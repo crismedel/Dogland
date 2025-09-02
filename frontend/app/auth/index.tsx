@@ -10,7 +10,7 @@ export default function Index() {
       style={styles.container}
     >
       <ImageBackground
-        source={require("../assets/images/golden-retriever.png")}
+        source={require("../../assets/images/golden-retriever.png")}
         style={styles.backgroundImage}
         resizeMode="cover"
       >
@@ -24,7 +24,7 @@ export default function Index() {
 
           {/* Registration Prompt */}
           <View style={styles.registrationContainer}>
-            <Text style={styles.registrationText}>
+            <Text style={styles.registrationText} onPress={() => router.push('/auth/register')}>
               No tienes una cuenta? <Text style={styles.registrationLink}>Regístrate</Text>
             </Text>
           </View>

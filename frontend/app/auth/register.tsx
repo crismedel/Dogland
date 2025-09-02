@@ -14,6 +14,18 @@ export default function Index() {
                     {/* Welcome Title */}
                     <Text style={styles.welcomeTitle}>Bienvenido a Dogland</Text>
 
+                    {/* User Input */}
+                    <View style={styles.inputContainer}>
+                        <Text style={styles.inputLabel}>Usuario</Text>
+                        <TextInput
+                            style={styles.textInput}
+                            placeholder="Ingresa tu usuario"
+                            placeholderTextColor="#9CA3AF"
+                            keyboardType="default"
+                            autoCapitalize="none"
+                        />
+                    </View>
+
                     {/* Email Input */}
                     <View style={styles.inputContainer}>
                         <Text style={styles.inputLabel}>Correo</Text>
@@ -38,19 +50,14 @@ export default function Index() {
                         />
                     </View>
 
-                    {/* Login Button */}
-                    <TouchableOpacity style={styles.loginButton} activeOpacity={0.8}>
-                        <Text style={styles.loginButtonText}>Acceder</Text>
+                    {/* Register Button */}
+                    <TouchableOpacity style={styles.registerButton} activeOpacity={0.8}>
+                        <Text style={styles.registerButtonText}>Crear Cuenta</Text>
                     </TouchableOpacity>
 
-                    {/* Forgot Password Link */}
-                    <TouchableOpacity style={styles.forgotPasswordContainer}>
-                        <Text style={styles.forgotPasswordText}>No recuerdas tú contraseña?</Text>
-                    </TouchableOpacity>
-
-                    {/* Register Link */}
-                    <TouchableOpacity style={styles.registerContainer}>
-                        <Text style={styles.registerText} onPress={() => router.push('/auth/register')}>Regístrate</Text>
+                    {/* Login Link */}
+                    <TouchableOpacity style={styles.loginContainer}>
+                        <Text style={styles.loginText} onPress={() => router.push('/auth/login')}>Ya Tengo una Cuenta</Text>
                     </TouchableOpacity>
                 </View>
             </View>
@@ -97,7 +104,7 @@ const styles = StyleSheet.create({
         color: "#1F2937",
         backgroundColor: "#F9FAFB",
     },
-    loginButton: {
+    registerButton: {
         backgroundColor: "#fbbf24",
         paddingVertical: 18,
         borderRadius: 12,
@@ -112,26 +119,17 @@ const styles = StyleSheet.create({
         shadowRadius: 3.84,
         elevation: 5,
     },
-    loginButtonText: {
+    registerButtonText: {
         color: "#ffffff",
         fontSize: 18,
         fontWeight: "700",
         textAlign: "center",
         letterSpacing: 0.5,
     },
-    forgotPasswordContainer: {
-        alignItems: "center",
-        marginBottom: 20,
-    },
-    forgotPasswordText: {
-        color: "#6B7280",
-        fontSize: 14,
-        textDecorationLine: "underline",
-    },
-    registerContainer: {
+    loginContainer: {
         alignItems: "center",
     },
-    registerText: {
+    loginText: {
         color: "#fbbf24",
         fontSize: 16,
         fontWeight: "600",
