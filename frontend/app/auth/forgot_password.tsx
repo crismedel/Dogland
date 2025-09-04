@@ -16,7 +16,7 @@ export default function Index() {
             <View style={styles.container}>
                 <View style={styles.formContainer}>
                     {/* Welcome Title */}
-                    <Text style={styles.welcomeTitle}>Bienvenido a Dogland</Text>
+                    <Text style={styles.welcomeTitle}>Recuperación de Contraseña</Text>
 
                     {/* Email Input */}
                     <View style={styles.inputContainer}>
@@ -30,26 +30,9 @@ export default function Index() {
                         />
                     </View>
 
-                    {/* Password Input */}
-                    <View style={styles.inputContainer}>
-                        <Text style={styles.inputLabel}>Contraseña</Text>
-                        <TextInput
-                            style={styles.textInput}
-                            placeholder="Ingresa tu contraseña"
-                            placeholderTextColor="#9CA3AF"
-                            secureTextEntry={true}
-                            autoCapitalize="none"
-                        />
-                    </View>
-
                     {/* Login Button */}
-                    <TouchableOpacity style={styles.loginButton} activeOpacity={0.8}>
-                        <Text style={styles.loginButtonText}>Acceder</Text>
-                    </TouchableOpacity>
-
-                    {/* Forgot Password Link */}
-                    <TouchableOpacity style={styles.forgotPasswordContainer} onPress={() => router.push('/auth/forgot_password')}>
-                        <Text style={styles.forgotPasswordText}>No recuerdas tú contraseña?</Text>
+                    <TouchableOpacity style={styles.forgotpswdButton} activeOpacity={0.8}>
+                        <Text style={styles.forgotpswdButtonText}>Envia Código</Text>
                     </TouchableOpacity>
 
                     {/* Register Link */}
@@ -101,7 +84,7 @@ const styles = StyleSheet.create({
         color: "#1F2937",
         backgroundColor: "#F9FAFB",
     },
-    loginButton: {
+    forgotpswdButton: {
         backgroundColor: "#fbbf24",
         paddingVertical: 18,
         borderRadius: 12,
@@ -116,7 +99,7 @@ const styles = StyleSheet.create({
         shadowRadius: 3.84,
         elevation: 5,
     },
-    loginButtonText: {
+    forgotpswdButtonText: {
         color: "#ffffff",
         fontSize: 18,
         fontWeight: "700",

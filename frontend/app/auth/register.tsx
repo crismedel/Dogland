@@ -1,4 +1,4 @@
-import { Text, View, TextInput, TouchableOpacity, StyleSheet, Dimensions, KeyboardAvoidingView, Platform } from "react-native"
+import { Text, View, TextInput, TouchableOpacity, StyleSheet, Dimensions, KeyboardAvoidingView, Platform, Image } from "react-native"
 import { router } from 'expo-router';
 
 const { width, height } = Dimensions.get("window")
@@ -9,10 +9,14 @@ export default function Index() {
             behavior={Platform.OS === "ios" ? "padding" : "height"}
             style={styles.container}
         >
+            <TouchableOpacity style={{ position: 'absolute', top: 50, left: 20, zIndex: 1 }} activeOpacity={0.8} onPress={() => router.push('/auth')}>
+                <Image source={require("../../assets/images/volver.png")} style={{ width: 24, height: 24 }} />
+            </TouchableOpacity>
+
             <View style={styles.container}>
                 <View style={styles.formContainer}>
                     {/* Welcome Title */}
-                    <Text style={styles.welcomeTitle}>Bienvenido a Dogland</Text>
+                    <Text style={styles.welcomeTitle}>Crea tu cuenta en Dogland</Text>
 
                     {/* User Input */}
                     <View style={styles.inputContainer}>
