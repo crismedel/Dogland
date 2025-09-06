@@ -5,69 +5,98 @@ import {
   FlatList,
   StyleSheet,
   ActivityIndicator,
+  TouchableOpacity,
 } from 'react-native';
-
 import { mockAlerts } from '../../data/alertsData';
-
-export interface Alert {
-  id: string;
-  title: string;
-  description: string;
-  date: string;
-  type: 'sanitario' | 'seguridad' | 'vacunacion' | 'adopcion' | 'perdida';
-}
-
-// 🔹 Diccionario centralizado para estilos de tipos de alerta
-const alertStyles: Record<Alert['type'], { card: object; badge: object }> = {
-  sanitario: {
-    card: { borderLeftColor: '#FF6B6B', backgroundColor: '#FFF5F5' },
-    badge: { backgroundColor: '#FF6B6B' },
-  },
-  seguridad: {
-    card: { borderLeftColor: '#FFB347', backgroundColor: '#FFF8F0' },
-    badge: { backgroundColor: '#FFB347' },
-  },
-  vacunacion: {
-    card: { borderLeftColor: '#4ECDC4', backgroundColor: '#F0FFFE' },
-    badge: { backgroundColor: '#4ECDC4' },
-  },
-  adopcion: {
-    card: { borderLeftColor: '#45B7D1', backgroundColor: '#F0F8FF' },
-    badge: { backgroundColor: '#45B7D1' },
-  },
-  perdida: {
-    card: { borderLeftColor: '#96CEB4', backgroundColor: '#F8FFF8' },
-    badge: { backgroundColor: '#96CEB4' },
-  },
-};
-
-// 🔹 Componente reutilizable para una card de alerta
-const AlertCard = ({ alert }: { alert: Alert }) => {
-  const { card, badge } = alertStyles[alert.type];
-
-  return (
-    <View style={[styles.card, card]}>
-      <View style={styles.cardHeader}>
-        <Text style={styles.title}>{alert.title}</Text>
-        <View style={[styles.typeBadge, badge]}>
-          <Text style={styles.badgeText}>{alert.type.toUpperCase()}</Text>
-        </View>
-      </View>
-      <Text style={styles.description}>{alert.description}</Text>
-      <Text style={styles.date}>📅 {alert.date}</Text>
-    </View>
-  );
-};
+import { Alert, FilterOptions } from '../../features/alerts/types';
+import AlertCard from './components/AlertCard';
+import FilterModal from './components/FilterModal';
 
 const CommunityAlertsScreen = () => {
-  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [allAlerts, setAllAlerts] = useState<Alert[]>([]);
+  const [filteredAlerts, setFilteredAlerts] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState<FilterOptions>({
+    type: 'todos',
+    riskLevel: 'todos',
+    status: 'activas',
+    timeRange: 'todas',
+  });
 
-  // Simulación de llamadas al backend
+  // Función para verificar y archivar alertas expiradas
+  const checkAndArchiveExpiredAlerts = (alerts: Alert[]): Alert[] => {
+    const now = new Date();
+    return alerts.map((alert) => {
+      const expirationDate = new Date(alert.expirationDate);
+      if (expirationDate < now && alert.isActive) {
+        return { ...alert, isActive: false };
+      }
+      return alert;
+    });
+  };
+
+  // Función para aplicar filtros
+  const applyFilters = (
+    alerts: Alert[],
+    filterOptions: FilterOptions,
+  ): Alert[] => {
+    return alerts.filter((alert) => {
+      // Filtro por tipo
+      if (filterOptions.type !== 'todos' && alert.type !== filterOptions.type) {
+        return false;
+      }
+
+      // Filtro por nivel de riesgo
+      if (
+        filterOptions.riskLevel !== 'todos' &&
+        alert.riskLevel !== filterOptions.riskLevel
+      ) {
+        return false;
+      }
+
+      // Filtro por estado
+      if (filterOptions.status === 'activas' && !alert.isActive) {
+        return false;
+      }
+      if (filterOptions.status === 'archivadas' && alert.isActive) {
+        return false;
+      }
+
+      // Filtro por tiempo
+      if (filterOptions.timeRange !== 'todas') {
+        const alertDate = new Date(alert.date);
+        const now = new Date();
+        const diffTime = now.getTime() - alertDate.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        switch (filterOptions.timeRange) {
+          case 'recientes':
+            if (diffDays > 1) return false;
+            break;
+          case 'semana':
+            if (diffDays > 7) return false;
+            break;
+          case 'mes':
+            if (diffDays > 30) return false;
+            break;
+        }
+      }
+
+      return true;
+    });
+  };
+
+  // Simulación de llamadas al backend con datos extendidos
   useEffect(() => {
     const fetchAlerts = async () => {
       try {
-        setAlerts(mockAlerts); // ✅ Ahora viene de archivo externo
+        // En lugar de definir `data` aquí, lo traes desde el archivo de datos
+        const data: Alert[] = mockAlerts;
+
+        // Verificar y archivar alertas expiradas
+        const updatedAlerts = checkAndArchiveExpiredAlerts(data);
+        setAllAlerts(updatedAlerts);
       } catch (error) {
         console.error('Error cargando alertas:', error);
       } finally {
@@ -77,6 +106,17 @@ const CommunityAlertsScreen = () => {
 
     fetchAlerts();
   }, []);
+
+  // Aplicar filtros cuando cambien los filtros o las alertas
+  useEffect(() => {
+    const filtered = applyFilters(allAlerts, filters);
+    setFilteredAlerts(filtered);
+  }, [allAlerts, filters]);
+
+  const handleFiltersChange = (newFilters: FilterOptions) => {
+    setFilters(newFilters);
+  };
+
   if (loading) {
     return (
       <View style={styles.center}>
@@ -88,10 +128,46 @@ const CommunityAlertsScreen = () => {
 
   return (
     <View style={styles.container}>
+      {/* Header con filtros */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>
+          Alertas Comunitarias ({filteredAlerts.length})
+        </Text>
+        <TouchableOpacity
+          style={styles.filterButton}
+          onPress={() => setShowFilters(true)}
+        >
+          <Text style={styles.filterButtonText}>🔍 Filtros</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Resumen de filtros activos */}
+      {(filters.type !== 'todos' ||
+        filters.riskLevel !== 'todos' ||
+        filters.status !== 'activas' ||
+        filters.timeRange !== 'todas') && (
+        <View style={styles.activeFilters}>
+          <Text style={styles.activeFiltersText}>
+            Filtros: {filters.type !== 'todos' && `Tipo: ${filters.type} `}
+            {filters.riskLevel !== 'todos' && `Riesgo: ${filters.riskLevel} `}
+            {filters.status !== 'activas' && `Estado: ${filters.status} `}
+            {filters.timeRange !== 'todas' && `Período: ${filters.timeRange}`}
+          </Text>
+        </View>
+      )}
+
       <FlatList
-        data={alerts}
+        data={filteredAlerts}
         renderItem={({ item }) => <AlertCard alert={item} />}
         keyExtractor={(item) => item.id}
+        showsVerticalScrollIndicator={false}
+      />
+
+      <FilterModal
+        visible={showFilters}
+        onClose={() => setShowFilters(false)}
+        filters={filters}
+        onFiltersChange={handleFiltersChange}
       />
     </View>
   );
@@ -105,54 +181,38 @@ const styles = StyleSheet.create({
     backgroundColor: '#f4f6f9',
     padding: 16,
   },
-  card: {
-    backgroundColor: '#fff',
-    padding: 16,
-    marginBottom: 12,
-    borderRadius: 12,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    borderLeftWidth: 4,
-  },
-  cardHeader: {
+  header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 8,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#222',
-    flex: 1,
-    marginRight: 8,
-  },
-  typeBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    minWidth: 80,
     alignItems: 'center',
+    marginBottom: 16,
   },
-  badgeText: {
-    color: '#fff',
-    fontSize: 10,
+  headerTitle: {
+    fontSize: 20,
     fontWeight: 'bold',
+    color: '#222',
   },
-  description: {
+  filterButton: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  filterButtonText: {
+    color: '#fff',
     fontSize: 14,
-    marginVertical: 8,
-    color: '#555',
-    lineHeight: 20,
+    fontWeight: '600',
   },
-  date: {
+  activeFilters: {
+    backgroundColor: '#e3f2fd',
+    padding: 8,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  activeFiltersText: {
     fontSize: 12,
-    color: '#888',
-    textAlign: 'right',
-    marginTop: 8,
+    color: '#1976d2',
+    fontWeight: '500',
   },
   center: {
     flex: 1,
