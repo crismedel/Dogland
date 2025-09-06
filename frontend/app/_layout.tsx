@@ -1,5 +1,5 @@
-import { Stack, useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { Stack, useRouter } from 'expo-router';
+import { useEffect, useState } from 'react';
 
 export default function RootLayout() {
   const router = useRouter();
@@ -13,7 +13,7 @@ export default function RootLayout() {
   useEffect(() => {
     // Realiza la redirección solo después de que el layout esté listo
     if (isReady) {
-      router.replace("/auth");
+      router.replace('/auth');
     }
   }, [isReady]);
 
@@ -22,6 +22,10 @@ export default function RootLayout() {
       {/* Define las pantallas de tu app */}
       <Stack.Screen name="auth" options={{ headerShown: false }} />
       <Stack.Screen name="home" options={{ headerShown: false }} />
+      <Stack.Screen
+        name="alerts/index"
+        options={{ headerTitle: 'Alertas Comunitarias' }}
+      />
     </Stack>
   );
 }
