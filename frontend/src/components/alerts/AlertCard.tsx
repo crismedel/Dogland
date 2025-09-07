@@ -6,7 +6,7 @@ import {
   riskStyles,
   tipoAlertas,
   nivelesRiesgo,
-} from '../../../features/alerts/types';
+} from '../../features/types';
 
 interface AlertCardProps {
   alert: Alert;

@@ -7,15 +7,15 @@ import {
   ActivityIndicator,
   TouchableOpacity,
 } from 'react-native';
-import { mockAlerts } from '../../data/alertsData';
+import { mockAlerts } from '../../src/data/alertsData';
 import {
   Alert,
   FilterOptions,
   tipoAlertas,
   nivelesRiesgo,
-} from '../../features/alerts/types';
-import AlertCard from './components/AlertCard';
-import FilterModal from './components/FilterModal';
+} from '../../src/features/types';
+import AlertCard from '../../src/components/alerts/AlertCard';
+import FilterModal from '../../src/components/alerts/FilterModal';
 
 const CommunityAlertsScreen = () => {
   const [allAlerts, setAllAlerts] = useState<Alert[]>([]);
