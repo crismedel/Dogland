@@ -1,6 +1,12 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Alert, alertStyles, riskStyles } from '../../../features/alerts/types';
+import {
+  Alert,
+  alertStyles,
+  riskStyles,
+  tipoAlertas,
+  nivelesRiesgo,
+} from '../../../features/alerts/types';
 
 interface AlertCardProps {
   alert: Alert;
@@ -8,22 +14,25 @@ interface AlertCardProps {
 
 // Componente actualizado para card de alerta
 const AlertCard: React.FC<AlertCardProps> = ({ alert }) => {
-  const { card, badge } = alertStyles[alert.type];
-  const riskStyle = riskStyles[alert.riskLevel];
+  // transformar FK en nombre legible para estilos
+  const typeName = tipoAlertas[alert.id_tipo_alerta];
+  const riskName = nivelesRiesgo[alert.id_nivel_riesgo];
 
-  // Calcular días restantes hasta expiración
+  const { card, badge } = alertStyles[typeName];
+  const riskStyle = riskStyles[riskName];
+
   const daysUntilExpiration = Math.ceil(
-    (new Date(alert.expirationDate).getTime() - new Date().getTime()) /
+    (new Date(alert.fecha_expiracion).getTime() - new Date().getTime()) /
       (1000 * 60 * 60 * 24),
   );
 
   return (
-    <View style={[styles.card, card, !alert.isActive && styles.archivedCard]}>
+    <View style={[styles.card, card, !alert.activa && styles.archivedCard]}>
       <View style={styles.cardHeader}>
-        <Text style={styles.title}>{alert.title}</Text>
+        <Text style={styles.title}>{alert.titulo}</Text>
         <View style={styles.badgeContainer}>
           <View style={[styles.typeBadge, badge]}>
-            <Text style={styles.badgeText}>{alert.type.toUpperCase()}</Text>
+            <Text style={styles.badgeText}>{typeName.toUpperCase()}</Text>
           </View>
           <View
             style={[
@@ -32,22 +41,22 @@ const AlertCard: React.FC<AlertCardProps> = ({ alert }) => {
             ]}
           >
             <Text style={[styles.riskText, { color: riskStyle.color }]}>
-              {alert.riskLevel.toUpperCase()}
+              {riskName.toUpperCase()}
             </Text>
           </View>
         </View>
       </View>
 
-      <Text style={styles.description}>{alert.description}</Text>
+      <Text style={styles.description}>{alert.descripcion}</Text>
 
       <View style={styles.alertInfo}>
-        <Text style={styles.location}>📍 {alert.location}</Text>
-        <Text style={styles.reportCount}>📊 {alert.reportCount} reportes</Text>
+        <Text style={styles.location}>📍 {alert.ubicacion}</Text>
+        <Text style={styles.reportCount}>📊 {alert.reportes} reportes</Text>
       </View>
 
       <View style={styles.cardFooter}>
-        <Text style={styles.date}>📅 {alert.date}</Text>
-        {alert.isActive && (
+        <Text style={styles.date}>📅 {alert.fecha_creacion}</Text>
+        {alert.activa ? (
           <Text
             style={[
               styles.expiration,
@@ -56,8 +65,7 @@ const AlertCard: React.FC<AlertCardProps> = ({ alert }) => {
           >
             ⏰ Expira en {daysUntilExpiration} días
           </Text>
-        )}
-        {!alert.isActive && (
+        ) : (
           <Text style={styles.archivedText}>📁 ARCHIVADA</Text>
         )}
       </View>
