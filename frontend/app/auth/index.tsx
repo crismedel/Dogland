@@ -9,6 +9,7 @@ export default function Index() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={styles.container}
     >
+
       <ImageBackground
         source={require("../../assets/images/golden-retriever.png")}
         style={styles.backgroundImage}

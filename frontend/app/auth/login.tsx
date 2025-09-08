@@ -44,7 +44,7 @@ export default function Index() {
       const response = await simulateLogin(email, password);
       setLoading(false);
       Alert.alert('Éxito', 'Has iniciado sesión correctamente.');
-      router.push('/alerts');
+      router.push('/home');
     } catch (error) {
       setLoading(false);
       Alert.alert('Error', error.message || 'Credenciales inválidas.');

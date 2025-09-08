@@ -6,7 +6,11 @@ import {
   StyleSheet,
   ActivityIndicator,
   TouchableOpacity,
+  KeyboardAvoidingView,
+  Platform,
+  Image,
 } from 'react-native';
+import { router } from 'expo-router';
 import { mockAlerts } from '../../src/data/alertsData';
 import {
   Alert,
@@ -136,49 +140,55 @@ const CommunityAlertsScreen = () => {
   }
 
   return (
-    <View style={styles.container}>
-      {/* Header con filtros */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>
-          Alertas Comunitarias ({filteredAlerts.length})
-        </Text>
-        <TouchableOpacity
-          style={styles.filterButton}
-          onPress={() => setShowFilters(true)}
-        >
-          <Text style={styles.filterButtonText}>🔍 Filtros</Text>
-        </TouchableOpacity>
-      </View>
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <View style={styles.container}>
 
-      {/* Resumen de filtros activos */}
-      {(filters.type !== 'todos' ||
-        filters.riskLevel !== 'todos' ||
-        filters.status !== 'activas' ||
-        filters.timeRange !== 'todas') && (
-        <View style={styles.activeFilters}>
-          <Text style={styles.activeFiltersText}>
-            Filtros: {filters.type !== 'todos' && `Tipo: ${filters.type} `}
-            {filters.riskLevel !== 'todos' && `Riesgo: ${filters.riskLevel} `}
-            {filters.status !== 'activas' && `Estado: ${filters.status} `}
-            {filters.timeRange !== 'todas' && `Período: ${filters.timeRange}`}
+        {/* Header con filtros */}
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>
+            Alertas Comunitarias ({filteredAlerts.length})
           </Text>
+          <TouchableOpacity
+            style={styles.filterButton}
+            onPress={() => setShowFilters(true)}
+          >
+            <Text style={styles.filterButtonText}>🔍 Filtros</Text>
+          </TouchableOpacity>
         </View>
-      )}
 
-      <FlatList
-        data={filteredAlerts}
-        renderItem={({ item }) => <AlertCard alert={item} />}
-        keyExtractor={(item) => item.id_alerta.toString()}
-        showsVerticalScrollIndicator={false}
-      />
+        {/* Resumen de filtros activos */}
+        {(filters.type !== 'todos' ||
+          filters.riskLevel !== 'todos' ||
+          filters.status !== 'activas' ||
+          filters.timeRange !== 'todas') && (
+            <View style={styles.activeFilters}>
+              <Text style={styles.activeFiltersText}>
+                Filtros: {filters.type !== 'todos' && `Tipo: ${filters.type} `}
+                {filters.riskLevel !== 'todos' && `Riesgo: ${filters.riskLevel} `}
+                {filters.status !== 'activas' && `Estado: ${filters.status} `}
+                {filters.timeRange !== 'todas' && `Período: ${filters.timeRange}`}
+              </Text>
+            </View>
+          )}
 
-      <FilterModal
-        visible={showFilters}
-        onClose={() => setShowFilters(false)}
-        filters={filters}
-        onFiltersChange={handleFiltersChange}
-      />
-    </View>
+        <FlatList
+          data={filteredAlerts}
+          renderItem={({ item }) => <AlertCard alert={item} />}
+          keyExtractor={(item) => item.id_alerta.toString()}
+          showsVerticalScrollIndicator={false}
+        />
+
+        <FilterModal
+          visible={showFilters}
+          onClose={() => setShowFilters(false)}
+          filters={filters}
+          onFiltersChange={handleFiltersChange}
+        />
+      </View>
+    </KeyboardAvoidingView>
   );
 };
 

@@ -22,10 +22,7 @@ export default function RootLayout() {
       {/* Define las pantallas de tu app */}
       <Stack.Screen name="auth" options={{ headerShown: false }} />
       <Stack.Screen name="home" options={{ headerShown: false }} />
-      <Stack.Screen
-        name="alerts/index"
-        options={{ headerTitle: 'Alertas Comunitarias' }}
-      />
+      <Stack.Screen name="alerts" options={{ headerShown: false }} />
     </Stack>
   );
 }
