@@ -1,3 +1,4 @@
+import React, { useState } from 'react';
 import {
   Text,
   View,
@@ -8,12 +9,48 @@ import {
   KeyboardAvoidingView,
   Platform,
   Image,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { router } from 'expo-router';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
+
+const simulateLogin = (email, password) => {
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      if (email === 'admin@dogland.com' && password === 'admin123') {
+        resolve(true);
+      } else {
+        reject(new Error('Credenciales inválidas'));
+      }
+    }, 2000);
+  });
+};
 
 export default function Index() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert('Error', 'Por favor, completa todos los campos.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await simulateLogin(email, password);
+      setLoading(false);
+      Alert.alert('Éxito', 'Has iniciado sesión correctamente.');
+      router.push('/alerts');
+    } catch (error) {
+      setLoading(false);
+      Alert.alert('Error', error.message || 'Credenciales inválidas.');
+    }
+  };
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -44,6 +81,8 @@ export default function Index() {
               placeholderTextColor="#9CA3AF"
               keyboardType="email-address"
               autoCapitalize="none"
+              value={email}
+              onChangeText={setEmail}
             />
           </View>
 
@@ -56,16 +95,23 @@ export default function Index() {
               placeholderTextColor="#9CA3AF"
               secureTextEntry={true}
               autoCapitalize="none"
+              value={password}
+              onChangeText={setPassword}
             />
           </View>
 
           {/* Login Button */}
           <TouchableOpacity
-            style={styles.loginButton}
+            style={[styles.loginButton, loading && { opacity: 0.7 }]}
             activeOpacity={0.8}
-            onPress={() => router.push('/alerts')}
+            onPress={handleLogin}
+            disabled={loading}
           >
-            <Text style={styles.loginButtonText}>Acceder</Text>
+            {loading ? (
+              <ActivityIndicator color="#ffffff" />
+            ) : (
+              <Text style={styles.loginButtonText}>Acceder</Text>
+            )}
           </TouchableOpacity>
 
           {/* Forgot Password Link */}
