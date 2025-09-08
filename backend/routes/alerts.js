@@ -9,8 +9,8 @@ router.get('/alerts', async (req, res) => {
     const result = await pool.query(`
       SELECT a.id_alerta, a.titulo, a.descripcion, a.fecha_creacion, 
              a.fecha_expiracion, a.ubicacion, a.activa, a.reportes,
-             ta.nombre_tipo_alerta AS tipo,
-             nr.nombre_nivel AS nivel_riesgo,
+             ta.tipo_alerta AS tipo,
+             nr.nivel_riesgo AS nivel_riesgo,
              u.nombre_usuario AS creado_por
       FROM alerta a
       INNER JOIN tipo_alerta ta ON a.id_tipo_alerta = ta.id_tipo_alerta
@@ -33,8 +33,8 @@ router.get('/alerts/:id', async (req, res) => {
       `
       SELECT a.id_alerta, a.titulo, a.descripcion, a.fecha_creacion, 
              a.fecha_expiracion, a.ubicacion, a.activa, a.reportes,
-             ta.nombre_tipo_alerta AS tipo,
-             nr.nombre_nivel AS nivel_riesgo,
+             ta.tipo_alerta AS tipo,
+             nr.nivel_riesgo AS nivel_riesgo,
              u.nombre_usuario AS creado_por
       FROM alerta a
       INNER JOIN tipo_alerta ta ON a.id_tipo_alerta = ta.id_tipo_alerta
