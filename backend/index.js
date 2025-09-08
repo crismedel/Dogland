@@ -6,6 +6,7 @@ import organizationsRouter from './routes/organizations.js';
 
 // conffiguraciones
 app.set('port', 3000);
+app.use(express.json());
 
 // rutas
 app.get('/', (req, res) => {
