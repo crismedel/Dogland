@@ -8,16 +8,9 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
-  Image,
 } from 'react-native';
 import { router } from 'expo-router';
-import { mockAlerts } from '../../src/data/alertsData';
-import {
-  Alert,
-  FilterOptions,
-  tipoAlertas,
-  nivelesRiesgo,
-} from '../../src/features/types';
+import { Alert, FilterOptions } from '../../src/features/types';
 import AlertCard from '../../src/components/alerts/AlertCard';
 import FilterModal from '../../src/components/alerts/FilterModal';
 
@@ -33,7 +26,7 @@ const CommunityAlertsScreen = () => {
     timeRange: 'todas',
   });
 
-  // Función para verificar y archivar alertas expiradas
+  // Verificar y archivar alertas expiradas
   const checkAndArchiveExpiredAlerts = (alerts: Alert[]): Alert[] => {
     const now = new Date();
     return alerts.map((alert) => {
@@ -45,39 +38,24 @@ const CommunityAlertsScreen = () => {
     });
   };
 
-  // Función para aplicar filtros
+  // Aplicar filtros
   const applyFilters = (
     alerts: Alert[],
     filterOptions: FilterOptions,
   ): Alert[] => {
     return alerts.filter((alert) => {
-      // Mapeamos ids a strings legibles
-      const tipoName = alert.tipo ?? tipoAlertas[alert.id_tipo_alerta];
-      const riesgoName =
-        alert.nivelRiesgo ?? nivelesRiesgo[alert.id_nivel_riesgo];
-
-      // Filtro por tipo
-      if (filterOptions.type !== 'todos' && tipoName !== filterOptions.type) {
+      if (filterOptions.type !== 'todos' && alert.tipo !== filterOptions.type)
         return false;
-      }
 
-      // Filtro por nivel de riesgo
       if (
         filterOptions.riskLevel !== 'todos' &&
-        riesgoName !== filterOptions.riskLevel
-      ) {
+        alert.nivel_riesgo !== filterOptions.riskLevel
+      )
         return false;
-      }
 
-      // Filtro por estado
-      if (filterOptions.status === 'activas' && !alert.activa) {
-        return false;
-      }
-      if (filterOptions.status === 'archivadas' && alert.activa) {
-        return false;
-      }
+      if (filterOptions.status === 'activas' && !alert.activa) return false;
+      if (filterOptions.status === 'archivadas' && alert.activa) return false;
 
-      // Filtro por tiempo
       if (filterOptions.timeRange !== 'todas') {
         const alertDate = new Date(alert.fecha_creacion);
         const now = new Date();
@@ -96,20 +74,27 @@ const CommunityAlertsScreen = () => {
             break;
         }
       }
-
       return true;
     });
   };
 
-  // Simulación de llamadas al backend con datos extendidos
+  // Fetch de alertas desde el backend
   useEffect(() => {
     const fetchAlerts = async () => {
       try {
-        const data: Alert[] = mockAlerts;
+        setLoading(true);
+        // const response = await fetch('http://localhost:3000/api/alerts');
+        const response = await fetch('http://10.0.2.2:3000/api/alerts');
 
-        // Verificar y archivar alertas expiradas
-        const updatedAlerts = checkAndArchiveExpiredAlerts(data);
-        setAllAlerts(updatedAlerts);
+        const result = await response.json();
+
+        if (result.success) {
+          // No se hace mapeo porque types.ts ya está definido en snake_case
+          const updatedAlerts = checkAndArchiveExpiredAlerts(result.data);
+          setAllAlerts(updatedAlerts);
+        } else {
+          console.error('Error al obtener alertas:', result.error);
+        }
       } catch (error) {
         console.error('Error cargando alertas:', error);
       } finally {
@@ -120,7 +105,6 @@ const CommunityAlertsScreen = () => {
     fetchAlerts();
   }, []);
 
-  // Aplicar filtros cuando cambien los filtros o las alertas
   useEffect(() => {
     const filtered = applyFilters(allAlerts, filters);
     setFilteredAlerts(filtered);
@@ -145,7 +129,6 @@ const CommunityAlertsScreen = () => {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <View style={styles.container}>
-
         {/* Header con filtros */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>
@@ -159,21 +142,22 @@ const CommunityAlertsScreen = () => {
           </TouchableOpacity>
         </View>
 
-        {/* Resumen de filtros activos */}
+        {/* Resumen de filtros */}
         {(filters.type !== 'todos' ||
           filters.riskLevel !== 'todos' ||
           filters.status !== 'activas' ||
           filters.timeRange !== 'todas') && (
-            <View style={styles.activeFilters}>
-              <Text style={styles.activeFiltersText}>
-                Filtros: {filters.type !== 'todos' && `Tipo: ${filters.type} `}
-                {filters.riskLevel !== 'todos' && `Riesgo: ${filters.riskLevel} `}
-                {filters.status !== 'activas' && `Estado: ${filters.status} `}
-                {filters.timeRange !== 'todas' && `Período: ${filters.timeRange}`}
-              </Text>
-            </View>
-          )}
+          <View style={styles.activeFilters}>
+            <Text style={styles.activeFiltersText}>
+              Filtros: {filters.type !== 'todos' && `Tipo: ${filters.type} `}
+              {filters.riskLevel !== 'todos' && `Riesgo: ${filters.riskLevel} `}
+              {filters.status !== 'activas' && `Estado: ${filters.status} `}
+              {filters.timeRange !== 'todas' && `Período: ${filters.timeRange}`}
+            </Text>
+          </View>
+        )}
 
+        {/* Lista de alertas */}
         <FlatList
           data={filteredAlerts}
           renderItem={({ item }) => <AlertCard alert={item} />}

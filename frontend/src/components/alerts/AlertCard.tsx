@@ -1,25 +1,14 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import {
-  Alert,
-  alertStyles,
-  riskStyles,
-  tipoAlertas,
-  nivelesRiesgo,
-} from '../../features/types';
+import { Alert, alertStyles, riskStyles } from '../../features/types';
 
 interface AlertCardProps {
   alert: Alert;
 }
 
-// Componente actualizado para card de alerta
 const AlertCard: React.FC<AlertCardProps> = ({ alert }) => {
-  // transformar FK en nombre legible para estilos
-  const typeName = tipoAlertas[alert.id_tipo_alerta];
-  const riskName = nivelesRiesgo[alert.id_nivel_riesgo];
-
-  const { card, badge } = alertStyles[typeName];
-  const riskStyle = riskStyles[riskName];
+  const { card, badge } = alertStyles[alert.tipo];
+  const riskStyle = riskStyles[alert.nivel_riesgo];
 
   const daysUntilExpiration = Math.ceil(
     (new Date(alert.fecha_expiracion).getTime() - new Date().getTime()) /
@@ -32,7 +21,7 @@ const AlertCard: React.FC<AlertCardProps> = ({ alert }) => {
         <Text style={styles.title}>{alert.titulo}</Text>
         <View style={styles.badgeContainer}>
           <View style={[styles.typeBadge, badge]}>
-            <Text style={styles.badgeText}>{typeName.toUpperCase()}</Text>
+            <Text style={styles.badgeText}>{alert.tipo.toUpperCase()}</Text>
           </View>
           <View
             style={[
@@ -41,7 +30,7 @@ const AlertCard: React.FC<AlertCardProps> = ({ alert }) => {
             ]}
           >
             <Text style={[styles.riskText, { color: riskStyle.color }]}>
-              {riskName.toUpperCase()}
+              {alert.nivel_riesgo.toUpperCase()}
             </Text>
           </View>
         </View>

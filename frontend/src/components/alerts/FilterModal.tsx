@@ -57,11 +57,11 @@ const FilterModal: React.FC<FilterModalProps> = ({
               style={styles.picker}
             >
               <Picker.Item label="Todos" value="todos" />
-              <Picker.Item label="Sanitario" value="sanitario" />
-              <Picker.Item label="Seguridad" value="seguridad" />
-              <Picker.Item label="Vacunación" value="vacunacion" />
-              <Picker.Item label="Adopción" value="adopcion" />
-              <Picker.Item label="Perdida" value="perdida" />
+              <Picker.Item label="Jauría" value="Jauria" />
+              <Picker.Item label="Accidente" value="Accidente" />
+              <Picker.Item label="Robo" value="Robo" />
+              <Picker.Item label="Animal Perdido" value="Animal Perdido" />
+              <Picker.Item label="Otro" value="Otro" />
             </Picker>
 
             <Text style={styles.filterLabel}>Nivel de Riesgo:</Text>
