@@ -1,16 +1,71 @@
-import { Text, View, TextInput, TouchableOpacity, StyleSheet, Dimensions, KeyboardAvoidingView, Platform, Image } from "react-native"
+import React, { useState } from "react"
+import {
+    Text,
+    View,
+    TextInput,
+    TouchableOpacity,
+    StyleSheet,
+    Dimensions,
+    KeyboardAvoidingView,
+    Platform,
+    Image,
+    Alert,
+} from "react-native"
 import { router } from 'expo-router';
 
-const { width, height } = Dimensions.get("window")
+const { width } = Dimensions.get("window")
 
 export default function Index() {
+    const [username, setUsername] = useState('');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+
+    const validateEmail = (email) => {
+        const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return re.test(String(email).toLowerCase());
+    }
+
+    const handleRegister = () => {
+        if (!username || !email || !password || !confirmPassword) {
+            Alert.alert('Error', 'Por favor, completa todos los campos.');
+            return;
+        }
+
+        if (!validateEmail(email)) {
+            Alert.alert('Error', 'Por favor, ingresa un correo válido.');
+            return;
+        }
+
+        if (password.length < 6) {
+            Alert.alert('Error', 'La contraseña debe tener al menos 6 caracteres.');
+            return;
+        }
+
+        if (password !== confirmPassword) {
+            Alert.alert('Error', 'Las contraseñas no coinciden.');
+            return;
+        }
+
+        Alert.alert('Éxito', 'Cuenta creada correctamente. Ahora puedes iniciar sesión.', [
+            { text: 'OK', onPress: () => router.push('/auth/login') }
+        ]);
+    };
+
     return (
         <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "padding" : "height"}
             style={styles.container}
         >
-            <TouchableOpacity style={{ position: 'absolute', top: 50, left: 20, zIndex: 1 }} activeOpacity={0.8} onPress={() => router.push('/auth')}>
-                <Image source={require("../../assets/images/volver.png")} style={{ width: 24, height: 24 }} />
+            <TouchableOpacity
+                style={{ position: 'absolute', top: 50, left: 20, zIndex: 1 }}
+                activeOpacity={0.8}
+                onPress={() => router.push('/auth')}
+            >
+                <Image
+                    source={require("../../assets/images/volver.png")}
+                    style={{ width: 24, height: 24 }}
+                />
             </TouchableOpacity>
 
             <View style={styles.container}>
@@ -27,6 +82,8 @@ export default function Index() {
                             placeholderTextColor="#9CA3AF"
                             keyboardType="default"
                             autoCapitalize="none"
+                            value={username}
+                            onChangeText={setUsername}
                         />
                     </View>
 
@@ -39,6 +96,8 @@ export default function Index() {
                             placeholderTextColor="#9CA3AF"
                             keyboardType="email-address"
                             autoCapitalize="none"
+                            value={email}
+                            onChangeText={setEmail}
                         />
                     </View>
 
@@ -51,17 +110,42 @@ export default function Index() {
                             placeholderTextColor="#9CA3AF"
                             secureTextEntry={true}
                             autoCapitalize="none"
+                            value={password}
+                            onChangeText={setPassword}
+                        />
+                    </View>
+
+                    {/* Confirm Password Input */}
+                    <View style={styles.inputContainer}>
+                        <Text style={styles.inputLabel}>Confirmar Contraseña</Text>
+                        <TextInput
+                            style={styles.textInput}
+                            placeholder="Confirma tu contraseña"
+                            placeholderTextColor="#9CA3AF"
+                            secureTextEntry={true}
+                            autoCapitalize="none"
+                            value={confirmPassword}
+                            onChangeText={setConfirmPassword}
                         />
                     </View>
 
                     {/* Register Button */}
-                    <TouchableOpacity style={styles.registerButton} activeOpacity={0.8}>
+                    <TouchableOpacity
+                        style={styles.registerButton}
+                        activeOpacity={0.8}
+                        onPress={handleRegister}
+                    >
                         <Text style={styles.registerButtonText}>Crear Cuenta</Text>
                     </TouchableOpacity>
 
                     {/* Login Link */}
                     <TouchableOpacity style={styles.loginContainer}>
-                        <Text style={styles.loginText} onPress={() => router.push('/auth/login')}>Ya Tengo una Cuenta</Text>
+                        <Text
+                            style={styles.loginText}
+                            onPress={() => router.push('/auth/login')}
+                        >
+                            Ya Tengo una Cuenta
+                        </Text>
                     </TouchableOpacity>
                 </View>
             </View>
