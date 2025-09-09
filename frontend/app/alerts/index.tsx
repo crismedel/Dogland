@@ -150,6 +150,17 @@ const CommunityAlertsScreen = () => {
             style={styles.filterButton}
             onPress={() => setShowFilters(true)}
           >
+            <View style={styles.actionSection}>
+                                  <Text style={styles.questionText}>¿Viste un perrito que necesita ayuda?</Text>
+                                   <TouchableOpacity
+        style={[styles.actionButton, styles.reportButton]}
+        activeOpacity={0.8}
+        onPress={() => router.push('/reports')}  // Navegar a la carpeta /reports
+      >
+        <Text style={styles.actionButtonText}>Hacer Reportes</Text> {/* Texto del botón */}
+      </TouchableOpacity>
+                              </View>
+
             <Text style={styles.filterButtonText}>🔍 Filtros</Text>
           </TouchableOpacity>
         </View>
@@ -246,4 +257,42 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+
+  reportButton: {
+    backgroundColor: '#4CAF50',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 20,  // Espacio para separar del borde superior
+  },
+  reportButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+   actionButton: {
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  actionButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  actionSection: {
+    flex: 1,
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    marginLeft: 16,
+  },
+  questionText: {
+    fontSize: 15,
+    color: '#333',
+    marginBottom: 8,
+    fontWeight: '500',
+  },
+
+
 });
