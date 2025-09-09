@@ -8,13 +8,15 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
+  Image,
 } from 'react-native';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { Alert, FilterOptions } from '../../src/features/types';
 import AlertCard from '../../src/components/alerts/AlertCard';
 import FilterModal from '../../src/components/alerts/FilterModal';
 
 const CommunityAlertsScreen = () => {
+  const router = useRouter();
   const [allAlerts, setAllAlerts] = useState<Alert[]>([]);
   const [filteredAlerts, setFilteredAlerts] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(true);
@@ -83,13 +85,11 @@ const CommunityAlertsScreen = () => {
     const fetchAlerts = async () => {
       try {
         setLoading(true);
-        // const response = await fetch('http://localhost:3000/api/alerts');
         const response = await fetch('http://10.0.2.2:3000/api/alerts');
 
         const result = await response.json();
 
         if (result.success) {
-          // No se hace mapeo porque types.ts ya está definido en snake_case
           const updatedAlerts = checkAndArchiveExpiredAlerts(result.data);
           setAllAlerts(updatedAlerts);
         } else {
@@ -129,6 +129,18 @@ const CommunityAlertsScreen = () => {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <View style={styles.container}>
+        {/* Botón Volver */}
+        <TouchableOpacity
+          style={styles.backButton}
+          activeOpacity={0.8}
+          onPress={() => router.back()} // retrocede a la pantalla anterior
+        >
+          <Image
+            source={require('../../assets/images/volver.png')}
+            style={styles.backIcon}
+          />
+        </TouchableOpacity>
+
         {/* Header con filtros */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>
@@ -184,11 +196,23 @@ const styles = StyleSheet.create({
     backgroundColor: '#f4f6f9',
     padding: 16,
   },
+  backButton: {
+    position: 'absolute',
+    top: 40, // ajusta según tu diseño o SafeAreaView
+    left: 16,
+    zIndex: 10,
+  },
+  backIcon: {
+    width: 28,
+    height: 28,
+    tintColor: '#333', // opcional: para darle color
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 16,
+    marginTop: 40, // deja espacio debajo del botón
   },
   headerTitle: {
     fontSize: 20,
