@@ -4,6 +4,7 @@ const app = express();
 import alertsRouter from './routes/alerts.js';
 import organizationsRouter from './routes/organizations.js';
 import usersRouter from './routes/users.js';
+import passwordResetRequestRouter from './routes/password-reset-request.js';
 
 // conffiguraciones
 app.set('port', 3000);
@@ -17,6 +18,7 @@ app.get('/', (req, res) => {
 app.use('/api', alertsRouter);
 app.use('/api', organizationsRouter);
 app.use('/api', usersRouter);
+app.use("/api", passwordResetRequestRouter);
 
 app.listen(app.get('port'), () => {
   console.log(`Servidor correindo en http://localhost:${app.get('port')}`);
