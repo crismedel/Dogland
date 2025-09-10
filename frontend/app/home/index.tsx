@@ -57,6 +57,18 @@ export default function Index() {
                             <Text style={styles.actionButtonText}>¡Quiero adoptar!</Text>
                         </TouchableOpacity>
                     </View>
+
+                    {/* Report Dog Section */}
+                    <View style={styles.actionSection}>
+                        <Text style={styles.questionText}>Mapa Comunitario</Text>
+                        <TouchableOpacity
+                            style={[styles.actionButton, styles.mapButton]}
+                            activeOpacity={0.8}
+                            onPress={() => router.push('/community_maps')}
+                        >
+                            <Text style={styles.actionButtonText}>Mapa Comunitario</Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
 
                 {/* Social Media Section */}
@@ -150,6 +162,9 @@ const styles = StyleSheet.create({
     },
     adoptButton: {
         backgroundColor: "#22c55e", // Green for positive action
+    },
+    mapButton: {
+        backgroundColor: "#1071d1ff", // Green for positive action
     },
     actionButtonText: {
         color: "#ffffff",
