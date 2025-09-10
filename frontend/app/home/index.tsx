@@ -53,8 +53,9 @@ export default function Index() {
                         <TouchableOpacity
                             style={[styles.actionButton, styles.adoptButton]}
                             activeOpacity={0.8}
+                            onPress={() => router.push('/adoption')}
                         >
-                            <Text style={styles.actionButtonText}>¡Quiero adoptar!</Text>
+                            <Text style={styles.actionButtonText}>¡Si quiero adoptar!</Text>
                         </TouchableOpacity>
                     </View>
 
