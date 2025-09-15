@@ -9,6 +9,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   Image,
+  Animated,
+  Easing,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Alert, FilterOptions } from '../../src/features/types';
@@ -21,12 +23,48 @@ const CommunityAlertsScreen = () => {
   const [filteredAlerts, setFilteredAlerts] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
+  const [menuVisible, setMenuVisible] = useState(false); // nuevo estado para menú
   const [filters, setFilters] = useState<FilterOptions>({
     type: 'todos',
     riskLevel: 'todos',
     status: 'activas',
     timeRange: 'todas',
   });
+
+  // Animación para el menú flotante
+  const fadeAnim = React.useRef(new Animated.Value(0)).current;
+  const scaleAnim = React.useRef(new Animated.Value(0.8)).current;
+
+  useEffect(() => {
+    if (menuVisible) {
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 200,
+          easing: Easing.out(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          speed: 10,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else {
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 150,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scaleAnim, {
+          toValue: 0.8,
+          duration: 150,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [menuVisible]);
 
   // Verificar y archivar alertas expiradas
   const checkAndArchiveExpiredAlerts = (alerts: Alert[]): Alert[] => {
@@ -129,39 +167,28 @@ const CommunityAlertsScreen = () => {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <View style={styles.container}>
-        {/* Botón Volver */}
-        <TouchableOpacity
-          style={styles.backButton}
-          activeOpacity={0.8}
-          onPress={() => router.back()} // retrocede a la pantalla anterior
-        >
-          <Image
-            source={require('../../assets/images/volver.png')}
-            style={styles.backIcon}
-          />
-        </TouchableOpacity>
-
-        {/* Header con filtros */}
+        {/* Header con back + título + filtros */}
         <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.backButtonHeader}
+            activeOpacity={0.8}
+            onPress={() => router.back()}
+          >
+            <Image
+              source={require('../../assets/images/volver.png')}
+              style={styles.backIconHeader}
+            />
+          </TouchableOpacity>
+
           <Text style={styles.headerTitle}>
             Alertas Comunitarias ({filteredAlerts.length})
           </Text>
+
           <TouchableOpacity
             style={styles.filterButton}
             onPress={() => setShowFilters(true)}
           >
-            <View style={styles.actionSection}>
-                                  <Text style={styles.questionText}>¿Viste un perrito que necesita ayuda?</Text>
-                                   <TouchableOpacity
-        style={[styles.actionButton, styles.reportButton]}
-        activeOpacity={0.8}
-        onPress={() => router.push('/reports')}  // Navegar a la carpeta /reports
-      >
-        <Text style={styles.actionButtonText}>Hacer Reportes</Text> {/* Texto del botón */}
-      </TouchableOpacity>
-                              </View>
-
-            <Text style={styles.filterButtonText}>🔍 Filtros</Text>
+            <Text style={styles.filterButtonText}>Filtros</Text>
           </TouchableOpacity>
         </View>
 
@@ -194,6 +221,48 @@ const CommunityAlertsScreen = () => {
           filters={filters}
           onFiltersChange={handleFiltersChange}
         />
+
+        {/* Menú flotante persistente */}
+        {menuVisible && (
+          <Animated.View
+            style={[
+              styles.fabMenuContainer,
+              {
+                opacity: fadeAnim,
+                transform: [{ scale: scaleAnim }],
+              },
+            ]}
+          >
+            <TouchableOpacity
+              style={styles.fabMenuItem}
+              onPress={() => {
+                setMenuVisible(false);
+                router.push('/reports');
+              }}
+            >
+              <Text style={styles.fabMenuItemText}>Ir a Reportes</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.fabMenuItem, { marginTop: 10 }]}
+              onPress={() => {
+                setMenuVisible(false);
+                router.push('/create-alert');
+              }}
+            >
+              <Text style={styles.fabMenuItemText}>Crear Nueva Alerta</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        )}
+
+        {/* Botón flotante principal */}
+        <TouchableOpacity
+          style={styles.fab}
+          activeOpacity={0.8}
+          onPress={() => setMenuVisible(!menuVisible)}
+        >
+          <Text style={styles.fabText}>{menuVisible ? '×' : '+'}</Text>
+        </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
   );
@@ -207,37 +276,47 @@ const styles = StyleSheet.create({
     backgroundColor: '#f4f6f9',
     padding: 16,
   },
-  backButton: {
-    position: 'absolute',
-    top: 40, // ajusta según tu diseño o SafeAreaView
-    left: 16,
-    zIndex: 10,
-  },
-  backIcon: {
-    width: 28,
-    height: 28,
-    tintColor: '#333', // opcional: para darle color
-  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 8,
     marginBottom: 16,
-    marginTop: 40, // deja espacio debajo del botón
+    marginTop: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 4,
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 'bold',
-    color: '#222',
+    color: '#fff',
+    flex: 1,
+    textAlign: 'center',
+  },
+  backButtonHeader: {
+    padding: 6,
+  },
+  backIconHeader: {
+    width: 24,
+    height: 24,
+    tintColor: '#fff',
   },
   filterButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#fff',
     paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#007AFF',
   },
   filterButtonText: {
-    color: '#fff',
+    color: '#007AFF',
     fontSize: 14,
     fontWeight: '600',
   },
@@ -257,42 +336,52 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-
-  reportButton: {
+  fab: {
+    position: 'absolute',
+    bottom: 24,
+    right: 24,
     backgroundColor: '#4CAF50',
-    padding: 12,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 5,
+    zIndex: 1000,
+  },
+  fabText: {
+    color: '#fff',
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  fabMenuContainer: {
+    position: 'absolute',
+    bottom: 90,
+    right: 24,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
+    zIndex: 999,
+  },
+  fabMenuItem: {
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    backgroundColor: '#f0f0f0',
     borderRadius: 8,
     alignItems: 'center',
-    marginTop: 20,  // Espacio para separar del borde superior
   },
-  reportButtonText: {
-    color: '#fff',
+  fabMenuItemText: {
     fontSize: 16,
+    color: '#007AFF',
     fontWeight: '600',
   },
-   actionButton: {
-    padding: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  actionButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  actionSection: {
-    flex: 1,
-    flexDirection: 'column',
-    alignItems: 'flex-start',
-    marginLeft: 16,
-  },
-  questionText: {
-    fontSize: 15,
-    color: '#333',
-    marginBottom: 8,
-    fontWeight: '500',
-  },
-
-
 });
