@@ -16,6 +16,7 @@ import { useRouter } from 'expo-router';
 import { Alert, FilterOptions } from '../../src/features/types';
 import AlertCard from '../../src/components/alerts/AlertCard';
 import FilterModal from '../../src/components/alerts/FilterModal';
+import { fetchAlerts } from '../../src/api/alerts';
 
 const CommunityAlertsScreen = () => {
   const router = useRouter();
@@ -120,19 +121,13 @@ const CommunityAlertsScreen = () => {
 
   // Fetch de alertas desde el backend
   useEffect(() => {
-    const fetchAlerts = async () => {
+    const getAlerts = async () => {
       try {
         setLoading(true);
-        const response = await fetch('http://10.0.2.2:3000/api/alerts');
+        const result = await fetchAlerts();
 
-        const result = await response.json();
-
-        if (result.success) {
-          const updatedAlerts = checkAndArchiveExpiredAlerts(result.data);
-          setAllAlerts(updatedAlerts);
-        } else {
-          console.error('Error al obtener alertas:', result.error);
-        }
+        const updatedAlerts = checkAndArchiveExpiredAlerts(result);
+        setAllAlerts(updatedAlerts);
       } catch (error) {
         console.error('Error cargando alertas:', error);
       } finally {
@@ -140,7 +135,7 @@ const CommunityAlertsScreen = () => {
       }
     };
 
-    fetchAlerts();
+    getAlerts();
   }, []);
 
   useEffect(() => {
