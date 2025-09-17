@@ -1,12 +1,23 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Alert as RNAlert,
+  TouchableOpacity,
+} from 'react-native';
+import { useRouter } from 'expo-router';
 import { Alert, alertStyles, riskStyles } from '../../features/types';
+import { deleteAlert } from '../../api/alerts';
+import { Ionicons } from '@expo/vector-icons';
 
 interface AlertCardProps {
   alert: Alert;
+  onDeleteSuccess?: (id: number) => void;
 }
 
-const AlertCard: React.FC<AlertCardProps> = ({ alert }) => {
+const AlertCard: React.FC<AlertCardProps> = ({ alert, onDeleteSuccess }) => {
+  const router = useRouter();
   const { card, badge } = alertStyles[alert.tipo];
   const riskStyle = riskStyles[alert.nivel_riesgo];
 
@@ -15,34 +26,81 @@ const AlertCard: React.FC<AlertCardProps> = ({ alert }) => {
       (1000 * 60 * 60 * 24),
   );
 
+  const handleEdit = () => {
+    router.push({
+      pathname: '/edit-alert',
+      params: { id: alert.id_alerta.toString() },
+    });
+  };
+
+  const handleDelete = () => {
+    RNAlert.alert(
+      'Confirmar eliminación',
+      '¿Estás seguro de eliminar esta alerta?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Eliminar',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteAlert(alert.id_alerta);
+              if (onDeleteSuccess) onDeleteSuccess(alert.id_alerta);
+            } catch (e) {
+              RNAlert.alert('Error', 'No se pudo eliminar la alerta');
+            }
+          },
+        },
+      ],
+    );
+  };
+
   return (
     <View style={[styles.card, card, !alert.activa && styles.archivedCard]}>
+      {/* Header con título y acciones */}
       <View style={styles.cardHeader}>
         <Text style={styles.title}>{alert.titulo}</Text>
-        <View style={styles.badgeContainer}>
-          <View style={[styles.typeBadge, badge]}>
-            <Text style={styles.badgeText}>{alert.tipo.toUpperCase()}</Text>
-          </View>
-          <View
-            style={[
-              styles.riskBadge,
-              { backgroundColor: riskStyle.backgroundColor },
-            ]}
-          >
-            <Text style={[styles.riskText, { color: riskStyle.color }]}>
-              {alert.nivel_riesgo.toUpperCase()}
-            </Text>
-          </View>
+        <View style={styles.actions}>
+          {alert.activa && (
+            <TouchableOpacity onPress={handleEdit} style={styles.iconButton}>
+              <Ionicons name="create-outline" size={20} color="#007bff" />
+            </TouchableOpacity>
+          )}
+          {!alert.activa && (
+            <TouchableOpacity onPress={handleDelete} style={styles.iconButton}>
+              <Ionicons name="trash-outline" size={20} color="#dc3545" />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
+      {/* Badges de tipo y riesgo */}
+      <View style={styles.badgeContainer}>
+        <View style={[styles.typeBadge, badge]}>
+          <Text style={styles.badgeText}>{alert.tipo.toUpperCase()}</Text>
+        </View>
+        <View
+          style={[
+            styles.riskBadge,
+            { backgroundColor: riskStyle.backgroundColor },
+          ]}
+        >
+          <Text style={[styles.riskText, { color: riskStyle.color }]}>
+            {alert.nivel_riesgo.toUpperCase()}
+          </Text>
+        </View>
+      </View>
+
+      {/* Descripción */}
       <Text style={styles.description}>{alert.descripcion}</Text>
 
+      {/* Info */}
       <View style={styles.alertInfo}>
         <Text style={styles.location}>📍 {alert.ubicacion}</Text>
         <Text style={styles.reportCount}>📊 {alert.reportes} reportes</Text>
       </View>
 
+      {/* Footer */}
       <View style={styles.cardFooter}>
         <Text style={styles.date}>📅 {alert.fecha_creacion}</Text>
         {alert.activa ? (
@@ -84,8 +142,8 @@ const styles = StyleSheet.create({
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 8,
+    alignItems: 'center',
+    marginBottom: 6,
   },
   title: {
     fontSize: 18,
@@ -94,8 +152,16 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: 8,
   },
+  actions: {
+    flexDirection: 'row',
+  },
+  iconButton: {
+    marginLeft: 8,
+  },
   badgeContainer: {
-    alignItems: 'flex-end',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
   },
   typeBadge: {
     paddingHorizontal: 8,
@@ -103,7 +169,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     minWidth: 80,
     alignItems: 'center',
-    marginBottom: 4,
   },
   badgeText: {
     color: '#fff',
