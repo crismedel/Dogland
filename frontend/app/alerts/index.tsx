@@ -232,7 +232,7 @@ const CommunityAlertsScreen = () => {
               style={styles.fabMenuItem}
               onPress={() => {
                 setMenuVisible(false);
-                router.push('/reports');
+                router.push('/create-report');
               }}
             >
               <Text style={styles.fabMenuItemText}>Ir a Reportes</Text>
