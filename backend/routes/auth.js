@@ -1,7 +1,9 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
+import { UserCreate, findUserByEmail } from '../models/User.js';
 
 const router = Router();
+const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key';
 
 let users = [];
 
@@ -16,7 +18,7 @@ router.post('/register', async (req, res) => {
         }
         
         // Verificar si el usuario ya existe
-        const existingUser = users.findUserByEmail(user => user.email === email);
+        const existingUser = users.find(user => user.email === email);
         if (existingUser) {
             return res.status(400).json({ success: false, error: 'El usuario ya existe' });
         }
@@ -44,7 +46,33 @@ router.post('/register', async (req, res) => {
         });
 
     } catch (error) {
+        console.error('Error en /register:', error);
         return res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+router.post('/login', async (req, res) => {
+    try {
+        const { email, password } = req.body;
+
+        const user = await findUserByEmail(email);
+        if (!user) {
+            return res.status(401).json({ success: false, error: 'Credenciales inválidas' });
+        }
+
+        const passwordMatch = await bcrypt.compare(password, user.password_hash);
+        if (!passwordMatch) {
+            return res.status(401).json({ success: false, error: 'Credenciales inválidas' });
+        }
+
+        const token = JWT_SECRET.substring({userId: user.id, email: user.email }, JWT_SECRET, {
+            expiresIn: '1h',
+        });
+
+        res.json({ success: true, message: 'Inicio de sesión exitoso', token });
+    } catch (error) {
+        console.error('Error en /login:', error);
+        res.status(500).json({ success: false, error: 'Error del servidor' });
     }
 });
 
