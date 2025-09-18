@@ -1,4 +1,6 @@
 import express from 'express';
+import cors from 'cors';
+
 const app = express();
 
 import alertsRouter from './routes/alerts.js';
@@ -10,6 +12,9 @@ import passwordResetConfirmRouter from './routes/password-reset-confirm.js';
 // conffiguraciones
 app.set('port', 3000);
 app.use(express.json());
+
+// middleware cors 
+app.use(cors())
 
 // rutas
 app.get('/', (req, res) => {
