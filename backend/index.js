@@ -4,6 +4,7 @@ import cors from 'cors';
 const app = express();
 
 import alertsRouter from './routes/alerts.js';
+import { errorHandler } from './middlewares/errorHandler.js';
 import organizationsRouter from './routes/organizations.js';
 import usersRouter from './routes/users.js';
 import passwordResetRequestRouter from './routes/password-reset-request.js';
@@ -13,8 +14,8 @@ import passwordResetConfirmRouter from './routes/password-reset-confirm.js';
 app.set('port', 3000);
 app.use(express.json());
 
-// middleware cors 
-app.use(cors())
+// middleware cors
+app.use(cors());
 
 // rutas
 app.get('/', (req, res) => {
@@ -24,8 +25,10 @@ app.get('/', (req, res) => {
 app.use('/api', alertsRouter);
 app.use('/api', organizationsRouter);
 app.use('/api', usersRouter);
-app.use("/api", passwordResetRequestRouter);
-app.use("/api", passwordResetConfirmRouter);
+app.use('/api', passwordResetRequestRouter);
+app.use('/api', passwordResetConfirmRouter);
+
+app.use(errorHandler);
 
 app.listen(app.get('port'), () => {
   console.log(`Servidor correindo en http://localhost:${app.get('port')}`);

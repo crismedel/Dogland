@@ -5,12 +5,13 @@ import {
   TextInput,
   Button,
   StyleSheet,
-  TouchableOpacity,
   ScrollView,
+  TouchableOpacity,
 } from 'react-native';
 import { useForm, Controller } from 'react-hook-form';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { Picker } from '@react-native-picker/picker';
+import { createAlert } from '../../src/api/alerts';
 
 type FormData = {
   titulo: string;
@@ -57,16 +58,39 @@ export default function CreateAlertScreen() {
     hideDatePicker();
   };
 
-  const onSubmit = (data: FormData) => {
-    console.log('Datos del formulario:', {
-      ...data,
-      fechaExpiracion: selectedDate ? selectedDate.toISOString() : null,
-    });
-    alert('Formulario enviado (datos en consola)');
-    reset();
-    setSelectedDate(null);
-  };
+  const onSubmit = async (data: FormData) => {
+    if (!data.tipoAlerta || !data.nivelRiesgo) {
+      alert('Debe seleccionar tipo de alerta y nivel de riesgo');
+      return;
+    }
 
+    const payload = {
+      titulo: data.titulo,
+      descripcion: data.descripcion,
+      id_tipo_alerta: data.tipoAlerta,
+      id_nivel_riesgo: data.nivelRiesgo,
+      fecha_expiracion: selectedDate ? selectedDate.toISOString() : null,
+      ubicacion: '', // o la ubicación que obtengas
+      id_usuario: 2, // Valor fijo por ahora
+    };
+
+    console.log('CreateAlertScreen: Payload a enviar:', payload);
+    try {
+      const newAlert = await createAlert(payload);
+      console.log('CreateAlertScreen: Alerta creada con éxito:', newAlert);
+      alert('Alerta creada con éxito!');
+      reset();
+      setSelectedDate(null);
+      // router.back() o navegar a la lista de alertas
+    } catch (error: any) {
+      console.error('CreateAlertScreen: Error al crear alerta:', error);
+      alert(
+        `Error al crear alerta: ${
+          error.response?.data?.error || 'Inténtalo de nuevo.'
+        }`,
+      );
+    }
+  };
   return (
     <ScrollView
       style={styles.container}

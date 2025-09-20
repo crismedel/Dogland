@@ -13,7 +13,22 @@ import { Picker } from '@react-native-picker/picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { fetchAlertById, updateAlert } from '../../src/api/alerts';
-import type { Alert, AlertType, RiskLevel } from '../../src/features/types'; // 👈 tu archivo de tipos
+import type { Alert as AlertTypeFromAPI } from '../../src/types/alert';
+
+const MOCK_TIPOS_ALERTA = [
+  { id: 1, nombre: 'Jauria' },
+  { id: 2, nombre: 'Accidente' },
+  { id: 3, nombre: 'Robo' },
+  { id: 4, nombre: 'Animal Perdido' },
+  { id: 5, nombre: 'Otro' },
+];
+
+const MOCK_NIVELES_RIESGO = [
+  { id: 1, nombre: 'Bajo' },
+  { id: 2, nombre: 'Medio' },
+  { id: 3, nombre: 'Alto' },
+  { id: 4, nombre: 'Crítico' },
+];
 
 export default function EditAlertScreen() {
   const router = useRouter();
@@ -23,36 +38,36 @@ export default function EditAlertScreen() {
   const [descripcion, setDescripcion] = useState<string>('');
   const [ubicacion, setUbicacion] = useState<string>('');
 
-  const [tipoAlerta, setTipoAlerta] = useState<AlertType | null>(null);
-  const [nivelRiesgo, setNivelRiesgo] = useState<RiskLevel | null>(null);
+  const [tipoAlerta, setTipoAlerta] = useState<number | null>(null);
+  const [nivelRiesgo, setNivelRiesgo] = useState<number | null>(null);
 
-  const [fechaExpiracion, setFechaExpiracion] = useState<string | null>(null); // 👈 string | null
+  const [fechaExpiracion, setFechaExpiracion] = useState<string | null>(null);
   const [activa, setActiva] = useState<boolean>(true);
 
   const [loading, setLoading] = useState(true);
   const [showDate, setShowDate] = useState(false);
 
-  // Opciones fijas
-  const tiposAlerta: AlertType[] = [
-    'Jauria',
-    'Accidente',
-    'Robo',
-    'Animal Perdido',
-    'Otro',
-  ];
-  const nivelesRiesgo: RiskLevel[] = ['Bajo', 'Medio', 'Alto', 'Critico'];
-
   useEffect(() => {
     const loadAlert = async () => {
       try {
         setLoading(true);
-        const alertData: Alert = await fetchAlertById(Number(id));
+        const alertData: AlertTypeFromAPI = await fetchAlertById(Number(id));
 
         setTitulo(alertData.titulo);
         setDescripcion(alertData.descripcion);
         setUbicacion(alertData.ubicacion || '');
-        setTipoAlerta(alertData.tipo);
-        setNivelRiesgo(alertData.nivel_riesgo);
+
+        const tipoObj = MOCK_TIPOS_ALERTA.find(
+          (t) => t.nombre === alertData.tipo,
+        );
+        const nivelObj = MOCK_NIVELES_RIESGO.find(
+          (n) =>
+            n.nombre.toLowerCase() === alertData.nivel_riesgo.toLowerCase(),
+        );
+
+        setTipoAlerta(tipoObj ? tipoObj.id : null);
+        setNivelRiesgo(nivelObj ? nivelObj.id : null);
+
         setFechaExpiracion(alertData.fecha_expiracion || null);
         setActiva(alertData.activa);
       } catch (e) {
@@ -66,23 +81,42 @@ export default function EditAlertScreen() {
   }, [id]);
 
   const handleSave = async () => {
+    if (!tipoAlerta || !nivelRiesgo) {
+      RNAlert.alert(
+        'Error',
+        'Debe seleccionar tipo de alerta y nivel de riesgo',
+      );
+      return;
+    }
+
+    const updatedData = {
+      titulo,
+      descripcion,
+      ubicacion,
+      id_tipo_alerta: tipoAlerta,
+      id_nivel_riesgo: nivelRiesgo,
+      fecha_expiracion: fechaExpiracion ?? undefined,
+      activa,
+      id_usuario: 2, // <-- Aquí agregas el id_usuario fijo
+    };
+
+    console.log('EditAlertScreen: ID de alerta a actualizar:', id);
+    console.log(
+      'EditAlertScreen: Datos a enviar para actualizar:',
+      updatedData,
+    );
+
     try {
-      await updateAlert(Number(id), {
-        titulo,
-        descripcion,
-        ubicacion,
-        tipo: tipoAlerta!,
-        nivel_riesgo: nivelRiesgo!,
-        fecha_expiracion: fechaExpiracion,
-        activa,
-      });
+      await updateAlert(Number(id), updatedData);
       RNAlert.alert('Éxito', 'Alerta actualizada');
       router.back();
-    } catch (e) {
-      RNAlert.alert('Error', 'No se pudo actualizar la alerta');
+    } catch (e: any) {
+      console.error('EditAlertScreen: Error al actualizar alerta:', e);
+      const message =
+        e?.response?.data?.error || 'No se pudo actualizar la alerta';
+      RNAlert.alert('Error', message);
     }
   };
-
   if (loading) {
     return (
       <View style={styles.center}>
@@ -116,29 +150,26 @@ export default function EditAlertScreen() {
         style={styles.input}
       />
 
-      {/* Tipo de alerta */}
       <Text style={styles.label}>Tipo de Alerta *</Text>
       <Picker
         selectedValue={tipoAlerta}
         onValueChange={(val) => setTipoAlerta(val)}
       >
-        {tiposAlerta.map((t) => (
-          <Picker.Item key={t} label={t} value={t} />
+        {MOCK_TIPOS_ALERTA.map((t) => (
+          <Picker.Item key={t.id} label={t.nombre} value={t.id} />
         ))}
       </Picker>
 
-      {/* Nivel de Riesgo */}
       <Text style={styles.label}>Nivel de Riesgo *</Text>
       <Picker
         selectedValue={nivelRiesgo}
         onValueChange={(val) => setNivelRiesgo(val)}
       >
-        {nivelesRiesgo.map((r) => (
-          <Picker.Item key={r} label={r} value={r} />
+        {MOCK_NIVELES_RIESGO.map((n) => (
+          <Picker.Item key={n.id} label={n.nombre} value={n.id} />
         ))}
       </Picker>
 
-      {/* Fecha Expiración (string <-> Date) */}
       <Text style={styles.label}>Fecha de Expiración</Text>
       <Button
         title={
@@ -155,12 +186,11 @@ export default function EditAlertScreen() {
           display="default"
           onChange={(event, date) => {
             setShowDate(false);
-            if (date) setFechaExpiracion(date.toISOString()); // guarda como string ISO
+            if (date) setFechaExpiracion(date.toISOString());
           }}
         />
       )}
 
-      {/* Activa */}
       <View
         style={{
           flexDirection: 'row',

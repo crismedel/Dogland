@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Alert, alertStyles, riskStyles } from '../../features/types';
+import { Alert, alertStyles, riskStyles } from '../../types/alert';
 import { deleteAlert } from '../../api/alerts';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -21,10 +21,12 @@ const AlertCard: React.FC<AlertCardProps> = ({ alert, onDeleteSuccess }) => {
   const { card, badge } = alertStyles[alert.tipo];
   const riskStyle = riskStyles[alert.nivel_riesgo];
 
-  const daysUntilExpiration = Math.ceil(
-    (new Date(alert.fecha_expiracion).getTime() - new Date().getTime()) /
-      (1000 * 60 * 60 * 24),
-  );
+  const daysUntilExpiration = alert.fecha_expiracion
+    ? Math.ceil(
+        (new Date(alert.fecha_expiracion).getTime() - new Date().getTime()) /
+          (1000 * 60 * 60 * 24),
+      )
+    : null;
 
   const handleEdit = () => {
     router.push({
@@ -44,10 +46,16 @@ const AlertCard: React.FC<AlertCardProps> = ({ alert, onDeleteSuccess }) => {
           style: 'destructive',
           onPress: async () => {
             try {
+              console.log('Eliminando alerta ID:', alert.id_alerta);
               await deleteAlert(alert.id_alerta);
+              RNAlert.alert('Éxito', 'Alerta eliminada correctamente');
               if (onDeleteSuccess) onDeleteSuccess(alert.id_alerta);
-            } catch (e) {
-              RNAlert.alert('Error', 'No se pudo eliminar la alerta');
+            } catch (e: any) {
+              console.error('Error al eliminar alerta:', e);
+              RNAlert.alert(
+                'Error',
+                e?.error || 'No se pudo eliminar la alerta',
+              );
             }
           },
         },
@@ -66,11 +74,9 @@ const AlertCard: React.FC<AlertCardProps> = ({ alert, onDeleteSuccess }) => {
               <Ionicons name="create-outline" size={20} color="#007bff" />
             </TouchableOpacity>
           )}
-          {!alert.activa && (
-            <TouchableOpacity onPress={handleDelete} style={styles.iconButton}>
-              <Ionicons name="trash-outline" size={20} color="#dc3545" />
-            </TouchableOpacity>
-          )}
+          <TouchableOpacity onPress={handleDelete} style={styles.iconButton}>
+            <Ionicons name="trash-outline" size={20} color="#dc3545" />
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -96,14 +102,18 @@ const AlertCard: React.FC<AlertCardProps> = ({ alert, onDeleteSuccess }) => {
 
       {/* Info */}
       <View style={styles.alertInfo}>
-        <Text style={styles.location}>📍 {alert.ubicacion}</Text>
+        <Text style={styles.location}>
+          📍 {alert.ubicacion || 'No disponible'}
+        </Text>
         <Text style={styles.reportCount}>📊 {alert.reportes} reportes</Text>
       </View>
 
       {/* Footer */}
       <View style={styles.cardFooter}>
-        <Text style={styles.date}>📅 {alert.fecha_creacion}</Text>
-        {alert.activa ? (
+        <Text style={styles.date}>
+          📅 {new Date(alert.fecha_creacion).toLocaleDateString()}
+        </Text>
+        {alert.activa && daysUntilExpiration !== null ? (
           <Text
             style={[
               styles.expiration,

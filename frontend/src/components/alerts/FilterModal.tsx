@@ -8,7 +8,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
-import { FilterOptions } from '../../features/types';
+import { FilterOptions } from '../../types/alert';
 
 interface FilterModalProps {
   visible: boolean;

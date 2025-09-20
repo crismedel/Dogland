@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -13,7 +13,7 @@ import {
   Easing,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Alert, FilterOptions } from '../../src/features/types';
+import { Alert, FilterOptions } from '../../src/types/alert';
 import AlertCard from '../../src/components/alerts/AlertCard';
 import FilterModal from '../../src/components/alerts/FilterModal';
 import { fetchAlerts } from '../../src/api/alerts';
@@ -71,10 +71,14 @@ const CommunityAlertsScreen = () => {
   const checkAndArchiveExpiredAlerts = (alerts: Alert[]): Alert[] => {
     const now = new Date();
     return alerts.map((alert) => {
-      const expirationDate = new Date(alert.fecha_expiracion);
-      if (expirationDate < now && alert.activa) {
-        return { ...alert, activa: false };
+      // Verificar que fecha_expiracion no sea null antes de crear Date
+      if (alert.fecha_expiracion) {
+        const expirationDate = new Date(alert.fecha_expiracion);
+        if (expirationDate < now && alert.activa) {
+          return { ...alert, activa: false };
+        }
       }
+      // Si no hay fecha de expiración o no ha expirado, devolver la alerta sin cambios
       return alert;
     });
   };
