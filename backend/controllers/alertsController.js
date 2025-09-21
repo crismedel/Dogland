@@ -1,14 +1,17 @@
 import pool from '../db/db.js';
 
-// Obtiene todas las alertas activas, con detalles relacionados de tipo, nivel de riesgo y creador
+// Obtiene todas las alertas activas, con latitud, longitud y dirección
 export const getAlerts = async (req, res, next) => {
   try {
     const result = await pool.query(`
       SELECT a.id_alerta, a.titulo, a.descripcion, a.fecha_creacion, 
-             a.fecha_expiracion, a.ubicacion, a.activa, a.reportes,
+             a.fecha_expiracion, a.activa, a.reportes,
              ta.tipo_alerta AS tipo,
              nr.nivel_riesgo AS nivel_riesgo,
-             u.nombre_usuario AS creado_por
+             u.nombre_usuario AS creado_por,
+             ST_Y(a.ubicacion::geometry) AS latitude,
+             ST_X(a.ubicacion::geometry) AS longitude,
+             a.direccion
       FROM alerta a
       INNER JOIN tipo_alerta ta ON a.id_tipo_alerta = ta.id_tipo_alerta
       INNER JOIN nivel_riesgo nr ON a.id_nivel_riesgo = nr.id_nivel_riesgo
@@ -24,16 +27,19 @@ export const getAlerts = async (req, res, next) => {
   }
 };
 
-// Obtiene una alerta específica por su ID, incluyendo detalles relacionados
+// Obtiene una alerta específica por su ID, con latitud, longitud y dirección
 export const getAlertById = async (req, res, next) => {
   try {
     const result = await pool.query(
       `
       SELECT a.id_alerta, a.titulo, a.descripcion, a.fecha_creacion, 
-             a.fecha_expiracion, a.ubicacion, a.activa, a.reportes,
+             a.fecha_expiracion, a.activa, a.reportes,
              ta.tipo_alerta AS tipo,
              nr.nivel_riesgo AS nivel_riesgo,
-             u.nombre_usuario AS creado_por
+             u.nombre_usuario AS creado_por,
+             ST_Y(a.ubicacion::geometry) AS latitude,
+             ST_X(a.ubicacion::geometry) AS longitude,
+             a.direccion
       FROM alerta a
       INNER JOIN tipo_alerta ta ON a.id_tipo_alerta = ta.id_tipo_alerta
       INNER JOIN nivel_riesgo nr ON a.id_nivel_riesgo = nr.id_nivel_riesgo
@@ -66,7 +72,9 @@ export const createAlert = async (req, res, next) => {
       id_tipo_alerta,
       id_nivel_riesgo,
       id_usuario,
-      ubicacion,
+      latitude,
+      longitude,
+      direccion,
       fecha_expiracion,
     } = req.body;
 
@@ -83,11 +91,16 @@ export const createAlert = async (req, res, next) => {
         .json({ success: false, error: 'Campos requeridos faltantes' });
     }
 
+    let ubicacion = null;
+    if (latitude != null && longitude != null) {
+      ubicacion = `SRID=4326;POINT(${longitude} ${latitude})`;
+    }
+
     // Inserta la nueva alerta en la base de datos, activa por defecto y sin reportes
     const result = await pool.query(
       `
-      INSERT INTO alerta (titulo, descripcion, id_tipo_alerta, id_nivel_riesgo, id_usuario, ubicacion, fecha_expiracion, activa, reportes) 
-      VALUES ($1,$2,$3,$4,$5,$6,$7,true,0)
+      INSERT INTO alerta (titulo, descripcion, id_tipo_alerta, id_nivel_riesgo, id_usuario, ubicacion, direccion, fecha_expiracion, activa, reportes) 
+      VALUES ($1,$2,$3,$4,$5,ST_GeomFromText($6),$7,$8,true,0)
       RETURNING *
     `,
       [
@@ -97,6 +110,7 @@ export const createAlert = async (req, res, next) => {
         id_nivel_riesgo,
         id_usuario,
         ubicacion,
+        direccion,
         fecha_expiracion,
       ],
     );
@@ -116,10 +130,17 @@ export const updateAlert = async (req, res, next) => {
       descripcion,
       id_tipo_alerta,
       id_nivel_riesgo,
-      ubicacion,
+      latitude,
+      longitude,
+      direccion,
       fecha_expiracion,
       activa,
     } = req.body;
+
+    let ubicacion = null;
+    if (latitude != null && longitude != null) {
+      ubicacion = `SRID=4326;POINT(${longitude} ${latitude})`;
+    }
 
     // Actualiza la alerta usando COALESCE para mantener valores actuales si no se proporcionan nuevos
     const result = await pool.query(
@@ -129,10 +150,11 @@ export const updateAlert = async (req, res, next) => {
           descripcion = COALESCE($2, descripcion),
           id_tipo_alerta = COALESCE($3, id_tipo_alerta),
           id_nivel_riesgo = COALESCE($4, id_nivel_riesgo),
-          ubicacion = COALESCE($5, ubicacion),
-          fecha_expiracion = COALESCE($6, fecha_expiracion),
-          activa = COALESCE($7, activa)
-      WHERE id_alerta = $8
+          ubicacion = COALESCE(ST_GeomFromText($5), ubicacion),
+          direccion = COALESCE($6, direccion),
+          fecha_expiracion = COALESCE($7, fecha_expiracion),
+          activa = COALESCE($8, activa)
+      WHERE id_alerta = $9
       RETURNING *
     `,
       [
@@ -141,6 +163,7 @@ export const updateAlert = async (req, res, next) => {
         id_tipo_alerta,
         id_nivel_riesgo,
         ubicacion,
+        direccion,
         fecha_expiracion,
         activa,
         req.params.id,

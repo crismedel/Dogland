@@ -36,7 +36,9 @@ export default function EditAlertScreen() {
 
   const [titulo, setTitulo] = useState<string>('');
   const [descripcion, setDescripcion] = useState<string>('');
-  const [ubicacion, setUbicacion] = useState<string>('');
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
+  const [direccion, setDireccion] = useState<string>('');
 
   const [tipoAlerta, setTipoAlerta] = useState<number | null>(null);
   const [nivelRiesgo, setNivelRiesgo] = useState<number | null>(null);
@@ -55,7 +57,9 @@ export default function EditAlertScreen() {
 
         setTitulo(alertData.titulo);
         setDescripcion(alertData.descripcion);
-        setUbicacion(alertData.ubicacion || '');
+        setLatitude(alertData.latitude ?? null);
+        setLongitude(alertData.longitude ?? null);
+        setDireccion(alertData.direccion ?? '');
 
         const tipoObj = MOCK_TIPOS_ALERTA.find(
           (t) => t.nombre === alertData.tipo,
@@ -92,12 +96,14 @@ export default function EditAlertScreen() {
     const updatedData = {
       titulo,
       descripcion,
-      ubicacion,
       id_tipo_alerta: tipoAlerta,
       id_nivel_riesgo: nivelRiesgo,
       fecha_expiracion: fechaExpiracion ?? undefined,
       activa,
       id_usuario: 2, // <-- Aquí agregas el id_usuario fijo
+      latitude,
+      longitude,
+      direccion,
     };
 
     console.log('EditAlertScreen: ID de alerta a actualizar:', id);
@@ -145,8 +151,8 @@ export default function EditAlertScreen() {
 
       <Text style={styles.label}>Ubicación</Text>
       <TextInput
-        value={ubicacion}
-        onChangeText={setUbicacion}
+        value={direccion}
+        onChangeText={setDireccion}
         style={styles.input}
       />
 

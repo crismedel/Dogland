@@ -28,6 +28,13 @@ const AlertCard: React.FC<AlertCardProps> = ({ alert, onDeleteSuccess }) => {
       )
     : null;
 
+  const handlePressAlert = (alertId: number) => {
+    router.push({
+      pathname: '/detail-alert/[id]',
+      params: { id: alertId.toString() },
+    });
+  };
+
   const handleEdit = () => {
     router.push({
       pathname: '/edit-alert',
@@ -64,7 +71,11 @@ const AlertCard: React.FC<AlertCardProps> = ({ alert, onDeleteSuccess }) => {
   };
 
   return (
-    <View style={[styles.card, card, !alert.activa && styles.archivedCard]}>
+    <TouchableOpacity
+      onPress={() => handlePressAlert(alert.id_alerta)}
+      style={[styles.card, card, !alert.activa && styles.archivedCard]}
+      activeOpacity={0.8}
+    >
       {/* Header con título y acciones */}
       <View style={styles.cardHeader}>
         <Text style={styles.title}>{alert.titulo}</Text>
@@ -103,7 +114,7 @@ const AlertCard: React.FC<AlertCardProps> = ({ alert, onDeleteSuccess }) => {
       {/* Info */}
       <View style={styles.alertInfo}>
         <Text style={styles.location}>
-          📍 {alert.ubicacion || 'No disponible'}
+          📍 {alert.direccion || 'No disponible'}
         </Text>
         <Text style={styles.reportCount}>📊 {alert.reportes} reportes</Text>
       </View>
@@ -126,7 +137,7 @@ const AlertCard: React.FC<AlertCardProps> = ({ alert, onDeleteSuccess }) => {
           <Text style={styles.archivedText}>📁 ARCHIVADA</Text>
         )}
       </View>
-    </View>
+    </TouchableOpacity>
   );
 };
 

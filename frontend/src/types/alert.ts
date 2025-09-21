@@ -8,20 +8,22 @@ export type AlertType =
 
 export type RiskLevel = 'Bajo' | 'Medio' | 'Alto' | 'Crítico';
 
-// Interfaz que refleja 100% lo que devuelve la BD
 export interface Alert {
   id_alerta: number;
   titulo: string;
   descripcion: string;
   fecha_creacion: string;
   fecha_expiracion: string | null;
-  ubicacion: string | null;
+  direccion: string | null;
   activa: boolean;
   reportes: number;
 
   tipo: AlertType; // viene en string desde la BD
   nivel_riesgo: RiskLevel; // viene en string desde la BD
   creado_por: string; // viene en string desde la BD
+
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 // Filtros

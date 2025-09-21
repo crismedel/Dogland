@@ -70,8 +70,10 @@ export default function CreateAlertScreen() {
       id_tipo_alerta: data.tipoAlerta,
       id_nivel_riesgo: data.nivelRiesgo,
       fecha_expiracion: selectedDate ? selectedDate.toISOString() : null,
-      ubicacion: '', // o la ubicación que obtengas
-      id_usuario: 2, // Valor fijo por ahora
+      id_usuario: 2, // <-- Aquí agregas el id_usuario fijo
+      latitude: null, // o el valor que obtengas
+      longitude: null, // o el valor que obtengas
+      direccion: '', // o el valor que obtengas
     };
 
     console.log('CreateAlertScreen: Payload a enviar:', payload);
