@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Animated, Platform } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
+import { View, Text, TouchableOpacity, StyleSheet, Animated, Platform, Alert, ScrollView } from 'react-native';
+import MapView, { Marker, Callout } from 'react-native-maps';
 import { useRouter } from 'expo-router';
-import * as Location from 'expo-location'; // Asegúrate de tener esta importación
+import * as Location from 'expo-location'; 
 
 const CommunityMapScreen = () => {
   const router = useRouter();
   const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [menuVisible, setMenuVisible] = useState(false);
+  const [reportes, setReportes] = useState<any[]>([]); // Para almacenar los reportes cargados
 
   // Función para obtener la ubicación actual del usuario
   const obtenerUbicacionActual = async () => {
@@ -21,9 +22,31 @@ const CommunityMapScreen = () => {
     setLocation(location.coords); // Establece la ubicación en el estado
   };
 
+  // Cargar los reportes desde el archivo JSON (simulado)
   useEffect(() => {
+    // Simula la carga de datos desde el archivo JSON
+    const cargarReportes = async () => {
+      const response = require('../../assets/reportes.json'); // Ruta corregida para cargar el archivo desde la carpeta assets
+      setReportes(response); // Guarda los reportes en el estado
+    };
+
+    cargarReportes();
     obtenerUbicacionActual(); // Llamar a la función para obtener la ubicación actual al cargar el componente
   }, []);
+
+  // Función para determinar el color del marcador basado en el nivel de riesgo
+  const obtenerColorMarcador = (nivelRiesgo: string) => {
+    switch (nivelRiesgo) {
+      case 'Bajo':
+        return 'green'; // Verde para riesgo bajo
+      case 'Moderado':
+        return 'yellow'; // Amarillo para riesgo moderado
+      case 'Alto':
+        return 'red'; // Rojo para riesgo alto
+      default:
+        return 'blue'; // Azul por defecto si no se especifica el nivel de riesgo
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -32,15 +55,59 @@ const CommunityMapScreen = () => {
       <MapView
         style={styles.map}
         initialRegion={{
-          latitude: location ? location.latitude : 37.7749,  // Valor predeterminado si no hay ubicación
-          longitude: location ? location.longitude : -122.4194,  // Valor predeterminado si no hay ubicación
+          latitude: location ? location.latitude : -38.7369, // Valor predeterminado si no hay ubicación
+          longitude: location ? location.longitude : -72.5994, // Valor predeterminado si no hay ubicación
           latitudeDelta: 0.0922,
           longitudeDelta: 0.0421,
         }}
       >
-        {location && (
-          <Marker coordinate={location} title="Ubicación Actual" />
+        {/* Verifica si la ubicación está disponible y muestra el marcador */}
+        {location ? (
+          <Marker
+            coordinate={location}
+            title="Ubicación Actual"
+            description="Ubicación actual del usuario"
+            pinColor="blue" 
+          >
+            <Callout style={styles.calloutContainer}>
+              <View>
+                <Text style={styles.calloutTitle}>Ubicación Actual</Text>
+                <Text style={styles.calloutText}>Lat: {location.latitude}</Text>
+                <Text style={styles.calloutText}>Lon: {location.longitude}</Text>
+              </View>
+            </Callout>
+          </Marker>
+        ) : (
+          <Text style={styles.noLocationText}>Esperando ubicación...</Text>
         )}
+
+        {/* Mostrar los reportes como marcadores */}
+        {reportes.map((reporte, index) => {
+          const colorMarcador = obtenerColorMarcador(reporte.nivelRiesgo); // Obtener el color basado en el nivel de riesgo
+
+          return (
+            <Marker
+              key={index}
+              coordinate={reporte.ubicacion}
+              title={reporte.titulo}
+              description={reporte.descripcion}
+              pinColor={colorMarcador} // Asignar el color del marcador según el nivel de riesgo
+            >
+              <Callout style={styles.calloutContainer}>
+                <ScrollView contentContainerStyle={styles.calloutContent}>
+                  <View>
+                    <Text style={styles.calloutTitle}>{reporte.titulo}</Text>
+                    <Text style={styles.calloutText}>{reporte.descripcion}</Text>
+                    <Text style={[styles.calloutText, { fontWeight: 'bold' }]}>Especie: {reporte.especie}</Text>
+                    <Text style={[styles.calloutText, { fontWeight: 'bold' }]}>Estado de Salud: {reporte.estadoSalud}</Text>
+                    <Text style={[styles.calloutText, { fontWeight: 'bold' }]}>Nivel de Riesgo: {reporte.nivelRiesgo}</Text>
+                    <Text style={[styles.calloutText, { fontWeight: 'bold' }]}>Ubicación: Lat: {reporte.ubicacion.latitude}, Lon: {reporte.ubicacion.longitude}</Text>
+                  </View>
+                </ScrollView>
+              </Callout>
+            </Marker>
+          );
+        })}
       </MapView>
 
       {/* Menú flotante persistente */}
@@ -50,7 +117,6 @@ const CommunityMapScreen = () => {
             style={styles.fabMenuItem}
             onPress={() => {
               setMenuVisible(false);
-              // Redirigir a la pantalla de reportes
               router.push('/create-report');
             }}
           >
@@ -61,7 +127,6 @@ const CommunityMapScreen = () => {
             style={[styles.fabMenuItem, { marginTop: 10 }]}
             onPress={() => {
               setMenuVisible(false);
-              // Redirigir a la pantalla de alertas
               router.push('/create-alert');
             }}
           >
@@ -132,6 +197,33 @@ const styles = StyleSheet.create({
   fabMenuItemText: {
     fontSize: 16,
     color: '#007AFF',
+  },
+  noLocationText: {
+    fontSize: 16,
+    color: '#FF0000',
+    position: 'absolute',
+    bottom: 10,
+    left: 10,
+  },
+  calloutContainer: {
+    padding: 10,
+    maxWidth: 250,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    elevation: 4,
+  },
+  calloutContent: {
+    paddingBottom: 10,
+  },
+  calloutTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 5,
+  },
+  calloutText: {
+    fontSize: 14,
+    color: '#555',
+    marginBottom: 4,
   },
 });
 

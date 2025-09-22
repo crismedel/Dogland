@@ -1,0 +1,57 @@
+[
+  {
+    "titulo": "Perro perdido",
+    "descripcion": "Perro de color marrón perdido cerca del hospital. Responde al nombre de Max y lleva un collar rojo.",
+    "especie": "Perro",
+    "estadoSalud": "Sano",
+    "nivelRiesgo": "Bajo",
+    "ubicacion": {
+      "latitude": -38.7369,
+      "longitude": -72.5994
+    }
+  },
+  {
+    "titulo": "Gato herido",
+    "descripcion": "Gato herido encontrado en Caupolicán. Presenta una herida en la pata trasera, parece estar desorientado.",
+    "especie": "Gato",
+    "estadoSalud": "Lesionado",
+    "nivelRiesgo": "Moderado",
+    "ubicacion": {
+      "latitude": -38.7345,
+      "longitude": -72.5911
+    }
+  },
+  {
+    "titulo": "Ave enferma",
+    "descripcion": "Ave de plumaje amarillo encontrado en la calle, no puede volar.",
+    "especie": "Ave",
+    "estadoSalud": "Enfermo",
+    "nivelRiesgo": "Alto",
+    "ubicacion": {
+      "latitude": -38.7400,
+      "longitude": -72.5800
+    }
+  },
+  {
+    "titulo": "Reptil encontrado",
+    "descripcion": "Reptil encontrado en la calle. Se trata de una serpiente de tamaño pequeño, no agresiva.",
+    "especie": "Reptil",
+    "estadoSalud": "Sano",
+    "nivelRiesgo": "Bajo",
+    "ubicacion": {
+      "latitude": -38.7370,
+      "longitude": -72.5950
+    }
+  },
+  {
+    "titulo": "Perro atropellado",
+    "descripcion": "Perro atropellado en la ruta 5, cerca de la gasolinera. Está herido y necesita ayuda urgente.",
+    "especie": "Perro",
+    "estadoSalud": "Lesionado",
+    "nivelRiesgo": "Alto",
+    "ubicacion": {
+      "latitude": -38.7380,
+      "longitude": -72.6010
+    }
+  }
+]
