@@ -100,5 +100,37 @@ router.get('/verify', authenticateToken, (req, res) => {
     });
 });
 
+// POST /api/auth/forgot-password - Solicitar recuperación de contraseña
+router.post('/forgot-password', async (req, res) => {
+    const { email } = req.body;
+
+    try {
+        const user = await findUserByEmail(email);
+        if (!user) {
+            return res.status(200).json({ success: true, message: 'Si el correo electrónico existe, se ha enviado un enlace de restablecimiento de contraseña.' });
+        }
+
+        const token = crypto.randomBytes(32).toString('hex');
+        
+        const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 60 minutos * 60 segundos * 1000 milisegundos
+
+        await pool.query(
+            `INSERT INTO password_reset (id_usuario, token, expires_at) VALUES ($1, $2, $3)`,
+            [user.id, token, expiresAt]
+        );
+
+        console.log(`Token de recuperación de contraseña generado para ${email}: ${token}`);
+        res.status(200).json({
+            success: true,
+            message: 'Si el correo electrónico existe, se ha enviado un enlace de restablecimiento de contraseña.',
+            tokenDePrueba: token, 
+        });
+
+    } catch (error) {
+        console.error('Error en el endpoint de forgot-password:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 
 export default router;
