@@ -12,6 +12,8 @@ import organizationsRouter from './routes/organizations.js';
 import usersRouter from './routes/users.js';
 import passwordResetRequestRouter from './routes/password-reset-request.js';
 import passwordResetConfirmRouter from './routes/password-reset-confirm.js';
+import animalsRouter from './routes/animals.js';
+import adoptionsRouter from './routes/adoptions.js';
 
 // configuraciones
 app.set('port', 3001);
@@ -35,6 +37,11 @@ app.use('/api', usersRouter);
 app.use('/api', passwordResetRequestRouter);
 app.use('/api', passwordResetConfirmRouter);
 
+
+// manejo de animales y su adoción
+app.use('/api', animalsRouter);
+app.use('/api', adoptionsRouter);
+
 // Middleware de manejo de errores general
 app.use((err, req, res, next) => {
   console.error('Error capturado:', err);
@@ -49,3 +56,6 @@ app.use(errorHandler);
 app.listen(app.get('port'), () => {
   console.log(`Servidor corriendo en http://localhost:${app.get('port')}`);
 });
+
+
+
