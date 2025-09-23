@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import { UserCreate, findUserByEmail } from '../models/User.js';
+import { blacklistToken, isTokenBlacklisted } from '../middleware/blacklist.js';
+import authenticateToken from '../middleware/auth.js';
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key';
@@ -51,6 +53,7 @@ router.post('/register', async (req, res) => {
     }
 });
 
+// POST /api/auth/login - Iniciar sesión
 router.post('/login', async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -74,6 +77,18 @@ router.post('/login', async (req, res) => {
         console.error('Error en /login:', error);
         res.status(500).json({ success: false, error: 'Error del servidor' });
     }
+});
+
+// POST /api/auth/logout - Cierre de sesión con lista negra
+router.post('/logout', authenticateToken, async (req, res) => {
+  try {
+    const token = req.header('Authorization').replace('Bearer ', '');
+    await blacklistToken(token);
+    res.json({ success: true, message: 'Cierre de sesión exitoso. El token ha sido invalidado.' });
+  } catch (error) {
+    console.error('Error en el endpoint de logout:', error);
+    res.status(500).json({ success: false, error: 'Error al cerrar la sesión' });
+  }
 });
 
 export default router;

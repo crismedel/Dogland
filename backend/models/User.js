@@ -1,6 +1,6 @@
-import pool from "../db/db";
+import pool from '../db/db.js';
 
-export const createUser = async (user, email, hashedPassword) => {
+export const UserCreate = async (user, email, hashedPassword) => {
     const query = `
         INSERT INTO usuario (nombre_usuario, apellido_paterno, apellido_materno, id_sexo, fecha_nacimiento, telefono, email, password_hash, fecha_creacion, id_ciudad, id_organizacion, id_rol)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), $9, $10, $11)
