@@ -5,6 +5,7 @@ import { corsOptions, corsBlocker } from './middlewares/corsConfig.js';
 
 const app = express();
 
+import sightingsRouter from './routes/sightings.js';
 import alertsRouter from './routes/alerts.js';
 import { errorHandler } from './middlewares/errorHandler.js';
 import organizationsRouter from './routes/organizations.js';
@@ -27,6 +28,7 @@ app.get('/', (req, res) => {
   res.send('Servidor funcionando correctamente');
 });
 
+app.use('/api', sightingsRouter);
 app.use('/api', alertsRouter);
 app.use('/api', organizationsRouter);
 app.use('/api', usersRouter);
