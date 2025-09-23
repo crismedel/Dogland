@@ -91,4 +91,14 @@ router.post('/logout', authenticateToken, async (req, res) => {
   }
 });
 
+// GET /api/auth/verify - Verificar la validez del token
+router.get('/verify', authenticateToken, (req, res) => {
+    res.json({
+        success: true,
+        message: 'Token válido',
+        user: req.user,
+    });
+});
+
+
 export default router;
