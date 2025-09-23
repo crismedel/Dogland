@@ -5,35 +5,45 @@ import {
   createAdoptionRequest,
   updateAdoptionRequest,
   deleteAdoptionRequest,
+  getAvailableAdoptions,
+  createAdoptionPost,
 } from '../controllers/adoptionsController.js';
 
 import { checkPermissions } from '../middlewares/permissions.js';
-// Middleware de validación (similar a validateAlert)
 import { validateAdoption } from '../middlewares/validationAdoption.js';
 
 const router = express.Router();
 
-router.get('/adoptions', getAdoptions);
-router.get('/adoptions/:id', getAdoptionById);
+// RUTAS PARA SOLICITUDES DE ADOPCIÓN
+router.get('/adoption-requests', getAdoptions); // Ver todas las solicitudes
+router.get('/adoption-requests/:id', getAdoptionById); // Ver solicitud específica
 
 router.post(
-  '/adoptions',
+  '/adoption-requests',
   validateAdoption,
   checkPermissions('create_adoption'),
-  createAdoptionRequest,
+  createAdoptionRequest, // Crear solicitud de adopción
 );
 
 router.put(
-  '/adoptions/:id',
-  validateAdoption,
+  '/adoption-requests/:id',
   checkPermissions('update_adoption'),
-  updateAdoptionRequest,
+  updateAdoptionRequest, // Actualizar estado de solicitud
 );
 
 router.delete(
-  '/adoptions/:id',
+  '/adoption-requests/:id',
   checkPermissions('delete_adoption'),
-  deleteAdoptionRequest,
+  deleteAdoptionRequest, // Eliminar solicitud
+);
+
+// RUTAS PARA PUBLICACIONES DE ADOPCIÓN
+router.get('/adoptions', getAvailableAdoptions); // Ver adopciones disponibles
+
+router.post(
+  '/adoptions',
+  checkPermissions('create_adoption_post'),
+  createAdoptionPost, // Crear publicación de adopción
 );
 
 export default router;
