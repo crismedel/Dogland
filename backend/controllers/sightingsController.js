@@ -176,3 +176,48 @@ export const getSightingsByLocation = async (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 };
+
+export const filterSightings = async (req, res) => {
+  try {
+    const { id_especie, id_estado_salud, id_estado_avistamiento } = req.query;
+
+    const filters = [];
+    const values = [];
+    let query = `SELECT * FROM avistamiento`;
+
+    let paramIndex = 1; // Un contador para generar los marcadores de posición ($1, $2, etc.)
+
+    if (id_especie) {
+      filters.push(`id_especie = $${paramIndex}`);
+      values.push(id_especie);
+      paramIndex++;
+    }
+    if (id_estado_salud) {
+      filters.push(`id_estado_salud = $${paramIndex}`);
+      values.push(id_estado_salud);
+      paramIndex++;
+    }
+    if (id_estado_avistamiento) {
+      filters.push(`id_estado_avistamiento = $${paramIndex}`);
+      values.push(id_estado_avistamiento);
+      paramIndex++;
+    }
+
+    // Si hay filtros, agrega la cláusula WHERE y une las condiciones
+    if (filters.length > 0) {
+      query += ` WHERE ` + filters.join(" AND ");
+    }
+
+    // Ejecutar la consulta con los valores dinámicos
+    const result = await pool.query(query, values);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'No se encontraron avistamientos con los filtros aplicados' });
+    }
+
+    res.status(200).json({ success: true, data: result.rows });
+  } catch (error) {
+    console.error('Error al filtrar los avistamientos:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
