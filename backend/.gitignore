@@ -16,6 +16,7 @@ pids
 
 # Env files
 .env
+.env*
 .env*.local
 
 # Cache
