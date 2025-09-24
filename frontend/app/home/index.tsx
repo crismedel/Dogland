@@ -9,11 +9,14 @@ import {
   Platform,
   Linking,
   Alert,
+  Image,
+  ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
 export default function Index() {
   const [menuVisible, setMenuVisible] = useState(false);
@@ -35,16 +38,13 @@ export default function Index() {
         text: 'Cerrar sesión',
         style: 'destructive',
         onPress: () => {
-          // Simulación: eliminar token
           setToken('');
           setMenuVisible(false);
-
-          // Mostrar alerta de sesión cerrada
           Alert.alert('Sesión cerrada', 'Has cerrado sesión correctamente.', [
             {
               text: 'OK',
               onPress: () => {
-                router.replace('/auth'); // Redirigir a login
+                router.replace('/auth');
               },
             },
           ]);
@@ -58,12 +58,16 @@ export default function Index() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      <View style={styles.overlay} />
+      {/* Fondo degradado */}
+      <LinearGradient
+        colors={['#b1d5f0', '#c7df9f']}
+        style={StyleSheet.absoluteFillObject}
+      />
 
-      {/* Botón de Configuración en esquina */}
-      <View style={styles.settingsContainer}>
+      {/* Botón menú arriba */}
+      <View style={styles.menuContainer}>
         <TouchableOpacity onPress={() => setMenuVisible(!menuVisible)}>
-          <Ionicons name="settings-outline" size={28} color="black" />
+          <Ionicons name="settings-outline" size={30} color="black" />
         </TouchableOpacity>
 
         {menuVisible && (
@@ -80,91 +84,106 @@ export default function Index() {
         )}
       </View>
 
-      <View style={styles.content}>
-        {/* Welcome Message */}
-        <View style={styles.welcomeContainer}>
-          <Text style={styles.welcomeText}>Bienvenido/a Admin</Text>
-        </View>
+      <ScrollView contentContainerStyle={styles.content}>
+        <Text style={styles.welcomeText}>Bienvenido/a Victoria</Text>
 
-        {/* Main Actions */}
-        <View style={styles.actionsContainer}>
-          <View style={styles.actionSection}>
+        {/* Bloque 1 (Texto+Botón izquierda, Imagen derecha) */}
+        <View style={styles.row}>
+          <View style={styles.textBlock}>
             <Text style={styles.questionText}>
               ¿Viste un perrito que necesita ayuda?
             </Text>
             <TouchableOpacity
-              style={[styles.actionButton, styles.reportButton]}
-              activeOpacity={0.8}
+              style={styles.linkButton}
               onPress={() => router.push('/alerts')}
             >
-              <Text style={styles.actionButtonText}>Dar aviso</Text>
+              <Text style={styles.linkButtonText}>Dar aviso</Text>
             </TouchableOpacity>
           </View>
+          <Image
+            source={{ uri: 'https://placedog.net/300/300?id=5' }}
+            style={styles.circleImage}
+          />
+        </View>
 
-          <View style={styles.actionSection}>
+        {/* Bloque 2 (Imagen izquierda, Texto+Botón derecha) */}
+        <View style={styles.row}>
+          <Image
+            source={{ uri: 'https://placedog.net/300/300?id=8' }}
+            style={styles.circleImage}
+          />
+          <View style={styles.textBlock}>
             <Text style={styles.questionText}>
               ¿Te gustaría adoptar un perrito?
             </Text>
             <TouchableOpacity
-              style={[styles.actionButton, styles.adoptButton]}
-              activeOpacity={0.8}
+              style={styles.linkButton}
               onPress={() => router.push('/adoption')}
             >
-              <Text style={styles.actionButtonText}>¡Si quiero adoptar!</Text>
+              <Text style={styles.linkButtonText}>Quiero adoptar</Text>
             </TouchableOpacity>
           </View>
+        </View>
 
-          <View style={styles.actionSection}>
+        {/* Bloque 3 (Texto+Botón izquierda, Imagen derecha) */}
+        <View style={styles.row}>
+          <View style={styles.textBlock}>
             <Text style={styles.questionText}>Mapa Comunitario</Text>
             <TouchableOpacity
-              style={[styles.actionButton, styles.mapButton]}
-              activeOpacity={0.8}
+              style={styles.linkButton}
               onPress={() => router.push('/community_maps')}
             >
-              <Text style={styles.actionButtonText}>Mapa Comunitario</Text>
+              <Text style={styles.linkButtonText}>Ver Mapa</Text>
             </TouchableOpacity>
           </View>
+          <Image
+            source={{ uri: 'https://placedog.net/300/300?id=15' }}
+            style={styles.circleImage}
+          />
+        </View>
 
-          <View style={styles.actionSection}>
+        {/* Bloque 4 (Imagen izquierda, Texto+Botón derecha) */}
+        <View style={styles.row}>
+          <Image
+            source={{ uri: 'https://placedog.net/300/300?id=20' }}
+            style={styles.circleImage}
+          />
+          <View style={styles.textBlock}>
             <Text style={styles.questionText}>Avistamientos</Text>
             <TouchableOpacity
-              style={[styles.actionButton, styles.sightinsButton]}
-              activeOpacity={0.8}
+              style={styles.linkButton}
               onPress={() => router.push('/sightings')}
             >
-              <Text style={styles.actionButtonText}>Avistamientos</Text>
+              <Text style={styles.linkButtonText}>Ver avistamientos</Text>
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* Social Media Section */}
+        {/* Redes sociales */}
         <View style={styles.socialContainer}>
-          <Text style={styles.socialText}>Puedes buscarnos en:</Text>
+          <Text style={styles.socialText}>Puedes buscarnos en :</Text>
           <View style={styles.socialButtons}>
             <TouchableOpacity
-              style={[styles.socialButton, styles.facebookButton]}
+              style={styles.socialIcon}
               onPress={() => openSocialMedia('facebook')}
-              activeOpacity={0.8}
             >
-              <Ionicons name="logo-facebook" size={24} color="white" />
+              <Ionicons name="logo-facebook" size={24} color="black" />
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.socialButton, styles.twitterButton]}
+              style={styles.socialIcon}
               onPress={() => openSocialMedia('twitter')}
-              activeOpacity={0.8}
             >
-              <Ionicons name="logo-twitter" size={24} color="white" />
+              <Ionicons name="logo-twitter" size={24} color="black" />
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.socialButton, styles.instagramButton]}
+              style={styles.socialIcon}
               onPress={() => openSocialMedia('instagram')}
-              activeOpacity={0.8}
             >
-              <Ionicons name="logo-instagram" size={24} color="white" />
+              <Ionicons name="logo-instagram" size={24} color="black" />
             </TouchableOpacity>
           </View>
         </View>
-      </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
@@ -173,26 +192,19 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  settingsContainer: {
+  menuContainer: {
     position: 'absolute',
     top: 50,
-    right: 20,
+    left: 20,
     zIndex: 10,
   },
   dropdownMenu: {
     marginTop: 10,
     backgroundColor: 'white',
     borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
     paddingVertical: 5,
-    width: 180,
+    width: 200,
+    elevation: 5,
   },
   menuItem: {
     paddingVertical: 10,
@@ -208,105 +220,75 @@ const styles = StyleSheet.create({
     color: '#999',
   },
   content: {
-    flex: 1,
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 30,
-    paddingVertical: 60,
-  },
-  welcomeContainer: {
-    alignItems: 'center',
-    marginTop: 40,
+    paddingTop: 120,
+    paddingBottom: 40,
+    gap: 40,
   },
   welcomeText: {
-    color: '#000000',
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: '700',
+    color: '#000',
     textAlign: 'center',
+    marginBottom: 20,
   },
-  actionsContainer: {
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  textBlock: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: '100%',
-  },
-  actionSection: {
-    alignItems: 'center',
-    marginVertical: 20,
-    width: '100%',
+    marginHorizontal: 10,
   },
   questionText: {
-    color: '#000000',
     fontSize: 18,
     fontWeight: '500',
-    textAlign: 'center',
-    marginBottom: 15,
-    lineHeight: 24,
+    marginBottom: 10,
+    color: '#000',
   },
-  actionButton: {
-    paddingVertical: 15,
-    paddingHorizontal: 40,
-    borderRadius: 25,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4.65,
-    elevation: 8,
-    minWidth: 200,
+  circleImage: {
+    width: width * 0.35,
+    height: width * 0.35,
+    borderRadius: (width * 0.35) / 2,
+    marginHorizontal: 10,
   },
-  reportButton: {
-    backgroundColor: '#ef4444',
+  linkButton: {
+    backgroundColor: '#f7b500', // amarillo similar al de la imagen
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    borderRadius: 12, // bordes redondeados
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 3, // sombra en Android
+    shadowColor: '#000', // sombra en iOS
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
   },
-  adoptButton: {
-    backgroundColor: '#22c55e',
-  },
-  mapButton: {
-    backgroundColor: '#1071d1ff',
-  },
-
-  sightinsButton: {
-    backgroundColor: '#d1be10ff',
-  },
-  actionButtonText: {
-    color: '#ffffff',
-    fontSize: 18,
-    fontWeight: '600',
+  linkButtonText: {
+    color: '#fff', // texto blanco
+    fontWeight: '700',
+    fontSize: 16,
     textAlign: 'center',
   },
   socialContainer: {
     alignItems: 'center',
-    marginBottom: 20,
+    marginTop: 30,
   },
   socialText: {
-    color: '#000000',
     fontSize: 16,
     fontWeight: '500',
-    marginBottom: 15,
+    marginBottom: 10,
   },
   socialButtons: {
     flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 15,
   },
-  socialButton: {
-    width: 45,
-    height: 45,
-    borderRadius: 22.5,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  facebookButton: {
-    backgroundColor: '#1877f2',
-  },
-  twitterButton: {
-    backgroundColor: '#1da1f2',
-  },
-  instagramButton: {
-    backgroundColor: '#e4405f',
+  socialIcon: {
+    backgroundColor: '#fff',
+    padding: 10,
+    borderRadius: 25,
+    marginHorizontal: 8,
+    elevation: 2,
   },
 });
