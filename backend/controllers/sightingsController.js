@@ -2,19 +2,19 @@ import pool from '../db/db.js'; // Importa correctamente el pool de conexiones
 
 // Función para obtener todos los avistamientos
 export const getSightings = async (req, res) => {
-  try {
-    // Usa 'pool.query' en lugar de 'db.query'
-    const result = await pool.query('SELECT * FROM avistamiento'); 
+    try {
+        // Se añade `::geometry` para el `CAST`
+        const result = await pool.query('SELECT *, ST_X(ubicacion::geometry) AS longitude, ST_Y(ubicacion::geometry) AS latitude FROM avistamiento');
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, message: 'No se encontraron avistamientos' });
+        if (result.rows.length === 0) {
+            return res.status(404).json({ success: false, message: 'No se encontraron avistamientos' });
+        }
+
+        res.status(200).json({ success: true, data: result.rows });
+    } catch (error) {
+        console.error('Error al obtener los avistamientos:', error);
+        res.status(500).json({ success: false, error: error.message });
     }
-
-    res.status(200).json({ success: true, data: result.rows });
-  } catch (error) {
-    console.error('Error al obtener los avistamientos:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
 };
 
 // Función para obtener un avistamiento por ID

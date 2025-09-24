@@ -1,50 +1,78 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Animated, Platform, Alert, ScrollView } from 'react-native';
-import MapView, { Marker, Callout } from 'react-native-maps';
+import { View, Text, TouchableOpacity, StyleSheet, Animated, Alert, ScrollView } from 'react-native';
+import MapView, { Marker } from 'react-native-maps';
 import { useRouter } from 'expo-router';
-import * as Location from 'expo-location'; 
+import * as Location from 'expo-location';
+import axios from 'axios';
+
+interface Reporte {
+  descripcion: string;
+  direccion: string;
+  id_especie: number;
+  id_estado_salud: number;
+  id_estado_avistamiento: number;
+  fecha_creacion: string;
+  id_avistamiento: number;
+  latitude: number;
+  longitude: number;
+}
 
 const CommunityMapScreen = () => {
   const router = useRouter();
   const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [mapRegion, setMapRegion] = useState({
+    latitude: -38.7369,
+    longitude: -72.5994,
+    latitudeDelta: 0.0922,
+    longitudeDelta: 0.0421,
+  });
   const [menuVisible, setMenuVisible] = useState(false);
-  const [reportes, setReportes] = useState<any[]>([]); // Para almacenar los reportes cargados
+  const [reportes, setReportes] = useState<Reporte[]>([]);
+  const [selectedSighting, setSelectedSighting] = useState<Reporte | null>(null);
 
-  // Función para obtener la ubicación actual del usuario
   const obtenerUbicacionActual = async () => {
     let { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== 'granted') {
-      alert('Permiso Denegado', 'No se puede acceder a la ubicación');
+      Alert.alert('Permiso Denegado', 'No se puede acceder a la ubicación. Por favor, habilite los permisos de ubicación en la configuración de su dispositivo.');
       return;
     }
-
-    let location = await Location.getCurrentPositionAsync({});
-    setLocation(location.coords); // Establece la ubicación en el estado
+    
+    let locationResult = await Location.getCurrentPositionAsync({});
+    setLocation(locationResult.coords);
+    
+    setMapRegion({
+      latitude: locationResult.coords.latitude,
+      longitude: locationResult.coords.longitude,
+      latitudeDelta: 0.0922,
+      longitudeDelta: 0.0421,
+    });
   };
 
-  // Cargar los reportes desde el archivo JSON (simulado)
-  useEffect(() => {
-    // Simula la carga de datos desde el archivo JSON
-    const cargarReportes = async () => {
-      const response = require('../../assets/reportes.json'); // Ruta corregida para cargar el archivo desde la carpeta assets
-      setReportes(response); // Guarda los reportes en el estado
-    };
+  const obtenerReportes = async () => {
+    try {
+      const response = await axios.get('http://172.20.10.3:3001/api/sightings');
+      console.log('Reportes recibidos del backend:', response.data.data);
+      setReportes(response.data.data);
+    } catch (error) {
+      console.error('Error al obtener los reportes:', error);
+      Alert.alert('Error', 'No se pudieron cargar los reportes');
+    }
+  };
 
-    cargarReportes();
-    obtenerUbicacionActual(); // Llamar a la función para obtener la ubicación actual al cargar el componente
+  useEffect(() => {
+    obtenerReportes();
+    obtenerUbicacionActual();
   }, []);
 
-  // Función para determinar el color del marcador basado en el nivel de riesgo
-  const obtenerColorMarcador = (nivelRiesgo: string) => {
-    switch (nivelRiesgo) {
-      case 'Bajo':
-        return 'green'; // Verde para riesgo bajo
-      case 'Moderado':
-        return 'yellow'; // Amarillo para riesgo moderado
-      case 'Alto':
-        return 'red'; // Rojo para riesgo alto
-      default:
-        return 'blue'; // Azul por defecto si no se especifica el nivel de riesgo
+  const obtenerColorMarcador = (idEstadoSalud: number) => {
+    switch (idEstadoSalud) {
+        case 1:
+            return 'green';
+        case 2:
+        case 3:
+            return 'red';
+        default:
+            return 'blue';
     }
   };
 
@@ -54,63 +82,53 @@ const CommunityMapScreen = () => {
 
       <MapView
         style={styles.map}
-        initialRegion={{
-          latitude: location ? location.latitude : -38.7369, // Valor predeterminado si no hay ubicación
-          longitude: location ? location.longitude : -72.5994, // Valor predeterminado si no hay ubicación
-          latitudeDelta: 0.0922,
-          longitudeDelta: 0.0421,
-        }}
+        region={mapRegion}
+        onPress={() => setSelectedSighting(null)}
       >
-        {/* Verifica si la ubicación está disponible y muestra el marcador */}
-        {location ? (
+        {location && (
           <Marker
             coordinate={location}
             title="Ubicación Actual"
-            description="Ubicación actual del usuario"
-            pinColor="blue" 
-          >
-            <Callout style={styles.calloutContainer}>
-              <View>
-                <Text style={styles.calloutTitle}>Ubicación Actual</Text>
-                <Text style={styles.calloutText}>Lat: {location.latitude}</Text>
-                <Text style={styles.calloutText}>Lon: {location.longitude}</Text>
-              </View>
-            </Callout>
-          </Marker>
-        ) : (
-          <Text style={styles.noLocationText}>Esperando ubicación...</Text>
+            pinColor="blue"
+          />
         )}
 
-        {/* Mostrar los reportes como marcadores */}
         {reportes.map((reporte, index) => {
-          const colorMarcador = obtenerColorMarcador(reporte.nivelRiesgo); // Obtener el color basado en el nivel de riesgo
-
+          const colorMarcador = obtenerColorMarcador(reporte.id_estado_salud);
           return (
             <Marker
               key={index}
-              coordinate={reporte.ubicacion}
-              title={reporte.titulo}
-              description={reporte.descripcion}
-              pinColor={colorMarcador} // Asignar el color del marcador según el nivel de riesgo
-            >
-              <Callout style={styles.calloutContainer}>
-                <ScrollView contentContainerStyle={styles.calloutContent}>
-                  <View>
-                    <Text style={styles.calloutTitle}>{reporte.titulo}</Text>
-                    <Text style={styles.calloutText}>{reporte.descripcion}</Text>
-                    <Text style={[styles.calloutText, { fontWeight: 'bold' }]}>Especie: {reporte.especie}</Text>
-                    <Text style={[styles.calloutText, { fontWeight: 'bold' }]}>Estado de Salud: {reporte.estadoSalud}</Text>
-                    <Text style={[styles.calloutText, { fontWeight: 'bold' }]}>Nivel de Riesgo: {reporte.nivelRiesgo}</Text>
-                    <Text style={[styles.calloutText, { fontWeight: 'bold' }]}>Ubicación: Lat: {reporte.ubicacion.latitude}, Lon: {reporte.ubicacion.longitude}</Text>
-                  </View>
-                </ScrollView>
-              </Callout>
-            </Marker>
+              coordinate={{
+                latitude: reporte.latitude,
+                longitude: reporte.longitude,
+              }}
+              pinColor={colorMarcador}
+              onPress={(e) => {
+                e.stopPropagation();
+                setSelectedSighting(reporte);
+              }}
+            />
           );
         })}
       </MapView>
 
-      {/* Menú flotante persistente */}
+      {selectedSighting && (
+        <View style={styles.floatingDetailsContainer}>
+          <TouchableOpacity onPress={() => setSelectedSighting(null)} style={styles.closeButton}>
+            <Text style={styles.closeButtonText}>×</Text>
+          </TouchableOpacity>
+          <ScrollView contentContainerStyle={styles.scrollableContent}>
+            <Text style={styles.detailTitle}>{selectedSighting.descripcion}</Text>
+            <Text style={styles.detailText}><Text style={styles.boldText}>Dirección:</Text> {selectedSighting.direccion}</Text>
+            <Text style={styles.detailText}><Text style={styles.boldText}>Especie ID:</Text> {selectedSighting.id_especie}</Text>
+            <Text style={styles.detailText}><Text style={styles.boldText}>Estado de Salud ID:</Text> {selectedSighting.id_estado_salud}</Text>
+            <Text style={styles.detailText}><Text style={styles.boldText}>Estado Avistamiento ID:</Text> {selectedSighting.id_estado_avistamiento}</Text>
+            <Text style={styles.detailText}><Text style={styles.boldText}>Fecha:</Text> {new Date(selectedSighting.fecha_creacion).toLocaleDateString()}</Text>
+            <Text style={styles.detailText}><Text style={styles.boldText}>ID:</Text> {selectedSighting.id_avistamiento}</Text>
+          </ScrollView>
+        </View>
+      )}
+
       {menuVisible && (
         <Animated.View style={[styles.fabMenuContainer]}>
           <TouchableOpacity
@@ -122,7 +140,6 @@ const CommunityMapScreen = () => {
           >
             <Text style={styles.fabMenuItemText}>Crear Reporte</Text>
           </TouchableOpacity>
-
           <TouchableOpacity
             style={[styles.fabMenuItem, { marginTop: 10 }]}
             onPress={() => {
@@ -135,7 +152,6 @@ const CommunityMapScreen = () => {
         </Animated.View>
       )}
 
-      {/* Botón flotante principal */}
       <TouchableOpacity
         style={styles.fab}
         activeOpacity={0.8}
@@ -150,18 +166,20 @@ const CommunityMapScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f8f8',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: '#F8F8F8',
   },
   header: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 20,
+    color: '#333',
+    paddingVertical: 15,
+    textAlign: 'center',
+    backgroundColor: 'white',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
   },
   map: {
-    width: '100%',
-    height: '80%',
+    flex: 1,
   },
   fab: {
     position: 'absolute',
@@ -173,9 +191,14 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     justifyContent: 'center',
     alignItems: 'center',
+    elevation: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
   },
   fabText: {
-    color: '#fff',
+    color: 'white',
     fontSize: 24,
     fontWeight: 'bold',
   },
@@ -183,47 +206,71 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 90,
     right: 24,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 10,
+    backgroundColor: 'white',
+    borderRadius: 15,
+    padding: 12,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 5,
   },
   fabMenuItem: {
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+    backgroundColor: '#F0F0F0',
+    borderRadius: 10,
     alignItems: 'center',
   },
   fabMenuItemText: {
     fontSize: 16,
     color: '#007AFF',
+    fontWeight: '500',
   },
-  noLocationText: {
-    fontSize: 16,
-    color: '#FF0000',
+  floatingDetailsContainer: {
     position: 'absolute',
-    bottom: 10,
-    left: 10,
+    bottom: 20,
+    left: 20,
+    right: 20,
+    backgroundColor: 'white',
+    padding: 20,
+    borderRadius: 20,
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    maxHeight: '60%',
   },
-  calloutContainer: {
-    padding: 10,
-    maxWidth: 250,
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    elevation: 4,
+  closeButton: {
+    position: 'absolute',
+    top: 10,
+    right: 15,
+    zIndex: 1,
   },
-  calloutContent: {
-    paddingBottom: 10,
+  closeButtonText: {
+    fontSize: 26,
+    color: '#999',
+    fontWeight: '300',
   },
-  calloutTitle: {
-    fontSize: 16,
+  scrollableContent: {
+    paddingTop: 10,
+  },
+  detailTitle: {
+    fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 5,
+    color: '#333',
+    marginBottom: 10,
   },
-  calloutText: {
-    fontSize: 14,
+  detailText: {
+    fontSize: 15,
     color: '#555',
-    marginBottom: 4,
+    marginBottom: 6,
+    lineHeight: 22,
+  },
+  boldText: {
+    fontWeight: 'bold',
+    color: '#222',
   },
 });
 
