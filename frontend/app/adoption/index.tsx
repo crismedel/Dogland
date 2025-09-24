@@ -2,9 +2,10 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import AnimalCard from './component/card';
 
-// Datos de ejemplo - en una app real estos vendrían de tu API o base de datos
+// Datos de ejemplo
 const mockAnimals = [
   {
     id: '1',
@@ -29,9 +30,10 @@ const mockAnimals = [
   },
 ];
 
-const index = () => {
+const Index = () => {
   const [animals, setAnimals] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
     const fetchAnimals = async () => {
@@ -46,6 +48,10 @@ const index = () => {
 
     fetchAnimals();
   }, []);
+
+  const handleSolicitarAdopcion = () => {
+    router.push('/adoption/solicitudAdopcion');
+  };
 
   if (loading) {
     return (
@@ -62,8 +68,15 @@ const index = () => {
         <View style={{ width: 24 }} /> 
       </View>
 
+      {/* Botón de solicitar adopción */}
+      <TouchableOpacity style={styles.solicitarButton} onPress={handleSolicitarAdopcion}>
+        <Text style={styles.solicitarButtonText}>¿Te gustaría adoptar un perrito?</Text>
+        <Text style={styles.solicitarButtonSubText}>Quiero adoptar!</Text>
+      </TouchableOpacity>
+
       {/* Contenido principal */}
       <View style={styles.content}>
+        <Text style={styles.title}>Animales disponibles para adopción</Text>
         <FlatList
           data={animals}
           renderItem={({ item }) => <AnimalCard animal={item} />}
@@ -100,17 +113,42 @@ const styles = StyleSheet.create({
     borderColor: '#ccc',
     justifyContent: 'space-between',
   },
-  headerTitle: {
-    fontSize: 18,
+  solicitarButton: {
+    backgroundColor: '#4A90E2',
+    margin: 15,
+    padding: 15,
+    borderRadius: 10,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  solicitarButtonText: {
+    color: '#fff',
+    fontSize: 16,
     fontWeight: 'bold',
+  },
+  solicitarButtonSubText: {
+    color: '#fff',
+    fontSize: 14,
+    marginTop: 5,
   },
   content: {
     flex: 1,
     backgroundColor: '#fff',
     marginHorizontal: 10,
-    marginVertical: 5,
+    marginBottom: 5,
     borderRadius: 10,
     padding: 10,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    textAlign: 'center',
+    color: '#333',
   },
   list: {
     paddingBottom: 20,
@@ -138,4 +176,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default index;
+export default Index;
