@@ -119,6 +119,17 @@ export default function Index() {
                             <Text style={styles.actionButtonText}>Mapa Comunitario</Text>
                         </TouchableOpacity>
                     </View>
+
+                    <View style={styles.actionSection}>
+                        <Text style={styles.questionText}>Avistamientos</Text>
+                        <TouchableOpacity
+                            style={[styles.actionButton, styles.sightinsButton]}
+                            activeOpacity={0.8}
+                            onPress={() => router.push("/sightings")}
+                        >
+                            <Text style={styles.actionButtonText}>Avistamientos</Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
 
                 {/* Social Media Section */}
@@ -246,6 +257,10 @@ const styles = StyleSheet.create({
     },
     mapButton: {
         backgroundColor: "#1071d1ff",
+    },
+
+    sightinsButton: {
+        backgroundColor: "#d1be10ff",
     },
     actionButtonText: {
         color: "#ffffff",
