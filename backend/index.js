@@ -39,7 +39,6 @@ app.use('/api', usersRouter);
 app.use('/api', passwordResetRequestRouter);
 app.use('/api', passwordResetConfirmRouter);
 
-
 // manejo de animales y su adoción
 app.use('/api', animalsRouter);
 app.use('/api', adoptionsRouter);
@@ -61,13 +60,14 @@ app.listen(app.get('port'), () => {
 
 (async () => {
   try {
-    const result = await pool.query("SELECT NOW()");
-    console.log("Conexión exitosa:", result.rows[0]);
+    const result = await pool.query('SELECT NOW()');
+    console.log('Conexión exitosa:', result.rows[0]);
   } catch (error) {
-    console.error("Error de conexión:", error.message);    
-  } finally {
-    await pool.end();
+    console.error('Error de conexión:', error.message);
   }
+  // } finally {
+  //   await pool.end();
+  // }
 })();
 
 export default app; //exportar para usar en tests

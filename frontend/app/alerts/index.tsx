@@ -154,7 +154,7 @@ const CommunityAlertsScreen = () => {
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#007AFF" />
+        <ActivityIndicator size="large" color="#fbbf24" />
         <Text>Cargando alertas...</Text>
       </View>
     );
@@ -246,7 +246,7 @@ const CommunityAlertsScreen = () => {
               style={[styles.fabMenuItem, { marginTop: 10 }]}
               onPress={() => {
                 setMenuVisible(false);
-                router.push('/create-alert');
+                router.push('/alerts/create-alert');
               }}
             >
               <Text style={styles.fabMenuItemText}>Crear Nueva Alerta</Text>
@@ -279,7 +279,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#007AFF',
+    backgroundColor: '#fbbf24',
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 8,
@@ -312,10 +312,10 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#007AFF',
+    borderColor: '#fbbf24',
   },
   filterButtonText: {
-    color: '#007AFF',
+    color: '#d97706',
     fontSize: 14,
     fontWeight: '600',
   },
@@ -339,7 +339,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 24,
     right: 24,
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#fbbf24',
     width: 60,
     height: 60,
     borderRadius: 30,
@@ -380,7 +380,7 @@ const styles = StyleSheet.create({
   },
   fabMenuItemText: {
     fontSize: 16,
-    color: '#007AFF',
+    color: '#d97706',
     fontWeight: '600',
   },
 });

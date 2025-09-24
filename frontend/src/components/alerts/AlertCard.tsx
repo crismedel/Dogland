@@ -30,14 +30,14 @@ const AlertCard: React.FC<AlertCardProps> = ({ alert, onDeleteSuccess }) => {
 
   const handlePressAlert = (alertId: number) => {
     router.push({
-      pathname: '/detail-alert/[id]',
+      pathname: '/alerts/detail-alert',
       params: { id: alertId.toString() },
     });
   };
 
   const handleEdit = () => {
     router.push({
-      pathname: '/edit-alert',
+      pathname: '/alerts/edit-alert',
       params: { id: alert.id_alerta.toString() },
     });
   };

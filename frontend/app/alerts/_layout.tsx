@@ -1,13 +1,10 @@
-import { View, Text } from 'react-native';
-import { Slot, Stack } from 'expo-router';
-import React from 'react';
+// app/(alerts)/_layout.tsx
+import { Stack } from 'expo-router';
 
-const _layout = () => {
+export default function AlertsLayout() {
   return (
-    <Stack>
-      <Stack.Screen name="index" options={{ headerShown: false }} />
+    <Stack screenOptions={{ headerShown: false }}>
+      {/* Todas las pantallas de (alerts) van sin header */}
     </Stack>
   );
-};
-
-export default _layout;
+}
