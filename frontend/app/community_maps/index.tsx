@@ -76,6 +76,43 @@ const CommunityMapScreen = () => {
     }
   };
 
+  // 1. Función para manejar la eliminación del reporte
+  const handleDeleteSighting = async () => {
+    if (!selectedSighting) return;
+
+    // Alerta de confirmación antes de eliminar
+    Alert.alert(
+      "Confirmar Eliminación",
+      "¿Estás seguro de que deseas eliminar este reporte? Esta acción no se puede deshacer.",
+      [
+        {
+          text: "Cancelar",
+          style: "cancel"
+        },
+        { 
+          text: "Eliminar", 
+          onPress: async () => {
+            try {
+              // Realiza la solicitud DELETE al backend
+              await axios.delete(`http://172.20.10.3:3001/api/sightings/${selectedSighting.id_avistamiento}`);
+              
+              // Cierra la vista de detalles
+              setSelectedSighting(null);
+              
+              // Actualiza la lista de reportes
+              obtenerReportes();
+              
+              Alert.alert("Éxito", "Reporte eliminado correctamente.");
+            } catch (error) {
+              console.error('Error al eliminar el reporte:', error);
+              Alert.alert("Error", "No se pudo eliminar el reporte. Inténtalo de nuevo.");
+            }
+          }
+        }
+      ]
+    );
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.header}>Mapa Comunitario</Text>
@@ -126,6 +163,11 @@ const CommunityMapScreen = () => {
             <Text style={styles.detailText}><Text style={styles.boldText}>Fecha:</Text> {new Date(selectedSighting.fecha_creacion).toLocaleDateString()}</Text>
             <Text style={styles.detailText}><Text style={styles.boldText}>ID:</Text> {selectedSighting.id_avistamiento}</Text>
           </ScrollView>
+          
+          {/* 2. Botón de Eliminar */}
+          <TouchableOpacity onPress={handleDeleteSighting} style={styles.deleteButton}>
+            <Text style={styles.deleteButtonText}>Eliminar Reporte</Text>
+          </TouchableOpacity>
         </View>
       )}
 
@@ -271,6 +313,20 @@ const styles = StyleSheet.create({
   boldText: {
     fontWeight: 'bold',
     color: '#222',
+  },
+  // 3. Estilos del botón de eliminar
+  deleteButton: {
+    backgroundColor: '#FF3B30',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    marginTop: 15,
+    alignItems: 'center',
+  },
+  deleteButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
 
