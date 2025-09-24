@@ -5,7 +5,8 @@ import { authenticateToken, authorizeRol } from '../middleware/auth.js';
 const router = express.Router();
 
 // GET /api/users - Listar todos los usuarios
-router.get('/users', authenticateToken, authorizeRol(['admin']), async (req, res) => {
+// TODO: arreglar permisos
+router.get('/users', authenticateToken, authorizeRol(['Usuario']), async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT u.id_usuario, u.nombre_usuario, u.apellido_paterno, u.apellido_materno,

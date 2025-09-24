@@ -1,3 +1,6 @@
+import dotenv from 'dotenv';
+dotenv.config(); 
+
 import express from 'express';
 import cors from 'cors';
 
@@ -32,6 +35,7 @@ app.get('/', (req, res) => {
   res.send('Servidor funcionando correctamente');
 });
 
+app.use('/api/auth', authRouter);
 app.use('/api', sightingsRouter);
 app.use('/api', alertsRouter);
 app.use('/api', organizationsRouter);

@@ -1,11 +1,14 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
+import pool from '../db/db.js';
 import { UserCreate, findUserByEmail } from '../models/User.js';
 import { blacklistToken, isTokenBlacklisted } from '../middleware/blacklist.js';
 import { authenticateToken } from '../middleware/auth.js';
 
 const router = Router();
-const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key';
+const JWT_SECRET = process.env.JWT_SECRET;
 
 let users = [];
 
@@ -26,7 +29,7 @@ router.post('/register', async (req, res) => {
         }
 
         // Hashear la contraseña
-        const hashedPassword = await bcrypt.hash(password_has, 10);
+        const hashedPassword = await bcrypt.hash(password_hash, 10);
 
         // Crear nuevo usuario
         const newUser = await UserCreate({
