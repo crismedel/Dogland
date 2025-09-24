@@ -20,7 +20,7 @@ const AvistamientosScreen = () => {
 
   const fetchSightings = useCallback(async () => {
     try {
-      const response = await axios.get('http://172.20.10.3:3001/api/sightings');
+      const response = await axios.get('http://localhost:3001/api/sightings');
       // Asegúrate de acceder a los datos de la misma forma que en el mapa
       setSightings(response.data.data);
     } catch (error) {
@@ -58,23 +58,20 @@ const AvistamientosScreen = () => {
     };
 
     return (
-      // ✨ CORRECCIÓN 1: El enlace ahora usa id_avistamiento para la navegación
       <Link href={{ pathname: "/sightings/[id]", params: { id: item.id_avistamiento } }} asChild>
         <View style={styles.card}>
           <Text style={styles.cardTitle}>{item.descripcion}</Text>
           <View style={styles.infoRow}>
             <Text style={styles.label}>Especie:</Text>
-            {/* ✨ CORRECCIÓN 2: Muestra el ID de la especie si no hay un nombre */}
             <Text style={styles.value}>{item.id_especie || 'Desconocida'}</Text>
           </View>
           <View style={styles.infoRow}>
             <Text style={styles.label}>Estado de Salud:</Text>
-            {/* ✨ CORRECCIÓN 3: Muestra el ID del estado de salud */}
             <Text style={styles.value}>{item.id_estado_salud || 'Desconocido'}</Text>
           </View>
           <View style={styles.infoRow}>
             <Text style={styles.label}>Fecha:</Text>
-            {/* ✨ CORRECCIÓN 4: Formatea la fecha correctamente */}
+
             <Text style={styles.value}>{formatDate(item.fecha_creacion)}</Text>
           </View>
           <View style={styles.infoRow}>
@@ -91,7 +88,6 @@ const AvistamientosScreen = () => {
       <FlatList
         data={sightings}
         renderItem={renderItem}
-        // ✨ CORRECCIÓN 5: Usamos id_avistamiento como clave
         keyExtractor={(item) => item.id_avistamiento?.toString()}
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={() => (

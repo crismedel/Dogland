@@ -32,7 +32,7 @@ const SightingDetailsScreen = () => {
       try {
         if (!id) return;
         // ✨ CORRECCIÓN 1: La ruta del API ahora utiliza el id_avistamiento
-        const response = await axios.get(`http://172.20.10.3:3001/api/sightings/${id}`);
+        const response = await axios.get(`http://localhost:3001/api/sightings/${id}`);
         // ✨ CORRECCIÓN 2: Accede a 'data' para obtener el avistamiento
         setSighting(response.data.data);
       } catch (err) {

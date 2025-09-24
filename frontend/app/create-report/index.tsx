@@ -80,7 +80,7 @@ const CreateReportScreen = () => {
     };
 
     try {
-      const response = await axios.post('http://172.20.10.3:3001/api/sightings', reportData);
+      const response = await axios.post('http://localhost:3001/api/sightings', reportData);
 
       if (response.status === 201) {
         Alert.alert('Éxito', 'Reporte creado con éxito.');
