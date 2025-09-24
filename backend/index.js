@@ -69,3 +69,5 @@ app.listen(app.get('port'), () => {
     await pool.end();
   }
 })();
+
+export default app; //exportar para usar en tests
