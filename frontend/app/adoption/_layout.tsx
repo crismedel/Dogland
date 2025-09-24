@@ -1,33 +1,29 @@
 // app/adoption/_layout.tsx
-import { Stack } from "expo-router";
-import React from "react";
+import { Stack } from 'expo-router';
 
-const AdopcionesLayout = () => {
+export default function AdopcionesLayout() {
   return (
+    // 👇 Oculta el header por defecto del stack de la carpeta adoption
     <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="index" />
-      
       <Stack.Screen
         name="perfilCan"
         options={{
-          title: "Perfil canino",
-          headerStyle: { backgroundColor: "#4A90E2" },
-          headerTintColor: "#fff",
+          title: 'Perfil canino',
+          headerStyle: { backgroundColor: '#4A90E2' },
+          headerTintColor: '#fff',
           headerShown: true,
         }}
       />
-      
+
       <Stack.Screen
         name="solicitudAdopcion"
         options={{
-          title: "Solicitar Adopción",
-          headerStyle: { backgroundColor: "#4A90E2" },
-          headerTintColor: "#fff",
+          title: 'Solicitar Adopción',
+          headerStyle: { backgroundColor: '#4A90E2' },
+          headerTintColor: '#fff',
           headerShown: true,
         }}
       />
     </Stack>
   );
-};
-
-export default AdopcionesLayout;
+}

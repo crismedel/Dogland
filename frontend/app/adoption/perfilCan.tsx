@@ -1,7 +1,7 @@
 // app/adoption/perfilCan.tsx
-import { View, Text, Image, StyleSheet, TouchableOpacity } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import React from "react";
+import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import React from 'react';
 import { Ionicons } from '@expo/vector-icons';
 
 const PerfilCan = () => {
@@ -10,35 +10,33 @@ const PerfilCan = () => {
 
   const handleSolicitarAdopcion = () => {
     router.push({
-      pathname: "/adoption/solicitudAdopcion",
+      pathname: '/adoption/solicitudAdopcion',
       params: {
         idAnimal: id,
         nombreAnimal: name,
         breed: breed,
         age: age,
-        imageUrl: imageUrl
-      }
+        imageUrl: imageUrl,
+      },
     });
   };
 
   return (
     <View style={styles.container}>
       {/* Botón de retroceso */}
-      <TouchableOpacity 
-        style={styles.backButton} 
+      <TouchableOpacity
+        style={styles.backButton}
         onPress={() => router.back()}
-      >
-        <Ionicons name="arrow-back" size={24} color="#4A90E2" />
-      </TouchableOpacity>
+      ></TouchableOpacity>
 
       <Image source={{ uri: imageUrl as string }} style={styles.image} />
       <Text style={styles.name}>{name}</Text>
       <Text style={styles.breed}>{breed}</Text>
       <Text style={styles.age}>{age} meses</Text>
-      
+
       {/* Botón de solicitar adopción */}
-      <TouchableOpacity 
-        style={styles.adoptionButton} 
+      <TouchableOpacity
+        style={styles.adoptionButton}
         onPress={handleSolicitarAdopcion}
       >
         <Text style={styles.adoptionButtonText}>Solicitar Adopción</Text>
@@ -65,10 +63,14 @@ const PerfilCan = () => {
       {/* Requisitos de adopción */}
       <View style={styles.requirementsSection}>
         <Text style={styles.sectionTitle}>Requisitos de Adopción</Text>
-        <Text style={styles.requirementText}>• Compromiso de cuidado responsable</Text>
+        <Text style={styles.requirementText}>
+          • Compromiso de cuidado responsable
+        </Text>
         <Text style={styles.requirementText}>• Vivienda adecuada</Text>
         <Text style={styles.requirementText}>• Tiempo para dedicarle</Text>
-        <Text style={styles.requirementText}>• Compromiso de esterilización</Text>
+        <Text style={styles.requirementText}>
+          • Compromiso de esterilización
+        </Text>
       </View>
     </View>
   );
@@ -78,8 +80,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    alignItems: "center",
-    backgroundColor: "#dbe8d3",
+    alignItems: 'center',
+    backgroundColor: '#dbe8d3',
   },
   backButton: {
     alignSelf: 'flex-start',
@@ -96,18 +98,18 @@ const styles = StyleSheet.create({
   },
   name: {
     fontSize: 28,
-    fontWeight: "bold",
+    fontWeight: 'bold',
     marginBottom: 10,
     color: '#333',
   },
   breed: {
     fontSize: 20,
-    color: "#666",
+    color: '#666',
     marginBottom: 8,
   },
   age: {
     fontSize: 18,
-    color: "#999",
+    color: '#999',
     marginBottom: 30,
   },
   adoptionButton: {
