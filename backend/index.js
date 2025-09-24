@@ -5,8 +5,10 @@ import { corsOptions, corsBlocker } from './middlewares/corsConfig.js';
 
 const app = express();
 
+import pool from './db/db.js';
 import sightingsRouter from './routes/sightings.js';
 import alertsRouter from './routes/alerts.js';
+import authRouter from './routes/auth.js';
 import { errorHandler } from './middlewares/errorHandler.js';
 import organizationsRouter from './routes/organizations.js';
 import usersRouter from './routes/users.js';
@@ -57,5 +59,13 @@ app.listen(app.get('port'), () => {
   console.log(`Servidor corriendo en http://localhost:${app.get('port')}`);
 });
 
-
-
+(async () => {
+  try {
+    const result = await pool.query("SELECT NOW()");
+    console.log("Conexión exitosa:", result.rows[0]);
+  } catch (error) {
+    console.error("Error de conexión:", error.message);    
+  } finally {
+    await pool.end();
+  }
+})();

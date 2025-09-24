@@ -1,4 +1,5 @@
 import express from 'express';
+import pool from '../db/db.js';
 import {
   getAlerts,
   getAlertById,
@@ -7,9 +8,9 @@ import {
   deleteAlert,
 } from '../controllers/alertsController.js';
 
+import { sendPushNotificationToUsers } from '../middlewares/pushNotifications.js';
 import { validateAlert } from '../middlewares/validationAlert.js';
 import { checkPermissions } from '../middlewares/permissions.js';
-
 const router = express.Router();
 
 // Ruta para obtener todas las alertas activas
@@ -40,5 +41,28 @@ router.delete(
   checkPermissions('delete_alert'), // Verifica permisos para eliminar alertas
   deleteAlert, // Controlador que elimina la alerta
 );
+
+router.post('/test-push-notification', async (req, res, next) => {
+  try {
+    const { message, userIds } = req.body; // Esperamos un mensaje y una lista de IDs de usuario
+
+    if (
+      !message ||
+      !userIds ||
+      !Array.isArray(userIds) ||
+      userIds.length === 0
+    ) {
+      return res
+        .status(400)
+        .json({ success: false, error: 'Faltan message o userIds válidos' });
+    }
+
+    await sendPushNotificationToUsers(message, userIds);
+    res.json({ success: true, message: 'Notificación de prueba enviada' });
+  } catch (error) {
+    console.error('Error en ruta de prueba de notificación:', error);
+    next(error);
+  }
+});
 
 export default router;
