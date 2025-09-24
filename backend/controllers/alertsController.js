@@ -1,4 +1,5 @@
 import pool from '../db/db.js';
+import { sendPushNotificationToUsers } from '../middlewares/pushNotifications.js';
 
 // Obtiene todas las alertas activas, con latitud, longitud y dirección
 export const getAlerts = async (req, res, next) => {
@@ -114,6 +115,17 @@ export const createAlert = async (req, res, next) => {
         fecha_expiracion,
       ],
     );
+
+    // Enviar notificación si nivel de riesgo es alto (ejemplo: id_nivel_riesgo === 3)
+    if (id_nivel_riesgo === 3) {
+      const usersRes = await pool.query('SELECT id_usuario FROM usuario');
+      const userIds = usersRes.rows.map((row) => row.id_usuario);
+
+      await sendPushNotificationToUsers(
+        `Nueva alerta importante: ${titulo}`,
+        userIds,
+      );
+    }
 
     // Responde con la alerta creada y código 201
     res.status(201).json({ success: true, data: result.rows[0] });

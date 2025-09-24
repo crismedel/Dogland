@@ -43,7 +43,9 @@ router.get('/users/:id', async (req, res) => {
     );
 
     if (result.rowCount === 0) {
-      return res.status(404).json({ success: false, error: 'Usuario no encontrado' });
+      return res
+        .status(404)
+        .json({ success: false, error: 'Usuario no encontrado' });
     }
 
     res.json({ success: true, data: result.rows[0] });
@@ -69,10 +71,18 @@ router.post('/users', async (req, res) => {
       id_rol,
     } = req.body;
 
-    if (!nombre_usuario || !email || !password_hash || !id_sexo || !id_ciudad || !id_rol) {
+    if (
+      !nombre_usuario ||
+      !email ||
+      !password_hash ||
+      !id_sexo ||
+      !id_ciudad ||
+      !id_rol
+    ) {
       return res.status(400).json({
         success: false,
-        error: 'Faltan campos obligatorios (nombre, email, password, sexo, ciudad, rol)',
+        error:
+          'Faltan campos obligatorios (nombre, email, password, sexo, ciudad, rol)',
       });
     }
 
@@ -149,7 +159,9 @@ router.put('/users/:id', async (req, res) => {
     );
 
     if (result.rowCount === 0) {
-      return res.status(404).json({ success: false, error: 'Usuario no encontrado' });
+      return res
+        .status(404)
+        .json({ success: false, error: 'Usuario no encontrado' });
     }
 
     res.json({ success: true, data: result.rows[0] });
@@ -167,7 +179,9 @@ router.delete('/users/:id', async (req, res) => {
     );
 
     if (result.rowCount === 0) {
-      return res.status(404).json({ success: false, error: 'Usuario no encontrado' });
+      return res
+        .status(404)
+        .json({ success: false, error: 'Usuario no encontrado' });
     }
 
     res.json({
@@ -176,6 +190,23 @@ router.delete('/users/:id', async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.post('/users/savePushToken', async (req, res) => {
+  const { userId, token } = req.body;
+  if (!userId || !token) {
+    return res.status(400).json({ success: false, error: 'Faltan datos' });
+  }
+  try {
+    await pool.query(
+      'UPDATE usuario SET push_token = $1 WHERE id_usuario = $2',
+      [token, userId],
+    );
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error guardando token push:', error);
+    res.status(500).json({ success: false, error: 'Error guardando token' });
   }
 });
 
