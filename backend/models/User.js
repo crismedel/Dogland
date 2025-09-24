@@ -12,7 +12,12 @@ export const UserCreate = async (user, email, hashedPassword) => {
 };
 
 export const findUserByEmail = async (email) => {
-    const query = `SELECT * FROM user WHERE enamil = $1 LIMIT 1;`;
+    const query = `
+        SELECT id_usuario, password_hash, id_rol, email
+        FROM usuario
+        WHERE email = $1
+        LIMIT 1;
+    `;
     const result = await pool.query(query, [email]);
     return result.rows[0];
 };

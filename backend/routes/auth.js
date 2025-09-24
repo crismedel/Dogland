@@ -2,7 +2,7 @@ import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import { UserCreate, findUserByEmail } from '../models/User.js';
 import { blacklistToken, isTokenBlacklisted } from '../middleware/blacklist.js';
-import authenticateToken from '../middleware/auth.js';
+import { authenticateToken } from '../middleware/auth.js';
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key';
@@ -53,12 +53,12 @@ router.post('/register', async (req, res) => {
     }
 });
 
-// POST /api/auth/login - Iniciar sesión
+// POST /api/auth/login
 router.post('/login', async (req, res) => {
     try {
         const { email, password } = req.body;
-
         const user = await findUserByEmail(email);
+
         if (!user) {
             return res.status(401).json({ success: false, error: 'Credenciales inválidas' });
         }
@@ -68,14 +68,19 @@ router.post('/login', async (req, res) => {
             return res.status(401).json({ success: false, error: 'Credenciales inválidas' });
         }
 
-        const token = JWT_SECRET.substring({userId: user.id, email: user.email }, JWT_SECRET, {
+        // Obtener el rol del usuario desde la base de datos
+        const rolResult = await pool.query('SELECT nombre_rol FROM rol WHERE id_rol = $1', [user.id_rol]);
+        const userRole = rolResult.rows[0].nombre_rol;
+
+        // Incluir el ID de usuario y el rol en el token JWT
+        const token = jwt.sign({ userId: user.id, email: user.email, role: userRole }, JWT_SECRET, {
             expiresIn: '1h',
         });
 
         res.json({ success: true, message: 'Inicio de sesión exitoso', token });
     } catch (error) {
-        console.error('Error en /login:', error);
-        res.status(500).json({ success: false, error: 'Error del servidor' });
+        console.error('Error en el endpoint de login:', error);
+        res.status(500).json({ success: false, error: error.message });
     }
 });
 

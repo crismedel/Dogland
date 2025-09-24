@@ -1,10 +1,11 @@
 import express from 'express';
 import pool from '../db/db.js';
+import { authenticateToken, authorizeRol } from '../middleware/auth.js';
 
 const router = express.Router();
 
 // GET /api/users - Listar todos los usuarios
-router.get('/users', async (req, res) => {
+router.get('/users', authenticateToken, authorizeRol(['admin']), async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT u.id_usuario, u.nombre_usuario, u.apellido_paterno, u.apellido_materno,
@@ -53,7 +54,7 @@ router.get('/users/:id', async (req, res) => {
 });
 
 // POST /api/users - Crear usuario
-router.post('/users', async (req, res) => {
+router.post('/users', authenticateToken, authorizeRol(['admin', 'trabajador']), async (req, res) => {
   try {
     const {
       nombre_usuario,

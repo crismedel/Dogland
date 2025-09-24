@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken';
 import { isTokenBlacklisted } from './blacklist.js';
 
-const authenticateToken = (req, res, next) => {
+export const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
@@ -23,4 +23,18 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
-export default authenticateToken;
+export const authorizeRol = (allowedRoles) => {
+    return (req, res, next) => {
+        const userRole = req.user.role;
+
+        if (!userRole) {
+            return res.status(403).json({ success: false, error: 'Rol no proporcionado en el token' });
+        }
+
+        if (!allowedRoles.includes(userRole)) {
+            return res.status(403).json({ success: false, error: 'Acceso denegado. No tienes los permisos requeridos' });
+        }
+        
+        next();
+    };
+};
