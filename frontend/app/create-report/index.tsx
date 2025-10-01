@@ -1,10 +1,21 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, Platform, KeyboardAvoidingView } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  ScrollView,
+  Platform,
+  KeyboardAvoidingView,
+} from 'react-native';
 import DropDownPicker from 'react-native-dropdown-picker';
 import { Dimensions } from 'react-native';
 import * as Location from 'expo-location';
 import MapView, { Marker } from 'react-native-maps';
 import axios, { AxiosError } from 'axios';
+import apiClient from '../../src/api/client';
 
 const { width } = Dimensions.get('window');
 
@@ -39,7 +50,10 @@ const CreateReportScreen = () => {
     { label: 'Perdido', value: 4 },
   ]);
 
-  const [ubicacion, setUbicacion] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [ubicacion, setUbicacion] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
   const [mostrarMapa, setMostrarMapa] = useState(false);
 
   const obtenerUbicacionActual = async () => {
@@ -56,12 +70,23 @@ const CreateReportScreen = () => {
   const handleMapPress = (event: any) => {
     const { coordinate } = event.nativeEvent;
     setUbicacion(coordinate);
-    Alert.alert('Ubicación Seleccionada', `Lat: ${coordinate.latitude.toFixed(4)}, Lon: ${coordinate.longitude.toFixed(4)}`);
+    Alert.alert(
+      'Ubicación Seleccionada',
+      `Lat: ${coordinate.latitude.toFixed(
+        4,
+      )}, Lon: ${coordinate.longitude.toFixed(4)}`,
+    );
     setMostrarMapa(false);
   };
 
   const handleCreateReport = async () => {
-    if (!descripcion || !especie || !estadoSalud || !estadoAvistamiento || !ubicacion) {
+    if (
+      !descripcion ||
+      !especie ||
+      !estadoSalud ||
+      !estadoAvistamiento ||
+      !ubicacion
+    ) {
       Alert.alert('Error', 'Todos los campos son obligatorios.');
       return;
     }
@@ -80,7 +105,7 @@ const CreateReportScreen = () => {
     };
 
     try {
-      const response = await axios.post('http://localhost:3001/api/sightings', reportData);
+      const response = await apiClient.post('/sightings', reportData);
 
       if (response.status === 201) {
         Alert.alert('Éxito', 'Reporte creado con éxito.');
@@ -94,8 +119,15 @@ const CreateReportScreen = () => {
       }
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        console.error('Error al enviar el reporte:', error.response?.data || error.message);
-        Alert.alert('Error', error.response?.data?.message || 'No se pudo conectar con el servidor.');
+        console.error(
+          'Error al enviar el reporte:',
+          error.response?.data || error.message,
+        );
+        Alert.alert(
+          'Error',
+          error.response?.data?.message ||
+            'No se pudo conectar con el servidor.',
+        );
       } else {
         console.error('Error inesperado:', error);
         Alert.alert('Error', 'Ocurrió un error inesperado.');
@@ -105,7 +137,7 @@ const CreateReportScreen = () => {
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
       <ScrollView
@@ -128,7 +160,12 @@ const CreateReportScreen = () => {
           </View>
 
           {/* Especie */}
-          <View style={[styles.inputContainer, Platform.OS === 'ios' && { zIndex: 5000 }]}>
+          <View
+            style={[
+              styles.inputContainer,
+              Platform.OS === 'ios' && { zIndex: 5000 },
+            ]}
+          >
             <Text style={styles.inputLabel}>Especie del Animal:</Text>
             <DropDownPicker
               open={openEspecie}
@@ -144,7 +181,12 @@ const CreateReportScreen = () => {
           </View>
 
           {/* Estado de Salud */}
-          <View style={[styles.inputContainer, Platform.OS === 'ios' && { zIndex: 4000 }]}>
+          <View
+            style={[
+              styles.inputContainer,
+              Platform.OS === 'ios' && { zIndex: 4000 },
+            ]}
+          >
             <Text style={styles.inputLabel}>Estado de Salud del Animal:</Text>
             <DropDownPicker
               open={openEstadoSalud}
@@ -160,7 +202,12 @@ const CreateReportScreen = () => {
           </View>
 
           {/* Estado del Avistamiento */}
-          <View style={[styles.inputContainer, Platform.OS === 'ios' && { zIndex: 3000 }]}>
+          <View
+            style={[
+              styles.inputContainer,
+              Platform.OS === 'ios' && { zIndex: 3000 },
+            ]}
+          >
             <Text style={styles.inputLabel}>Estado del Avistamiento:</Text>
             <DropDownPicker
               open={openEstadoAvistamiento}
@@ -185,15 +232,25 @@ const CreateReportScreen = () => {
                   'Selecciona una opción',
                   '¿Quieres seleccionar en el mapa o usar tu ubicación actual?',
                   [
-                    { text: 'Ver en Mapa', onPress: () => setMostrarMapa(true) },
-                    { text: 'Usar Ubicación Actual', onPress: obtenerUbicacionActual },
+                    {
+                      text: 'Ver en Mapa',
+                      onPress: () => setMostrarMapa(true),
+                    },
+                    {
+                      text: 'Usar Ubicación Actual',
+                      onPress: obtenerUbicacionActual,
+                    },
                     { text: 'Cancelar', style: 'cancel' },
-                  ]
+                  ],
                 )
               }
             >
               <Text style={{ color: ubicacion ? '#000' : '#888' }}>
-                {ubicacion ? `${ubicacion.latitude.toFixed(4)}, ${ubicacion.longitude.toFixed(4)}` : 'Seleccionar ubicación'}
+                {ubicacion
+                  ? `${ubicacion.latitude.toFixed(
+                      4,
+                    )}, ${ubicacion.longitude.toFixed(4)}`
+                  : 'Seleccionar ubicación'}
               </Text>
             </TouchableOpacity>
           </View>
@@ -212,7 +269,10 @@ const CreateReportScreen = () => {
                 onLongPress={handleMapPress}
               >
                 {ubicacion && (
-                  <Marker coordinate={ubicacion} title="Ubicación Seleccionada" />
+                  <Marker
+                    coordinate={ubicacion}
+                    title="Ubicación Seleccionada"
+                  />
                 )}
               </MapView>
             </View>

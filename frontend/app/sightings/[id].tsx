@@ -1,9 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, SafeAreaView } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  ActivityIndicator,
+  SafeAreaView,
+} from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import MapView, { Marker } from 'react-native-maps';
-import axios from 'axios';
-
+import apiClient from '../../src/api/client';
 interface SightingDetails {
   id_avistamiento: number;
   descripcion: string;
@@ -32,11 +38,11 @@ const SightingDetailsScreen = () => {
       try {
         if (!id) return;
         // ✨ CORRECCIÓN 1: La ruta del API ahora utiliza el id_avistamiento
-        const response = await axios.get(`http://localhost:3001/api/sightings/${id}`);
+        const response = await apiClient.get(`/sightings/${id}`);
         // ✨ CORRECCIÓN 2: Accede a 'data' para obtener el avistamiento
         setSighting(response.data.data);
       } catch (err) {
-        console.error("Error fetching sighting details:", err);
+        console.error('Error fetching sighting details:', err);
         setError('No se pudo cargar la información del avistamiento.');
       } finally {
         setLoading(false);
@@ -75,7 +81,7 @@ const SightingDetailsScreen = () => {
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollViewContent}>
         <Text style={styles.title}>Detalles del Avistamiento</Text>
-        
+
         <View style={styles.mapContainer}>
           <MapView
             style={styles.map}
@@ -87,11 +93,14 @@ const SightingDetailsScreen = () => {
             }}
           >
             {sighting.ubicacion && (
-              <Marker coordinate={sighting.ubicacion} title="Ubicación del Avistamiento" />
+              <Marker
+                coordinate={sighting.ubicacion}
+                title="Ubicación del Avistamiento"
+              />
             )}
           </MapView>
         </View>
-        
+
         <View style={styles.detailsContainer}>
           <View style={styles.infoRow}>
             <Text style={styles.label}>Descripción:</Text>
@@ -100,12 +109,16 @@ const SightingDetailsScreen = () => {
           <View style={styles.infoRow}>
             <Text style={styles.label}>Especie:</Text>
             {/* ✨ CORRECCIÓN 3: Muestra el nombre de la especie */}
-            <Text style={styles.value}>{sighting.especie?.nombre || 'Desconocida'}</Text>
+            <Text style={styles.value}>
+              {sighting.especie?.nombre || 'Desconocida'}
+            </Text>
           </View>
           <View style={styles.infoRow}>
             <Text style={styles.label}>Estado de Salud:</Text>
             {/* ✨ CORRECCIÓN 4: Muestra el nombre del estado de salud */}
-            <Text style={styles.value}>{sighting.estadoSalud?.nombre || 'Desconocido'}</Text>
+            <Text style={styles.value}>
+              {sighting.estadoSalud?.nombre || 'Desconocido'}
+            </Text>
           </View>
           <View style={styles.infoRow}>
             <Text style={styles.label}>Fecha:</Text>
@@ -124,7 +137,13 @@ const styles = StyleSheet.create({
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   text: { fontSize: 16, color: '#6b7280', marginTop: 10 },
   errorText: { fontSize: 16, color: 'red', textAlign: 'center' },
-  title: { fontSize: 24, fontWeight: '700', color: '#1f2937', textAlign: 'center', marginVertical: 20 },
+  title: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#1f2937',
+    textAlign: 'center',
+    marginVertical: 20,
+  },
   mapContainer: {
     width: '90%',
     height: 300,
@@ -150,8 +169,19 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
     elevation: 5,
   },
-  infoRow: { flexDirection: 'row', alignItems: 'baseline', marginBottom: 10, flexWrap: 'wrap' },
-  label: { fontSize: 16, fontWeight: '600', color: '#4b5563', minWidth: 120, marginRight: 10 },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    marginBottom: 10,
+    flexWrap: 'wrap',
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#4b5563',
+    minWidth: 120,
+    marginRight: 10,
+  },
   value: { fontSize: 16, color: '#374151', flexShrink: 1 },
 });
 

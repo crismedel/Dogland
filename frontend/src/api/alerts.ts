@@ -1,4 +1,4 @@
-import { apiClient } from './client';
+import apiClient from './client';
 import { Alert } from '../types/alert';
 
 // Obtener todas las alertas

@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import * as Notifications from 'expo-notifications';
 import * as Permissions from 'expo-permissions';
 import { Platform } from 'react-native';
-import { apiClient } from '../../api/client';
+import apiClient from '../../api/client';
 
 async function registerForPushNotificationsAsync(): Promise<
   string | undefined

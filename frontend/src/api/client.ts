@@ -18,7 +18,7 @@ export const apiClient = axios.create({
   },
 });
 
-/** 
+/**
  * Interceptor para inyectar el token en los headers
  */
 apiClient.interceptors.request.use(
@@ -31,8 +31,7 @@ apiClient.interceptors.request.use(
   },
   (error) => {
     return Promise.reject(error);
-  }
+  },
 );
-
 
 export default apiClient;

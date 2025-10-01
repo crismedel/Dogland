@@ -1,7 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, RefreshControl, SafeAreaView } from 'react-native';
-import axios from 'axios';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  ActivityIndicator,
+  RefreshControl,
+  SafeAreaView,
+} from 'react-native';
 import { Link } from 'expo-router';
+import apiClient from '../../src/api/client';
 
 // La interfaz debe coincidir con los datos que provienen de tu backend
 interface Sighting {
@@ -20,7 +28,7 @@ const AvistamientosScreen = () => {
 
   const fetchSightings = useCallback(async () => {
     try {
-      const response = await axios.get('http://localhost:3001/api/sightings');
+      const response = await apiClient.get('/sightings');
       // Asegúrate de acceder a los datos de la misma forma que en el mapa
       setSightings(response.data.data);
     } catch (error) {
@@ -45,8 +53,7 @@ const AvistamientosScreen = () => {
     );
   }
 
-  const renderItem = ({ item, index }: { item: Sighting, index: number }) => {
-    
+  const renderItem = ({ item, index }: { item: Sighting; index: number }) => {
     // Función para formatear la fecha a dd-mm-yyyy si es necesario
     const formatDate = (dateString: string) => {
       if (!dateString) return 'Fecha inválida';
@@ -58,7 +65,13 @@ const AvistamientosScreen = () => {
     };
 
     return (
-      <Link href={{ pathname: "/sightings/[id]", params: { id: item.id_avistamiento } }} asChild>
+      <Link
+        href={{
+          pathname: '/sightings/[id]',
+          params: { id: item.id_avistamiento },
+        }}
+        asChild
+      >
         <View style={styles.card}>
           <Text style={styles.cardTitle}>{item.descripcion}</Text>
           <View style={styles.infoRow}>
@@ -67,7 +80,9 @@ const AvistamientosScreen = () => {
           </View>
           <View style={styles.infoRow}>
             <Text style={styles.label}>Estado de Salud:</Text>
-            <Text style={styles.value}>{item.id_estado_salud || 'Desconocido'}</Text>
+            <Text style={styles.value}>
+              {item.id_estado_salud || 'Desconocido'}
+            </Text>
           </View>
           <View style={styles.infoRow}>
             <Text style={styles.label}>Fecha:</Text>
@@ -92,14 +107,19 @@ const AvistamientosScreen = () => {
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={() => (
           <View style={styles.centered}>
-            <Text style={styles.emptyText}>No hay avistamientos registrados.</Text>
+            <Text style={styles.emptyText}>
+              No hay avistamientos registrados.
+            </Text>
           </View>
         )}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={() => {
-            setRefreshing(true);
-            fetchSightings();
-          }} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => {
+              setRefreshing(true);
+              fetchSightings();
+            }}
+          />
         }
       />
     </SafeAreaView>
@@ -108,7 +128,12 @@ const AvistamientosScreen = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f0f4f7' },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
+  centered: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
   loadingText: { marginTop: 10, fontSize: 16, color: '#6b7280' },
   listContent: { padding: 10 },
   card: {
@@ -122,7 +147,12 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
     elevation: 5,
   },
-  cardTitle: { fontSize: 18, fontWeight: '600', color: '#1f2937', marginBottom: 10 },
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1f2937',
+    marginBottom: 10,
+  },
   infoRow: { flexDirection: 'row', marginBottom: 5 },
   label: { fontSize: 14, fontWeight: '500', color: '#4b5563', width: 120 },
   value: { fontSize: 14, color: '#374151', flexShrink: 1 },
