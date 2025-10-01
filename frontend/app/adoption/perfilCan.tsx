@@ -36,7 +36,7 @@ const PerfilCan = () => {
 
       {/* Botón de solicitar adopción */}
       <TouchableOpacity
-        style={styles.adoptionButton}
+        style={styles.adoptionButton}  
         onPress={handleSolicitarAdopcion}
       >
         <Text style={styles.adoptionButtonText}>Solicitar Adopción</Text>

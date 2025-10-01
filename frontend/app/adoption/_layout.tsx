@@ -31,7 +31,7 @@ export default function AdopcionesLayout() {
           title: 'Historial Médico',
           headerStyle: { backgroundColor: '#4A90E2' },
           headerTintColor: '#fff',
-          headerShown: true,
+          headerShown: false,
         }}
       />
     </Stack>

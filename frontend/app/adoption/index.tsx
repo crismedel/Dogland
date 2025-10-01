@@ -80,16 +80,16 @@ const Index = () => {
 
       {/* Botones */}
 
-      <TouchableOpacity style={styles.solicitarButton} onPress={handleVerPostulaciones}>
-        <Text style={styles.solicitarButtonText}>Ver mis Postulaciones</Text>
-        <Text style={styles.solicitarButtonSubText}>Consulta tus solicitudes</Text>
-      </TouchableOpacity>
+      {/* Contenedor de botones en fila */}
+      <View style={styles.rowButtons}>
+        <TouchableOpacity style={styles.smallButton} onPress={handleVerPostulaciones}>
+          <Text style={styles.solicitarButtonText}>Ver mis Postulaciones</Text>
+        </TouchableOpacity>
 
-
-      <TouchableOpacity style={styles.solicitarButton} onPress={handleVerHistorialMedico}>
-        <Text style={styles.solicitarButtonText}>Ver Historial Médico</Text>
-        <Text style={styles.solicitarButtonSubText}>Actualiza información de la mascota</Text>
-      </TouchableOpacity>      
+        <TouchableOpacity style={styles.smallButton} onPress={handleVerHistorialMedico}>
+          <Text style={styles.solicitarButtonText}>Ver Historial Médico</Text>
+        </TouchableOpacity>
+      </View>
 
       {/* Footer */}
       <View style={styles.footer}>
@@ -106,6 +106,7 @@ const Index = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f4f6f9' },
+
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -117,21 +118,37 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     marginTop: 20,
   },
+
   headerTitle: { fontSize: 18, fontWeight: 'bold', color: '#fff', flex: 1, textAlign: 'center' },
   backButtonHeader: { padding: 6 },
   backIconHeader: { width: 24, height: 24, tintColor: '#fff' },
+
   content: { flex: 1, backgroundColor: '#fff', margin: 10, borderRadius: 10, padding: 10 },
   title: { fontSize: 18, fontWeight: 'bold', marginBottom: 10, textAlign: 'center', color: '#333' },
   list: { paddingBottom: 20 },
-  solicitarButton: {
+
+  // 🔹 Contenedor para alinear los botones en fila
+  rowButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginHorizontal: 10,
+    marginBottom: 15,
+  },
+
+  // 🔹 Botones más pequeños
+  smallButton: {
+    flex: 1,
     backgroundColor: '#4A90E2',
-    margin: 10,
-    padding: 15,
-    borderRadius: 10,
+    marginHorizontal: 5,
+    paddingVertical: 10, // cambia aquí para hacerlo más grande o más chico
+    paddingHorizontal: 8,
+    borderRadius: 8,
     alignItems: 'center',
   },
-  solicitarButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
-  solicitarButtonSubText: { color: '#fff', fontSize: 14, marginTop: 5 },
+
+  solicitarButtonText: { color: '#fff', fontSize: 14, fontWeight: 'bold' },
+  solicitarButtonSubText: { color: '#fff', fontSize: 12, marginTop: 3 },
+
   footer: { backgroundColor: '#fff', padding: 10, borderTopWidth: 1, borderColor: '#ccc', alignItems: 'center' },
   footerText: { marginBottom: 5, fontSize: 12, color: '#333' },
   socials: { flexDirection: 'row', gap: 15 },
