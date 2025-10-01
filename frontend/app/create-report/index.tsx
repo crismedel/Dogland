@@ -9,6 +9,7 @@ import {
   ScrollView,
   Platform,
   KeyboardAvoidingView,
+  Image,
 } from 'react-native';
 import DropDownPicker from 'react-native-dropdown-picker';
 import { Dimensions } from 'react-native';
@@ -19,9 +20,18 @@ import apiClient from '../../src/api/client';
 
 const { width } = Dimensions.get('window');
 
+// Definimos la interfaz esperada para los datos del error del backend para resolver TS2339
+interface ErrorData {
+    error?: string;
+    message?: string;
+}
+
 const CreateReportScreen = () => {
   const [descripcion, setDescripcion] = useState('');
   const [titulo, setTitulo] = useState('');
+  
+  // ESTADO PARA LA URL DE LA IMAGEN
+  const [imageUrl, setImageUrl] = useState(''); 
 
   const [especie, setEspecie] = useState(null);
   const [openEspecie, setOpenEspecie] = useState(false);
@@ -80,6 +90,7 @@ const CreateReportScreen = () => {
   };
 
   const handleCreateReport = async () => {
+    // 1. Validaciones
     if (
       !descripcion ||
       !especie ||
@@ -87,10 +98,16 @@ const CreateReportScreen = () => {
       !estadoAvistamiento ||
       !ubicacion
     ) {
-      Alert.alert('Error', 'Todos los campos son obligatorios.');
+      Alert.alert('Error', 'Todos los campos de texto y ubicación son obligatorios.');
       return;
     }
+    
+    if (!imageUrl) {
+        Alert.alert('Error', 'Debe proporcionar la URL de una foto.');
+        return;
+    }
 
+    // 2. Data para la API
     const reportData = {
       id_usuario: 2,
       id_estado_avistamiento: estadoAvistamiento,
@@ -102,34 +119,49 @@ const CreateReportScreen = () => {
         latitude: ubicacion.latitude,
       },
       direccion: 'Ubicación seleccionada en el mapa',
+      url: imageUrl, // Enviamos la URL pegada
     };
 
+    // 3. Petición a la API y manejo de errores
     try {
       const response = await apiClient.post('/sightings', reportData);
 
       if (response.status === 201) {
         Alert.alert('Éxito', 'Reporte creado con éxito.');
+        // Limpiar el estado
         setDescripcion('');
+        setImageUrl(''); 
         setEspecie(null);
         setEstadoSalud(null);
         setEstadoAvistamiento(null);
         setUbicacion(null);
+        setTitulo(''); 
       } else {
         Alert.alert('Error', 'Hubo un problema al crear el reporte.');
       }
     } catch (error) {
-      if (axios.isAxiosError(error)) {
+      // Guardia de tipo para tipar el error como AxiosError<ErrorData> y resolver los TS2339 y TS18046
+      const isAxiosError = (err: any): err is AxiosError<ErrorData> => {
+        return err && err.isAxiosError === true;
+      };
+      
+      if (isAxiosError(error)) {
         console.error(
-          'Error al enviar el reporte:',
+          'Error al enviar el reporte (Axios):',
           error.response?.data || error.message,
         );
-        Alert.alert(
-          'Error',
-          error.response?.data?.message ||
-            'No se pudo conectar con el servidor.',
-        );
+        
+        const errorData = error.response?.data;
+        // Buscamos 'error' o 'message' en la respuesta del backend
+        const errorResponse = errorData?.error || errorData?.message; 
+        
+        const errorMessage = typeof errorResponse === 'string' 
+            ? errorResponse 
+            : 'No se pudo conectar con el servidor o hubo un error desconocido.';
+            
+        Alert.alert('Error', errorMessage);
       } else {
-        console.error('Error inesperado:', error);
+        console.error('Error inesperado (no-Axios):', error);
         Alert.alert('Error', 'Ocurrió un error inesperado.');
       }
     }
@@ -220,6 +252,30 @@ const CreateReportScreen = () => {
               style={styles.dropdownStyle}
               dropDownContainerStyle={styles.dropdownContainerStyle}
             />
+          </View>
+          
+          {/* CASILLERO PARA LA URL DE LA IMAGEN */}
+          <View style={[styles.inputContainer, { zIndex: 2000 }]}>
+            <Text style={styles.inputLabel}>URL de la Foto (Pegar aquí):</Text>
+            <TextInput
+              style={styles.textInput}
+              placeholder="Ej: https://tudominio.com/foto.jpg"
+              value={imageUrl}
+              onChangeText={setImageUrl}
+              keyboardType="url"
+              autoCapitalize="none"
+            />
+            
+            {/* Opcional: Previsualización de la Imagen */}
+            {imageUrl.startsWith('http') && (
+              <View style={styles.imagePreviewContainer}>
+                <Image 
+                    source={{ uri: imageUrl }} 
+                    style={styles.imagePreview} 
+                    onError={() => console.log("Error al cargar la URL de previsualización")}
+                />
+              </View>
+            )}
           </View>
 
           {/* Ubicación */}
@@ -359,6 +415,20 @@ const styles = StyleSheet.create({
   map: {
     width: '100%',
     height: '100%',
+  },
+  // Estilos para el campo de URL/imagen
+  imagePreviewContainer: {
+    marginTop: 15,
+    borderRadius: 12,
+    overflow: 'hidden',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+  },
+  imagePreview: {
+    width: '100%',
+    height: 200,
+    resizeMode: 'cover',
   },
   button: {
     backgroundColor: '#fbbf24',
