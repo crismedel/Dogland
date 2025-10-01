@@ -12,42 +12,77 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
+import apiClient from '@/src/api/client';
+import { authStorage } from '@/src/utils/authStorage';
+import { isAxiosError } from 'axios';
 import { router } from 'expo-router';
 
 const { width } = Dimensions.get('window');
 
-const simulateLogin = (email, password) => {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      if (email === 'admin@dogland.com' && password === 'admin123') {
-        resolve(true);
-      } else {
-        reject(new Error('Credenciales inválidas'));
-      }
-    }, 2000);
-  });
-};
-
-export default function Index() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
+// El componente es un React Functional Component (React.FC)
+const Index: React.FC = () => {
+  // Tipado explicito de los estados
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(false);
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert('Error', 'Por favor, completa todos los campos.');
+      Alert.alert('Atención', 'Por favor, completa todos los campos.');
       return;
     }
 
     setLoading(true);
+
     try {
-      const response = await simulateLogin(email, password);
-      setLoading(false);
-      Alert.alert('Éxito', 'Has iniciado sesión correctamente.');
-      router.push('/home');
+      // Definir el tipo de la respuesta esperada
+      interface LoginResponse {
+        success: true;
+        message: string;
+        token: string;
+      }
+
+      // Llamada a la API
+      const response = await apiClient.post<LoginResponse>('/auth/login', {
+        email,
+        password,
+      });
+
+      const { token } = response.data;
+
+      if (token) {
+        // Guardar el token de forma segura
+        await authStorage.saveToken(token);
+
+        Alert.alert('Éxito', 'Has iniciado sesión correctamente.');
+        // Usar router.replace para mejor experiencia de navegacion
+        router.replace('/home');
+      } else {
+        // Si la API responde 200 pero no viene el token
+        throw new Error('No se recibió el token de autenticación.');
+      }
     } catch (error) {
+      // Manejo de errores de API
+      let errorMessage = 'Ocurrió un error inesperado.';
+      if (isAxiosError(error)) {
+        // Si es un error de Axios
+        if (error.response) {
+          // Error del servidor
+          errorMessage =
+            error.response.data?.message ||
+            'Credenciales inválidas. Por favor, verifica tus datos.';
+        } else if (error.request) {
+          // La peticion se hizo pero no hubo respuesta
+          errorMessage =
+            'No se pudo conectar con el servidor. Revisa tu conexión a internet.';
+        }
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      Alert.alert('Error de inicio de sesión', errorMessage);
+    } finally {
+      // Se ejecuta siempre
       setLoading(false);
-      Alert.alert('Error', error.message || 'Credenciales inválidas.');
     }
   };
 
@@ -138,6 +173,8 @@ export default function Index() {
     </KeyboardAvoidingView>
   );
 }
+
+export default Index;
 
 const styles = StyleSheet.create({
   container: {

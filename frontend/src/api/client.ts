@@ -1,6 +1,7 @@
 // Configuracion del cliente para la comunicacion con la API
 import { Platform } from 'react-native';
-import axios from 'axios';
+import axios, { InternalAxiosRequestConfig } from 'axios';
+import { authStorage } from '../utils/authStorage';
 
 let API_URL = 'http://localhost:3001/api'; // fallback
 
@@ -16,3 +17,22 @@ export const apiClient = axios.create({
     'Content-Type': 'application/json',
   },
 });
+
+/** 
+ * Interceptor para inyectar el token en los headers
+ */
+apiClient.interceptors.request.use(
+  async (config: InternalAxiosRequestConfig) => {
+    const token = await authStorage.getToken();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+
+export default apiClient;
