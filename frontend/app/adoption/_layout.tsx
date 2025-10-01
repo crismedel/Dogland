@@ -24,6 +24,16 @@ export default function AdopcionesLayout() {
           headerShown: true,
         }}
       />
+
+      <Stack.Screen
+        name="historialMedico"
+        options={{
+          title: 'Historial Médico',
+          headerStyle: { backgroundColor: '#4A90E2' },
+          headerTintColor: '#fff',
+          headerShown: true,
+        }}
+      />
     </Stack>
   );
 }

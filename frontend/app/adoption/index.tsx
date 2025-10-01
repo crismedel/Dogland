@@ -37,6 +37,10 @@ const Index = () => {
     router.push('/adoption/misPostulaciones');
   };
 
+   const handleVerHistorialMedico = () => {
+    router.push('/adoption/historialMedico');
+  };
+
   if (loading) {
     return (
       <View style={styles.center}>
@@ -80,6 +84,12 @@ const Index = () => {
         <Text style={styles.solicitarButtonText}>Ver mis Postulaciones</Text>
         <Text style={styles.solicitarButtonSubText}>Consulta tus solicitudes</Text>
       </TouchableOpacity>
+
+
+      <TouchableOpacity style={styles.solicitarButton} onPress={handleVerHistorialMedico}>
+        <Text style={styles.solicitarButtonText}>Ver Historial Médico</Text>
+        <Text style={styles.solicitarButtonSubText}>Actualiza información de la mascota</Text>
+      </TouchableOpacity>      
 
       {/* Footer */}
       <View style={styles.footer}>
