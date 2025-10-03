@@ -19,6 +19,8 @@ import passwordResetRequestRouter from './routes/password-reset-request.js';
 import passwordResetConfirmRouter from './routes/password-reset-confirm.js';
 import animalsRouter from './routes/animals.js';
 import adoptionsRouter from './routes/adoptions.js';
+import regionsRouter from './routes/regions.js';
+import citiesRouter from './routes/cities.js';
 
 // configuraciones
 app.set('port', 3001);
@@ -42,6 +44,10 @@ app.use('/api', organizationsRouter);
 app.use('/api', usersRouter);
 app.use('/api', passwordResetRequestRouter);
 app.use('/api', passwordResetConfirmRouter);
+
+//manejo de ciudades y regiones para menus
+app.use('/api', regionsRouter);
+app.use('/api', citiesRouter);
 
 // manejo de animales y su adoción
 app.use('/api', animalsRouter);

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   Text,
   View,
@@ -9,160 +9,245 @@ import {
   Platform,
   Image,
   Alert,
-} from 'react-native';
+  ScrollView,
+} from "react-native";
 import { router } from 'expo-router';
 import DynamicForm, { FormField } from '@/src/components/UI/DynamicForm';
+import apiClient from '@/src/api/client';
+import { Region, Ciudad } from '@/src/types/location';
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
 
-export default function Index() {
-  const [loading, setLoading] = useState(false);
+export default function Register() {
+    // ESTADO Y LÓGICA DE NEGOCIO
 
-  const validateEmail = (email: string) => {
-    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return re.test(String(email).toLowerCase());
-  };
+    // Estado para datos que vienen de la API
+    const [regiones, setRegiones] = useState<Region[]>([]);
+    const [ciudades, setCiudades] = useState<Ciudad[]>([]);
+    const [isLoadingRegions, setIsLoadingRegions] = useState(true);
+    const [isLoadingCities, setIsLoadingCities] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleRegister = (values: Record<string, string>) => {
-    const { username, email, password, confirmPassword } = values;
+    const [formValues, setFormValues] = useState({
+        nombre: '',
+        apellidoPaterno: '',
+        apellidoMaterno: '',
+        telefono: '',
+        fechaNacimiento: new Date(),
+        idSexo: null,
+        idRegion: null,
+        idCiudad: null,
+        email: '',
+        password: '',
+        confirmPassword: '',
+    });
 
-    if (!username || !email || !password || !confirmPassword) {
-      Alert.alert('Error', 'Por favor, completa todos los campos.');
-      return;
-    }
+    const handleValueChange = (name: string, value: any) => {
+        setFormValues(prevValues => ({
+            ...prevValues,
+            [name]: value,
+        }));
 
-    if (!validateEmail(email)) {
-      Alert.alert('Error', 'Por favor, ingresa un correo válido.');
-      return;
-    }
+        // Si cambia la region resetea la ciudad
+        if (name === 'idRegion') {
+            setFormValues(prevValues => ({
+                ...prevValues,
+                idCiudad: null,
+            }));
+        }
+    };
 
-    if (password.length < 6) {
-      Alert.alert('Error', 'La contraseña debe tener al menos 6 caracteres.');
-      return;
-    }
+    // EFECTOS PARA CARGAR DATOS
+    useEffect(() => {
+        const fetchRegions = async () => {
+            try {
+                const response = await apiClient.get('/regions');
+                setRegiones(response.data.data);
+            } catch (error: any) {
+                Alert.alert('Error', 'No se pudieron cargar las regiones.');
+            } finally {
+                setIsLoadingRegions(false);
+            }
+        };
+        fetchRegions();
+    }, []);
 
-    if (password !== confirmPassword) {
-      Alert.alert('Error', 'Las contraseñas no coinciden.');
-      return;
-    }
+    useEffect(() => {
+        const fetchCities = async (regionId: number | null) => {
+            if (!regionId) {
+                setCiudades([]);
+                return;
+            }
+            setIsLoadingCities(true);
+            setCiudades([]); // Limpia las ciudades anteriores
 
-    Alert.alert(
-      'Éxito',
-      'Cuenta creada correctamente. Ahora puedes iniciar sesión.',
-      [{ text: 'OK', onPress: () => router.push('/auth/login') }],
+            try {
+                const response = await apiClient.get(`/cities/${regionId}`);
+                setCiudades(response.data.data);
+            } catch (error: any) {
+                Alert.alert('Error', 'No se pudieron cargar las ciudades.');
+            } finally {
+                setIsLoadingCities(false);
+            }
+        };
+        fetchCities(formValues.idRegion);
+    }, [formValues.idRegion]);
+
+    // MANEJADOR DEL ENVIO DEL FORMULARIO
+    const handleRegister = async () => {
+        const { nombre, apellidoPaterno, telefono, idSexo, idCiudad, email, password, confirmPassword } = formValues;
+
+        if (!nombre || !apellidoPaterno || !telefono || !idSexo || !idCiudad || !email || !password || !confirmPassword) {
+            Alert.alert('Error', 'Por favor, completa todos los campos obligatorios.');
+            return;
+        }
+        if (password.length < 6) {
+            Alert.alert('Error', 'La contraseña debe tener al menos 6 caracteres.');
+            return;
+        }
+        if (password !== confirmPassword) {
+            Alert.alert('Error', 'Las contraseñas no coinciden.');
+            return;
+        }
+
+        setIsSubmitting(true);
+        try {
+            const userData = {
+                nombre_usuario: nombre,
+                apellido_paterno: apellidoPaterno,
+                apellido_materno: formValues.apellidoMaterno,
+                id_sexo: idSexo,
+                fecha_nacimiento: new Date(formValues.fechaNacimiento).toISOString().split('T')[0],
+                telefono: telefono,
+                email: email,
+                password_hash: password,
+                id_ciudad: idCiudad
+            };
+
+            const response = await apiClient.post('/auth/register', userData);
+            if (!response.data.success) {
+                throw new Error(response.data.message || 'Ocurrió un error en el registro.');
+            }
+
+            Alert.alert('Éxito', 'Cuenta creada correctamente. Ahora puedes iniciar sesión.', [
+                { text: 'OK', onPress: () => router.push('/auth/login') }
+            ]);
+
+        } catch (error: any) {
+            const errorMessage = error.response?.data?.message || error.message;
+            Alert.alert('Error de Registro', errorMessage);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    // definicion declarativa de la estructura del formulario
+    const formFields: FormField[] = [
+        { name: 'nombre', label: 'Nombre', placeholder: 'Ingresa tu nombre', type: 'text', icon: 'person-outline' },
+        { name: 'apellidoPaterno', label: 'Apellido Paterno', placeholder: 'Ingresa tu apellido', type: 'text', icon: 'person-outline' },
+        { name: 'apellidoMaterno', label: 'Apellido Materno (Opcional)', placeholder: 'Ingresa tu apellido', type: 'text', icon: 'person-outline' },
+        { name: 'telefono', label: 'Teléfono', placeholder: 'Ej: 912345678', type: 'phone', icon: 'call-outline', keyboardType: 'phone-pad' },
+        { name: 'fechaNacimiento', label: 'Fecha de Nacimiento', placeholder: 'Selecciona una fecha', type: 'date', icon: 'calendar-outline' },
+        {
+            name: 'idSexo', label: 'Sexo', type: 'picker', icon: 'male-female-outline',
+            options: [
+                { label: "Selecciona tu sexo...", value: null },
+                { label: "Masculino", value: 1 },
+                { label: "Femenino", value: 2 },
+                { label: "Otro", value: 3 },
+            ]
+        },
+        {
+            name: 'idRegion', label: 'Región', type: 'picker', icon: 'map-outline',
+            options: [
+                { label: "Selecciona una región...", value: null },
+                ...regiones.map(r => ({ label: r.nombre_region, value: r.id_region }))
+            ]
+        },
+        {
+            name: 'idCiudad', label: 'Ciudad', type: 'picker', icon: 'location-outline',
+            options: [
+                { label: formValues.idRegion ? "Selecciona una ciudad..." : "Elige una región primero", value: null },
+                ...ciudades.map(c => ({ label: c.nombre_ciudad, value: c.id_ciudad }))
+            ]
+        },
+        { name: 'email', label: 'Correo Electrónico', placeholder: 'correo@ejemplo.com', type: 'email', icon: 'mail-outline', autoCapitalize: 'none' },
+        { name: 'password', label: 'Contraseña', placeholder: 'Mínimo 6 caracteres', type: 'password', icon: 'lock-closed-outline', secureTextEntry: true },
+        { name: 'confirmPassword', label: 'Confirmar Contraseña', placeholder: 'Repite la contraseña', type: 'password', icon: 'lock-closed-outline', secureTextEntry: true },
+    ];
+
+    return (
+        <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            style={styles.container}
+        >
+            <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+                <Image source={require('../../assets/images/volver.png')} style={{ width: 24, height: 24 }} />
+            </TouchableOpacity>
+
+            <ScrollView contentContainerStyle={styles.scrollContainer}>
+                <View style={styles.formContainer}>
+                    <Text style={styles.welcomeTitle}>Crea tu cuenta en Dogland</Text>
+                    
+                    <DynamicForm
+                        fields={formFields}
+                        values={formValues}
+                        onValueChange={handleValueChange}
+                        onSubmit={handleRegister}
+                        buttonText="Crear Cuenta"
+                        buttonIcon="checkmark-circle-outline"
+                        loading={isSubmitting}
+                        loadingFields={{
+                            idRegion: isLoadingRegions,
+                            idCiudad: isLoadingCities,
+                        }}
+                    />
+
+                    <TouchableOpacity onPress={() => router.push('/auth/login')} style={styles.loginLinkContainer}>
+                        <Text style={styles.loginLinkText}>Ya Tengo una Cuenta</Text>
+                    </TouchableOpacity>
+                </View>
+            </ScrollView>
+        </KeyboardAvoidingView>
     );
-  };
-
-  // Definición de campos del formulario
-  const formFields: FormField[] = [
-    {
-      name: 'username',
-      label: 'Usuario',
-      placeholder: 'Ingresa tu usuario',
-      keyboardType: 'default',
-      autoCapitalize: 'none',
-      icon: 'person-outline',
-    },
-    {
-      name: 'email',
-      label: 'Correo',
-      placeholder: 'Ingresa tu correo',
-      keyboardType: 'email-address',
-      autoCapitalize: 'none',
-      icon: 'mail-outline',
-    },
-    {
-      name: 'password',
-      label: 'Contraseña',
-      placeholder: 'Ingresa tu contraseña',
-      secureTextEntry: true,
-      autoCapitalize: 'none',
-      icon: 'lock-closed-outline',
-    },
-    {
-      name: 'confirmPassword',
-      label: 'Confirmar Contraseña',
-      placeholder: 'Confirma tu contraseña',
-      secureTextEntry: true,
-      autoCapitalize: 'none',
-      icon: 'lock-closed-outline',
-    },
-  ];
-
-  return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
-    >
-      {/* Botón de volver */}
-      <TouchableOpacity
-        style={{ position: 'absolute', top: 50, left: 20, zIndex: 1 }}
-        activeOpacity={0.8}
-        onPress={() => router.push('/auth')}
-      >
-        <Image
-          source={require('../../assets/images/volver.png')}
-          style={{ width: 24, height: 24 }}
-        />
-      </TouchableOpacity>
-
-      <View style={styles.container}>
-        <View style={styles.formContainer}>
-          {/* Welcome Title */}
-          <Text style={styles.welcomeTitle}>Crea tu cuenta en Dogland</Text>
-
-          {/* Formulario Dinámico */}
-          <DynamicForm
-            fields={formFields}
-            onSubmit={handleRegister}
-            loading={loading}
-            buttonText="Crear Cuenta"
-            buttonIcon="checkmark-circle-outline"
-          />
-
-          {/* Login Link */}
-          <TouchableOpacity style={styles.loginContainer}>
-            <Text
-              style={styles.loginText}
-              onPress={() => router.push('/auth/login')}
-            >
-              Ya Tengo una Cuenta
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </KeyboardAvoidingView>
-  );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#ffffff',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  formContainer: {
-    width: width * 0.85,
-    maxWidth: 400,
-    paddingHorizontal: 20,
-  },
-  welcomeTitle: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#1F2937',
-    textAlign: 'center',
-    marginBottom: 40,
-    letterSpacing: 0.5,
-  },
-  loginContainer: {
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  loginText: {
-    color: '#fbbf24',
-    fontSize: 16,
-    fontWeight: '600',
-    textDecorationLine: 'underline',
-  },
+    container: {
+        flex: 1,
+        backgroundColor: "#ffffff",
+    },
+    backButton: {
+        position: 'absolute',
+        top: 60,
+        left: 20,
+        zIndex: 10,
+    },
+    scrollContainer: {
+        paddingTop: 100,
+        paddingBottom: 40,
+        alignItems: 'center',
+        justifyContent: 'center'
+    },
+    formContainer: {
+        width: width * 0.9,
+        maxWidth: 400,
+    },
+    welcomeTitle: {
+        fontSize: 28,
+        fontWeight: "700",
+        color: "#1F2937",
+        textAlign: "center",
+        marginBottom: 30,
+    },
+    loginLinkContainer: {
+        alignItems: "center",
+        marginTop: 15,
+    },
+    loginLinkText: {
+        color: "#fbbf24",
+        fontSize: 16,
+        fontWeight: "600",
+        textDecorationLine: "underline",
+    },
 });

@@ -1,14 +1,19 @@
-// Configuracion del cliente para la comunicacion con la API
+/**
+ * Configuracion del cliente para la comunicacion con la API
+ */
 import { Platform } from 'react-native';
 import axios, { InternalAxiosRequestConfig } from 'axios';
 import { authStorage } from '../utils/authStorage';
 
-let API_URL = 'http://localhost:3001/api'; // fallback
+/**
+ * Configuracion usando las variables de entorno
+ */
+let API_URL = process.env.EXPO_PUBLIC_API_URL; // fallback
 
 if (Platform.OS === 'android') {
-  API_URL = 'http://10.0.2.2:3001/api'; // emulador Android
+  API_URL = process.env.EXPO_PUBLIC_API_URL_ANDROID // emulador Android
 } else if (Platform.OS === 'ios') {
-  API_URL = 'http://localhost:3001/api'; // simulador iOS
+  API_URL = process.env.EXPO_PUBLIC_API_URL_IOS; // simulador iOS
 }
 
 export const apiClient = axios.create({

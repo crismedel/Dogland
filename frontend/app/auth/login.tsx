@@ -28,6 +28,7 @@ const loginFields: FormField[] = [
     keyboardType: 'email-address',
     autoCapitalize: 'none',
     icon: 'mail-outline',
+    type: 'email',
   },
   {
     name: 'password',
@@ -36,6 +37,7 @@ const loginFields: FormField[] = [
     secureTextEntry: true,
     autoCapitalize: 'none',
     icon: 'lock-closed-outline',
+    type: 'password',
   },
 ];
 
@@ -43,8 +45,18 @@ const loginFields: FormField[] = [
 const Index: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
 
-  const handleLogin = async (values: Record<string, string>) => {
-    const { email, password } = values;
+  const [formValues, setFormValues] = useState({
+    email: '',
+    password: '',
+  });
+
+  const handleValueChange = (name: string, value: string) => {
+    setFormValues(prev => ({ ...prev, [name]: value }));
+  };
+
+  // Adaptar handleLogin para que use el estado 'formValues'
+  const handleLogin = async () => {
+    const { email, password } = formValues; // Se obtienen los valores del estado
 
     if (!email || !password) {
       Alert.alert('Atención', 'Por favor, completa todos los campos.');
@@ -54,14 +66,12 @@ const Index: React.FC = () => {
     setLoading(true);
 
     try {
-      // Definir el tipo de la respuesta esperada
       interface LoginResponse {
-        success: true;
+        success: boolean;
         message: string;
-        token: string;
+        token?: string; 
       }
 
-      // Llamada a la API
       const response = await apiClient.post<LoginResponse>('/auth/login', {
         email,
         password,
@@ -72,13 +82,12 @@ const Index: React.FC = () => {
       if (token) {
         // Guardar el token de forma segura
         await authStorage.saveToken(token);
-
         Alert.alert('Éxito', 'Has iniciado sesión correctamente.');
-        // Usar router.replace para mejor experiencia de navegacion
+        // Usar router.replace para navegar al home
         router.replace('/home');
+
       } else {
-        // Si la API responde 200 pero no viene el token
-        throw new Error('No se recibió el token de autenticación.');
+        throw new Error(response.data.message || 'No se recibió el token de autenticación.');
       }
     } catch (error) {
       // Manejo de errores de API
@@ -135,6 +144,8 @@ const Index: React.FC = () => {
         <View style={styles.formWrapper}>
           <DynamicForm
             fields={loginFields}
+            values={formValues}
+            onValueChange={handleValueChange}
             onSubmit={handleLogin}
             loading={loading}
             buttonText="Acceder"
