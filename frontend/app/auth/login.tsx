@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import {
   Text,
   View,
-  TextInput,
   TouchableOpacity,
   StyleSheet,
   Dimensions,
@@ -10,23 +9,43 @@ import {
   Platform,
   Image,
   Alert,
-  ActivityIndicator,
 } from 'react-native';
 import apiClient from '@/src/api/client';
 import { authStorage } from '@/src/utils/authStorage';
 import { isAxiosError } from 'axios';
 import { router } from 'expo-router';
+import DynamicForm, { FormField } from '@/src/components/UI/DynamicForm';
+import { Colors } from '@/src/constants/colors';
 
 const { width } = Dimensions.get('window');
 
+// 👇 Configuración de campos para LOGIN
+const loginFields: FormField[] = [
+  {
+    name: 'email',
+    label: 'Correo',
+    placeholder: 'Ingresa tu correo',
+    keyboardType: 'email-address',
+    autoCapitalize: 'none',
+    icon: 'mail-outline',
+  },
+  {
+    name: 'password',
+    label: 'Contraseña',
+    placeholder: 'Ingresa tu contraseña',
+    secureTextEntry: true,
+    autoCapitalize: 'none',
+    icon: 'lock-closed-outline',
+  },
+];
+
 // El componente es un React Functional Component (React.FC)
 const Index: React.FC = () => {
-  // Tipado explicito de los estados
-  const [email, setEmail] = useState<string>('');
-  const [password, setPassword] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
 
-  const handleLogin = async () => {
+  const handleLogin = async (values: Record<string, string>) => {
+    const { email, password } = values;
+
     if (!email || !password) {
       Alert.alert('Atención', 'Por favor, completa todos los campos.');
       return;
@@ -91,168 +110,144 @@ const Index: React.FC = () => {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      <TouchableOpacity
-        style={{ position: 'absolute', top: 50, left: 20, zIndex: 1 }}
-        activeOpacity={0.8}
-        onPress={() => router.push('/auth')}
-      >
-        <Image
-          source={require('../../assets/images/volver.png')}
-          style={{ width: 24, height: 24 }}
-        />
-      </TouchableOpacity>
-
       <View style={styles.container}>
-        <View style={styles.formContainer}>
-          {/* Welcome Title */}
-          <Text style={styles.welcomeTitle}>Bienvenido a Dogland</Text>
-
-          {/* Email Input */}
-          <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Correo</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="Ingresa tu correo"
-              placeholderTextColor="#9CA3AF"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              value={email}
-              onChangeText={setEmail}
+        {/* Back Button */}
+        <TouchableOpacity
+          style={styles.backButton}
+          activeOpacity={0.8}
+          onPress={() => router.push('/auth')}
+        >
+          <View style={styles.backButtonInner}>
+            <Image
+              source={require('../../assets/images/volver.png')}
+              style={{ width: 24, height: 24, tintColor: '#374151' }}
             />
           </View>
+        </TouchableOpacity>
 
-          {/* Password Input */}
-          <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Contraseña</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="Ingresa tu contraseña"
-              placeholderTextColor="#9CA3AF"
-              secureTextEntry={true}
-              autoCapitalize="none"
-              value={password}
-              onChangeText={setPassword}
-            />
-          </View>
-
-          {/* Login Button */}
-          <TouchableOpacity
-            style={[styles.loginButton, loading && { opacity: 0.7 }]}
-            activeOpacity={0.8}
-            onPress={handleLogin}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color="#ffffff" />
-            ) : (
-              <Text style={styles.loginButtonText}>Acceder</Text>
-            )}
-          </TouchableOpacity>
-
-          {/* Forgot Password Link */}
-          <TouchableOpacity
-            style={styles.forgotPasswordContainer}
-            onPress={() => router.push('/auth/forgot_password')}
-          >
-            <Text style={styles.forgotPasswordText}>
-              No recuerdas tú contraseña?
-            </Text>
-          </TouchableOpacity>
-
-          {/* Register Link */}
-          <TouchableOpacity style={styles.registerContainer}>
-            <Text
-              style={styles.registerText}
-              onPress={() => router.push('/auth/register')}
-            >
-              Regístrate
-            </Text>
-          </TouchableOpacity>
+        {/* Title */}
+        <View style={styles.titleContainer}>
+          <Text style={styles.welcomeTitle}>Bienvenido a</Text>
+          <Text style={styles.brandTitle}>Dogland</Text>
         </View>
+
+        {/* Dynamic Form */}
+        <View style={styles.formWrapper}>
+          <DynamicForm
+            fields={loginFields}
+            onSubmit={handleLogin}
+            loading={loading}
+            buttonText="Acceder"
+            buttonIcon="log-in-outline"
+          />
+        </View>
+
+        {/* Register Button */}
+        <TouchableOpacity
+          style={styles.registerButton}
+          onPress={() => router.push('/auth/register')}
+          activeOpacity={0.9}
+        >
+          <Text style={styles.registerText}>Regístrate</Text>
+        </TouchableOpacity>
+
+        {/* Forgot Password Link */}
+        <Text
+          style={styles.forgotPasswordText}
+          onPress={() => router.push('/auth/forgot_password')}
+        >
+          ¿No recuerdas tu contraseña?
+        </Text>
       </View>
     </KeyboardAvoidingView>
   );
-}
+};
 
 export default Index;
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: Colors.background,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  formContainer: {
-    width: width * 0.85,
-    maxWidth: 400,
-    paddingHorizontal: 20,
+  titleContainer: {
+    marginBottom: 40,
+    alignItems: 'center',
   },
   welcomeTitle: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#1F2937',
+    fontSize: 22,
+    fontWeight: '500',
+    color: '#6B7280',
     textAlign: 'center',
-    marginBottom: 40,
     letterSpacing: 0.5,
   },
-  inputContainer: {
-    marginBottom: 20,
-  },
-  inputLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#374151',
-    marginBottom: 8,
-  },
-  textInput: {
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    borderRadius: 12,
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    fontSize: 16,
+  brandTitle: {
+    fontSize: 36,
+    fontWeight: '800',
     color: '#1F2937',
-    backgroundColor: '#F9FAFB',
+    textAlign: 'center',
+    letterSpacing: 1,
+    textShadowColor: 'rgba(251, 191, 36, 0.3)',
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 4,
   },
-  loginButton: {
-    backgroundColor: '#fbbf24',
-    paddingVertical: 18,
-    borderRadius: 12,
-    marginTop: 20,
+  backButton: {
+    alignSelf: 'flex-start',
     marginBottom: 20,
+  },
+  backButtonInner: {
+    backgroundColor: '#FFFFFF',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
     shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
+  },
+  formWrapper: {
+    width: width * 0.85,
+    maxWidth: 400,
+  },
+  registerButton: {
+    backgroundColor: '#FEF3C7',
+    paddingVertical: 16,
+    marginTop: 15,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: Colors.primary,
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 4,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 6,
+    borderWidth: 1.5,
+    borderColor: Colors.primary,
+    width: width * 0.85,
+    maxWidth: 400,
   },
-  loginButtonText: {
-    color: '#ffffff',
-    fontSize: 18,
+  registerText: {
+    color: Colors.primary,
+    fontSize: 16,
     fontWeight: '700',
+    letterSpacing: 0.3,
     textAlign: 'center',
-    letterSpacing: 0.5,
-  },
-  forgotPasswordContainer: {
-    alignItems: 'center',
-    marginBottom: 20,
   },
   forgotPasswordText: {
     color: '#6B7280',
     fontSize: 14,
-    textDecorationLine: 'underline',
-  },
-  registerContainer: {
-    alignItems: 'center',
-  },
-  registerText: {
-    color: '#fbbf24',
-    fontSize: 16,
-    fontWeight: '600',
-    textDecorationLine: 'underline',
+    textAlign: 'center',
+    marginTop: 20,
+    marginBottom: 16,
   },
 });

@@ -22,16 +22,16 @@ const { width } = Dimensions.get('window');
 
 // Definimos la interfaz esperada para los datos del error del backend para resolver TS2339
 interface ErrorData {
-    error?: string;
-    message?: string;
+  error?: string;
+  message?: string;
 }
 
 const CreateReportScreen = () => {
   const [descripcion, setDescripcion] = useState('');
   const [titulo, setTitulo] = useState('');
-  
+
   // ESTADO PARA LA URL DE LA IMAGEN
-  const [imageUrl, setImageUrl] = useState(''); 
+  const [imageUrl, setImageUrl] = useState('');
 
   const [especie, setEspecie] = useState(null);
   const [openEspecie, setOpenEspecie] = useState(false);
@@ -98,13 +98,16 @@ const CreateReportScreen = () => {
       !estadoAvistamiento ||
       !ubicacion
     ) {
-      Alert.alert('Error', 'Todos los campos de texto y ubicación son obligatorios.');
+      Alert.alert(
+        'Error',
+        'Todos los campos de texto y ubicación son obligatorios.',
+      );
       return;
     }
-    
+
     if (!imageUrl) {
-        Alert.alert('Error', 'Debe proporcionar la URL de una foto.');
-        return;
+      Alert.alert('Error', 'Debe proporcionar la URL de una foto.');
+      return;
     }
 
     // 2. Data para la API
@@ -130,12 +133,12 @@ const CreateReportScreen = () => {
         Alert.alert('Éxito', 'Reporte creado con éxito.');
         // Limpiar el estado
         setDescripcion('');
-        setImageUrl(''); 
+        setImageUrl('');
         setEspecie(null);
         setEstadoSalud(null);
         setEstadoAvistamiento(null);
         setUbicacion(null);
-        setTitulo(''); 
+        setTitulo('');
       } else {
         Alert.alert('Error', 'Hubo un problema al crear el reporte.');
       }
@@ -144,21 +147,22 @@ const CreateReportScreen = () => {
       const isAxiosError = (err: any): err is AxiosError<ErrorData> => {
         return err && err.isAxiosError === true;
       };
-      
+
       if (isAxiosError(error)) {
         console.error(
           'Error al enviar el reporte (Axios):',
           error.response?.data || error.message,
         );
-        
+
         const errorData = error.response?.data;
         // Buscamos 'error' o 'message' en la respuesta del backend
-        const errorResponse = errorData?.error || errorData?.message; 
-        
-        const errorMessage = typeof errorResponse === 'string' 
-            ? errorResponse 
+        const errorResponse = errorData?.error || errorData?.message;
+
+        const errorMessage =
+          typeof errorResponse === 'string'
+            ? errorResponse
             : 'No se pudo conectar con el servidor o hubo un error desconocido.';
-            
+
         Alert.alert('Error', errorMessage);
       } else {
         console.error('Error inesperado (no-Axios):', error);
@@ -253,7 +257,7 @@ const CreateReportScreen = () => {
               dropDownContainerStyle={styles.dropdownContainerStyle}
             />
           </View>
-          
+
           {/* CASILLERO PARA LA URL DE LA IMAGEN */}
           <View style={[styles.inputContainer, { zIndex: 2000 }]}>
             <Text style={styles.inputLabel}>URL de la Foto (Pegar aquí):</Text>
@@ -265,14 +269,16 @@ const CreateReportScreen = () => {
               keyboardType="url"
               autoCapitalize="none"
             />
-            
+
             {/* Opcional: Previsualización de la Imagen */}
             {imageUrl.startsWith('http') && (
               <View style={styles.imagePreviewContainer}>
-                <Image 
-                    source={{ uri: imageUrl }} 
-                    style={styles.imagePreview} 
-                    onError={() => console.log("Error al cargar la URL de previsualización")}
+                <Image
+                  source={{ uri: imageUrl }}
+                  style={styles.imagePreview}
+                  onError={() =>
+                    console.log('Error al cargar la URL de previsualización')
+                  }
                 />
               </View>
             )}

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -9,8 +9,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   Image,
-  Animated,
-  Easing,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Alert, FilterOptions } from '../../src/types/alert';
@@ -18,13 +16,19 @@ import AlertCard from '../../src/components/alerts/AlertCard';
 import FilterModal from '../../src/components/alerts/FilterModal';
 import { fetchAlerts } from '../../src/api/alerts';
 
+import { Ionicons } from '@expo/vector-icons';
+import FloatingMenu from '../../src/components/UI/FloatingMenu';
+import CustomHeader from '@/src/components/UI/CustomHeader';
+import { Colors } from '@/src/constants/colors';
+
 const CommunityAlertsScreen = () => {
   const router = useRouter();
   const [allAlerts, setAllAlerts] = useState<Alert[]>([]);
   const [filteredAlerts, setFilteredAlerts] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(true);
+  const [menuVisible, setMenuVisible] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
-  const [menuVisible, setMenuVisible] = useState(false); // nuevo estado para menú
+
   const [filters, setFilters] = useState<FilterOptions>({
     type: 'todos',
     riskLevel: 'todos',
@@ -32,42 +36,7 @@ const CommunityAlertsScreen = () => {
     timeRange: 'todas',
   });
 
-  // Animación para el menú flotante
-  const fadeAnim = React.useRef(new Animated.Value(0)).current;
-  const scaleAnim = React.useRef(new Animated.Value(0.8)).current;
-
-  useEffect(() => {
-    if (menuVisible) {
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 200,
-          easing: Easing.out(Easing.ease),
-          useNativeDriver: true,
-        }),
-        Animated.spring(scaleAnim, {
-          toValue: 1,
-          speed: 10,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    } else {
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 0,
-          duration: 150,
-          useNativeDriver: true,
-        }),
-        Animated.timing(scaleAnim, {
-          toValue: 0.8,
-          duration: 150,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    }
-  }, [menuVisible]);
-
-  // Verificar y archivar alertas expiradas
+  // --- Archivar alertas expiradas ---
   const checkAndArchiveExpiredAlerts = (alerts: Alert[]): Alert[] => {
     const now = new Date();
     return alerts.map((alert) => {
@@ -83,7 +52,7 @@ const CommunityAlertsScreen = () => {
     });
   };
 
-  // Aplicar filtros
+  // --- Aplicar filtros ---
   const applyFilters = (
     alerts: Alert[],
     filterOptions: FilterOptions,
@@ -91,13 +60,11 @@ const CommunityAlertsScreen = () => {
     return alerts.filter((alert) => {
       if (filterOptions.type !== 'todos' && alert.tipo !== filterOptions.type)
         return false;
-
       if (
         filterOptions.riskLevel !== 'todos' &&
         alert.nivel_riesgo !== filterOptions.riskLevel
       )
         return false;
-
       if (filterOptions.status === 'activas' && !alert.activa) return false;
       if (filterOptions.status === 'archivadas' && alert.activa) return false;
 
@@ -123,13 +90,12 @@ const CommunityAlertsScreen = () => {
     });
   };
 
-  // Fetch de alertas desde el backend
+  // --- Fetch inicial de alertas ---
   useEffect(() => {
     const getAlerts = async () => {
       try {
         setLoading(true);
         const result = await fetchAlerts();
-
         const updatedAlerts = checkAndArchiveExpiredAlerts(result);
         setAllAlerts(updatedAlerts);
       } catch (error) {
@@ -138,10 +104,10 @@ const CommunityAlertsScreen = () => {
         setLoading(false);
       }
     };
-
     getAlerts();
   }, []);
 
+  // --- Aplicar filtros cada vez que cambian ---
   useEffect(() => {
     const filtered = applyFilters(allAlerts, filters);
     setFilteredAlerts(filtered);
@@ -154,7 +120,7 @@ const CommunityAlertsScreen = () => {
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#fbbf24" />
+        <ActivityIndicator size="large" color={Colors.primary} />
         <Text>Cargando alertas...</Text>
       </View>
     );
@@ -165,33 +131,30 @@ const CommunityAlertsScreen = () => {
       style={{ flex: 1 }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <View style={styles.container}>
-        {/* Header con back + título + filtros */}
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.backButtonHeader}
-            activeOpacity={0.8}
-            onPress={() => router.back()}
-          >
+      {/* ✅ Header fuera del contenedor con padding */}
+      <CustomHeader
+        title={`Alertas Comunitarias (${filteredAlerts.length})`}
+        leftComponent={
+          <TouchableOpacity onPress={() => router.back()}>
             <Image
               source={require('../../assets/images/volver.png')}
-              style={styles.backIconHeader}
+              style={{ width: 24, height: 24, tintColor: '#fff' }}
             />
           </TouchableOpacity>
-
-          <Text style={styles.headerTitle}>
-            Alertas Comunitarias ({filteredAlerts.length})
-          </Text>
-
+        }
+        rightComponent={
           <TouchableOpacity
             style={styles.filterButton}
             onPress={() => setShowFilters(true)}
           >
-            <Text style={styles.filterButtonText}>Filtros</Text>
+            <Ionicons name="filter" size={24} />
           </TouchableOpacity>
-        </View>
+        }
+      />
 
-        {/* Resumen de filtros */}
+      {/* ✅ Todo el contenido va dentro del container */}
+      <View style={styles.container}>
+        {/* Resumen de filtros activos */}
         {(filters.type !== 'todos' ||
           filters.riskLevel !== 'todos' ||
           filters.status !== 'activas' ||
@@ -206,7 +169,7 @@ const CommunityAlertsScreen = () => {
           </View>
         )}
 
-        {/* Lista de alertas */}
+        {/* Lista de Alertas */}
         <FlatList
           data={filteredAlerts}
           renderItem={({ item }) => <AlertCard alert={item} />}
@@ -214,54 +177,25 @@ const CommunityAlertsScreen = () => {
           showsVerticalScrollIndicator={false}
         />
 
+        {/* Modal de filtros */}
         <FilterModal
           visible={showFilters}
           onClose={() => setShowFilters(false)}
           filters={filters}
           onFiltersChange={handleFiltersChange}
         />
-
-        {/* Menú flotante persistente */}
-        {menuVisible && (
-          <Animated.View
-            style={[
-              styles.fabMenuContainer,
-              {
-                opacity: fadeAnim,
-                transform: [{ scale: scaleAnim }],
-              },
-            ]}
-          >
-            <TouchableOpacity
-              style={styles.fabMenuItem}
-              onPress={() => {
-                setMenuVisible(false);
-                router.push('/create-report');
-              }}
-            >
-              <Text style={styles.fabMenuItemText}>Ir a Reportes</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.fabMenuItem, { marginTop: 10 }]}
-              onPress={() => {
-                setMenuVisible(false);
-                router.push('/alerts/create-alert');
-              }}
-            >
-              <Text style={styles.fabMenuItemText}>Crear Nueva Alerta</Text>
-            </TouchableOpacity>
-          </Animated.View>
-        )}
-
-        {/* Botón flotante principal */}
-        <TouchableOpacity
-          style={styles.fab}
-          activeOpacity={0.8}
-          onPress={() => setMenuVisible(!menuVisible)}
-        >
-          <Text style={styles.fabText}>{menuVisible ? '×' : '+'}</Text>
-        </TouchableOpacity>
+        <FloatingMenu
+          visible={menuVisible}
+          onToggle={() => setMenuVisible(!menuVisible)}
+          onNavigateToReports={() => {
+            setMenuVisible(false);
+            router.push('/create-report');
+          }}
+          onNavigateToCreateAlert={() => {
+            setMenuVisible(false);
+            router.push('/alerts/create-alert');
+          }}
+        />
       </View>
     </KeyboardAvoidingView>
   );
@@ -272,55 +206,25 @@ export default CommunityAlertsScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f4f6f9',
+    backgroundColor: Colors.background,
     padding: 16,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#fbbf24',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 8,
-    marginBottom: 16,
-    marginTop: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    elevation: 4,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#fff',
-    flex: 1,
-    textAlign: 'center',
-  },
-  backButtonHeader: {
-    padding: 6,
-  },
-  backIconHeader: {
-    width: 24,
-    height: 24,
-    tintColor: '#fff',
   },
   filterButton: {
     backgroundColor: '#fff',
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#fbbf24',
+    borderColor: Colors.primary,
   },
   filterButtonText: {
-    color: '#d97706',
+    color: Colors.primary,
     fontSize: 14,
     fontWeight: '600',
+    textAlign: 'center',
   },
   activeFilters: {
-    backgroundColor: '#e3f2fd',
+    backgroundColor: Colors.secondary,
     padding: 8,
     borderRadius: 8,
     marginBottom: 12,
@@ -334,53 +238,5 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  fab: {
-    position: 'absolute',
-    bottom: 24,
-    right: 24,
-    backgroundColor: '#fbbf24',
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
-    elevation: 5,
-    zIndex: 1000,
-  },
-  fabText: {
-    color: '#fff',
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-  fabMenuContainer: {
-    position: 'absolute',
-    bottom: 90,
-    right: 24,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 5,
-    zIndex: 999,
-  },
-  fabMenuItem: {
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  fabMenuItemText: {
-    fontSize: 16,
-    color: '#d97706',
-    fontWeight: '600',
   },
 });

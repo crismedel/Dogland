@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import {
   Text,
   View,
-  TouchableOpacity,
   StyleSheet,
   Dimensions,
   KeyboardAvoidingView,
@@ -15,6 +14,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
+import CustomButton from '../../src/components/UI/CustomButton';
 
 const { width } = Dimensions.get('window');
 
@@ -60,26 +60,33 @@ export default function Index() {
     >
       {/* Fondo degradado */}
       <LinearGradient
-        colors={['#b1d5f0', '#c7df9f']}
+        colors={['#F2E2C4', '#F2E2C4']}
         style={StyleSheet.absoluteFillObject}
       />
 
       {/* Botón menú arriba */}
       <View style={styles.menuContainer}>
-        <TouchableOpacity onPress={() => setMenuVisible(!menuVisible)}>
-          <Ionicons name="settings-outline" size={30} color="black" />
-        </TouchableOpacity>
+        <Ionicons
+          name="settings-outline"
+          size={30}
+          color="black"
+          onPress={() => setMenuVisible(!menuVisible)}
+        />
 
         {menuVisible && (
           <View style={styles.dropdownMenu}>
-            <TouchableOpacity disabled style={styles.menuItem}>
-              <Text style={styles.menuTextDisabled}>
-                Configuración de usuario
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
-              <Text style={styles.menuText}>Cerrar sesión</Text>
-            </TouchableOpacity>
+            <CustomButton
+              title="Perfil"
+              onPress={() => router.push('/profile')}
+              variant="outline"
+              style={{ marginVertical: 5 }}
+            />
+            <CustomButton
+              title="Cerrar sesión"
+              onPress={handleLogout}
+              variant="secondary"
+              style={{ marginVertical: 5 }}
+            />
           </View>
         )}
       </View>
@@ -87,18 +94,18 @@ export default function Index() {
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.welcomeText}>Bienvenido/a Victoria</Text>
 
-        {/* Bloque 1 (Texto+Botón izquierda, Imagen derecha) */}
-        <View style={styles.row}>
+        {/* Bloque 1 (imagen derecha) */}
+        <View style={styles.cardRight}>
           <View style={styles.textBlock}>
             <Text style={styles.questionText}>
               ¿Viste un perrito que necesita ayuda?
             </Text>
-            <TouchableOpacity
-              style={styles.linkButton}
+            <CustomButton
+              title="Dar aviso"
               onPress={() => router.push('/alerts')}
-            >
-              <Text style={styles.linkButtonText}>Dar aviso</Text>
-            </TouchableOpacity>
+              variant="primary"
+              icon="alert-circle-outline"
+            />
           </View>
           <Image
             source={{ uri: 'https://placedog.net/300/300?id=5' }}
@@ -106,8 +113,8 @@ export default function Index() {
           />
         </View>
 
-        {/* Bloque 2 (Imagen izquierda, Texto+Botón derecha) */}
-        <View style={styles.row}>
+        {/* Bloque 2 (imagen izquierda) */}
+        <View style={styles.cardLeft}>
           <Image
             source={{ uri: 'https://placedog.net/300/300?id=8' }}
             style={styles.circleImage}
@@ -116,25 +123,25 @@ export default function Index() {
             <Text style={styles.questionText}>
               ¿Te gustaría adoptar un perrito?
             </Text>
-            <TouchableOpacity
-              style={styles.linkButton}
+            <CustomButton
+              title="Quiero adoptar"
               onPress={() => router.push('/adoption')}
-            >
-              <Text style={styles.linkButtonText}>Quiero adoptar</Text>
-            </TouchableOpacity>
+              variant="primary"
+              icon="paw-outline"
+            />
           </View>
         </View>
 
-        {/* Bloque 3 (Texto+Botón izquierda, Imagen derecha) */}
-        <View style={styles.row}>
+        {/* Bloque 3 (imagen derecha) */}
+        <View style={styles.cardRight}>
           <View style={styles.textBlock}>
             <Text style={styles.questionText}>Mapa Comunitario</Text>
-            <TouchableOpacity
-              style={styles.linkButton}
+            <CustomButton
+              title="Ver mapa"
               onPress={() => router.push('/community_maps')}
-            >
-              <Text style={styles.linkButtonText}>Ver Mapa</Text>
-            </TouchableOpacity>
+              variant="primary"
+              icon="map-outline"
+            />
           </View>
           <Image
             source={{ uri: 'https://placedog.net/300/300?id=15' }}
@@ -142,20 +149,20 @@ export default function Index() {
           />
         </View>
 
-        {/* Bloque 4 (Imagen izquierda, Texto+Botón derecha) */}
-        <View style={styles.row}>
+        {/* Bloque 4 (imagen izquierda) */}
+        <View style={styles.cardLeft}>
           <Image
             source={{ uri: 'https://placedog.net/300/300?id=20' }}
             style={styles.circleImage}
           />
           <View style={styles.textBlock}>
             <Text style={styles.questionText}>Avistamientos</Text>
-            <TouchableOpacity
-              style={styles.linkButton}
+            <CustomButton
+              title="Ver avistamientos"
               onPress={() => router.push('/sightings')}
-            >
-              <Text style={styles.linkButtonText}>Ver avistamientos</Text>
-            </TouchableOpacity>
+              variant="primary"
+              icon="eye-outline"
+            />
           </View>
         </View>
 
@@ -163,24 +170,27 @@ export default function Index() {
         <View style={styles.socialContainer}>
           <Text style={styles.socialText}>Puedes buscarnos en :</Text>
           <View style={styles.socialButtons}>
-            <TouchableOpacity
+            <Ionicons
+              name="logo-facebook"
+              size={24}
+              color="black"
               style={styles.socialIcon}
               onPress={() => openSocialMedia('facebook')}
-            >
-              <Ionicons name="logo-facebook" size={24} color="black" />
-            </TouchableOpacity>
-            <TouchableOpacity
+            />
+            <Ionicons
+              name="logo-twitter"
+              size={24}
+              color="black"
               style={styles.socialIcon}
               onPress={() => openSocialMedia('twitter')}
-            >
-              <Ionicons name="logo-twitter" size={24} color="black" />
-            </TouchableOpacity>
-            <TouchableOpacity
+            />
+            <Ionicons
+              name="logo-instagram"
+              size={24}
+              color="black"
               style={styles.socialIcon}
               onPress={() => openSocialMedia('instagram')}
-            >
-              <Ionicons name="logo-instagram" size={24} color="black" />
-            </TouchableOpacity>
+            />
           </View>
         </View>
       </ScrollView>
@@ -189,9 +199,7 @@ export default function Index() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
+  container: { flex: 1 },
   menuContainer: {
     position: 'absolute',
     top: 50,
@@ -204,91 +212,125 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingVertical: 5,
     width: 200,
-    elevation: 5,
-  },
-  menuItem: {
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-  },
-  menuText: {
-    fontSize: 16,
-    color: 'red',
-    fontWeight: '600',
-  },
-  menuTextDisabled: {
-    fontSize: 16,
-    color: '#999',
+    elevation: 6,
   },
   content: {
     paddingTop: 120,
     paddingBottom: 40,
-    gap: 40,
+    gap: 30,
   },
   welcomeText: {
-    fontSize: 26,
-    fontWeight: '700',
-    color: '#000',
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#2c3e50',
     textAlign: 'center',
     marginBottom: 20,
+    textShadowColor: 'rgba(0,0,0,0.15)',
+    textShadowOffset: { width: 1, height: 2 },
+    textShadowRadius: 3,
   },
-  row: {
+
+  /** ---- CARDS ---- */
+  cardRight: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    justifyContent: 'space-between',
+    marginHorizontal: 16,
+    padding: 16,
+    backgroundColor: 'rgba(255,255,255,0.5)', // transparencia
+    borderTopRightRadius: 70, // lado redondeado hacia la imagen
+    borderBottomRightRadius: 70,
+    borderTopLeftRadius: 20,
+    borderBottomLeftRadius: 20,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOpacity: 0.15,
+        shadowRadius: 4,
+        shadowOffset: { width: 0, height: 0 },
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
   },
-  textBlock: {
-    flex: 1,
-    marginHorizontal: 10,
+  cardLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginHorizontal: 16,
+    padding: 16,
+    backgroundColor: 'rgba(255,255,255,0.5)', // transparencia
+    borderTopLeftRadius: 70, // lado imagen
+    borderBottomLeftRadius: 70,
+    borderTopRightRadius: 20,
+    borderBottomRightRadius: 20,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOpacity: 0.15,
+        shadowRadius: 4,
+        shadowOffset: { width: 0, height: 0 },
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
   },
+
+  textBlock: { flex: 1, alignItems: 'center', marginHorizontal: 10 },
+
   questionText: {
     fontSize: 18,
-    fontWeight: '500',
-    marginBottom: 10,
+    fontWeight: '600',
+    marginBottom: 12,
     color: '#000',
-  },
-  circleImage: {
-    width: width * 0.35,
-    height: width * 0.35,
-    borderRadius: (width * 0.35) / 2,
-    marginHorizontal: 10,
-  },
-  linkButton: {
-    backgroundColor: '#f7b500', // amarillo similar al de la imagen
-    paddingVertical: 12,
-    paddingHorizontal: 30,
-    borderRadius: 12, // bordes redondeados
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 3, // sombra en Android
-    shadowColor: '#000', // sombra en iOS
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-  },
-  linkButtonText: {
-    color: '#fff', // texto blanco
-    fontWeight: '700',
-    fontSize: 16,
     textAlign: 'center',
   },
-  socialContainer: {
-    alignItems: 'center',
-    marginTop: 30,
+
+  circleImage: {
+    width: width * 0.28,
+    height: width * 0.28,
+    borderRadius: (width * 0.28) / 2,
+    borderWidth: 3,
+    borderColor: '#fff',
+    marginHorizontal: 10,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+        shadowOffset: { width: 0, height: 1 },
+      },
+      android: {
+        elevation: 6,
+      },
+    }),
   },
+
+  socialContainer: { alignItems: 'center', marginTop: 30 },
   socialText: {
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: '600',
     marginBottom: 10,
+    color: '#2c3e50',
   },
-  socialButtons: {
-    flexDirection: 'row',
-  },
+  socialButtons: { flexDirection: 'row' },
   socialIcon: {
     backgroundColor: '#fff',
     padding: 10,
     borderRadius: 25,
     marginHorizontal: 8,
-    elevation: 2,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOpacity: 0.15,
+        shadowRadius: 5,
+        shadowOffset: { width: 0, height: 2 },
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
   },
 });
