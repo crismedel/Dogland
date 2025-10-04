@@ -10,8 +10,6 @@ import { hashPassword, comparePassword } from '../utils/hash.js';
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET;
 
-let users = [];
-
 // POST /api/auth/register - Registrar nuevo usuario
 router.post('/register', async (req, res) => {
     try {
@@ -23,7 +21,7 @@ router.post('/register', async (req, res) => {
         }
         
         // Verificar si el usuario ya existe
-        const existingUser = users.find(user => user.email === email);
+        const existingUser = await findUserByEmail(email);
         if (existingUser) {
             return res.status(400).json({ success: false, error: 'El usuario ya existe' });
         }
@@ -120,7 +118,6 @@ router.post('/forgot-password', async (req, res) => {
         }
 
         const token = crypto.randomBytes(32).toString('hex');
-        
         const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 60 minutos * 60 segundos * 1000 milisegundos
 
         await pool.query(
