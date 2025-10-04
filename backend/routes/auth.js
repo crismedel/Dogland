@@ -4,8 +4,8 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import pool from '../db/db.js';
 import { UserCreate, findUserByEmail } from '../models/User.js';
-import { blacklistToken, isTokenBlacklisted } from '../middleware/blacklist.js';
-import { authenticateToken } from '../middleware/auth.js';
+import { blacklistToken, isTokenBlacklisted } from '../middlewares/blacklist.js';
+import { authenticateToken } from '../middlewares/auth.js';
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET;
