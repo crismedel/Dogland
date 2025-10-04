@@ -15,8 +15,6 @@ import authRouter from './routes/auth.js';
 import { errorHandler } from './middlewares/errorHandler.js';
 import organizationsRouter from './routes/organizations.js';
 import usersRouter from './routes/users.js';
-import passwordResetRequestRouter from './routes/password-reset-request.js';
-import passwordResetConfirmRouter from './routes/password-reset-confirm.js';
 import animalsRouter from './routes/animals.js';
 import adoptionsRouter from './routes/adoptions.js';
 import regionsRouter from './routes/regions.js';
@@ -42,8 +40,6 @@ app.use('/api', sightingsRouter);
 app.use('/api', alertsRouter);
 app.use('/api', organizationsRouter);
 app.use('/api', usersRouter);
-app.use('/api', passwordResetRequestRouter);
-app.use('/api', passwordResetConfirmRouter);
 
 //manejo de ciudades y regiones para menus
 app.use('/api', regionsRouter);

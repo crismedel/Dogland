@@ -6,6 +6,11 @@ import { UserCreate, findUserByEmail } from '../models/User.js';
 import { blacklistToken, isTokenBlacklisted } from '../middlewares/blacklist.js';
 import { authenticateToken } from '../middlewares/auth.js';
 import { hashPassword, comparePassword } from '../utils/hash.js';
+import { 
+    sendPasswordResetEmail, 
+    sendAccountConfirmationEmail 
+} from '../mail/mail.service.js';
+
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -122,19 +127,94 @@ router.post('/forgot-password', async (req, res) => {
 
         await pool.query(
             `INSERT INTO password_reset (id_usuario, token, expires_at) VALUES ($1, $2, $3)`,
-            [user.id, token, expiresAt]
+            [user.id_usuario, token, expiresAt]
         );
 
-        console.log(`Token de recuperación de contraseña generado para ${email}: ${token}`);
+        await sendPasswordResetEmail(user, token);
+
+        console.log(`Correo de recuperación enviado para ${email}`);
         res.status(200).json({
             success: true,
             message: 'Si el correo electrónico existe, se ha enviado un enlace de restablecimiento de contraseña.',
-            tokenDePrueba: token, 
         });
 
     } catch (error) {
         console.error('Error en el endpoint de forgot-password:', error);
         res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// POST /api/auth/reset-password - Confirmar cambio de contraseña
+router.post('/reset-password', async (req, res) => {
+    const { token, newPassword } = req.body;
+
+    if (!token || !newPassword) {
+        return res.status(400).json({ message: "El token y la nueva contraseña son requeridos." });
+    }
+
+    const client = await pool.connect();
+
+    try {
+        await client.query("BEGIN");
+
+        // Buscar token valido y no usado en la tabla password_reset
+        const resetResult = await client.query(
+            `SELECT id_usuario, expires_at, used
+             FROM password_reset
+             WHERE token = $1 FOR UPDATE`, // FOR UPDATE para evitar race conditions
+            [token]
+        );
+
+        if (resetResult.rows.length === 0) {
+            throw new Error("TOKEN_INVALID");
+        }
+
+        const reset = resetResult.rows[0];
+
+        // Validar expiracion y uso
+        if (reset.used) {
+            throw new Error("TOKEN_USED");
+        }
+        if (new Date(reset.expires_at) < new Date()) {
+            throw new Error("TOKEN_EXPIRED");
+        }
+
+        // Hashear nueva contraseña
+        const hashedPassword = await hashPassword(newPassword);
+
+        // Actualizar contraseña en la tabla de usuarios
+        await client.query(
+            `UPDATE usuario SET password_hash = $1 WHERE id_usuario = $2`,
+            [hashedPassword, reset.id_usuario]
+        );
+
+        // Marcar token como usado para que no se pueda reutilizar
+        await client.query(
+            `UPDATE password_reset SET used = TRUE WHERE token = $1`,
+            [token]
+        );
+
+        await client.query("COMMIT");
+        res.json({ success: true, message: "Contraseña actualizada correctamente." });
+
+    } catch (error) {
+        await client.query("ROLLBACK");
+
+        // Manejo de errores específicos
+        if (error.message === "TOKEN_INVALID") {
+            return res.status(400).json({ success: false, message: "El token proporcionado no es válido." });
+        }
+        if (error.message === "TOKEN_USED") {
+            return res.status(400).json({ success: false, message: "Este enlace de recuperación ya ha sido utilizado." });
+        }
+        if (error.message === "TOKEN_EXPIRED") {
+            return res.status(400).json({ success: false, message: "El enlace de recuperación ha expirado. Por favor, solicita uno nuevo." });
+        }
+
+        console.error("Error en /reset-password:", error);
+        res.status(500).json({ success: false, message: "Error interno del servidor." });
+    } finally {
+        client.release();
     }
 });
 
