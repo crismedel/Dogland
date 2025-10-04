@@ -1,11 +1,11 @@
 import { Router } from 'express';
-import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import pool from '../db/db.js';
 import { UserCreate, findUserByEmail } from '../models/User.js';
 import { blacklistToken, isTokenBlacklisted } from '../middlewares/blacklist.js';
 import { authenticateToken } from '../middlewares/auth.js';
+import { hashPassword, comparePassword } from '../utils/hash.js';
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -29,7 +29,7 @@ router.post('/register', async (req, res) => {
         }
 
         // Hashear la contraseña
-        const hashedPassword = await bcrypt.hash(password_hash, 10);
+        const hashedPassword = await hashPassword(password_hash);
 
         // Crear nuevo usuario
         const newUser = await UserCreate({
@@ -67,7 +67,7 @@ router.post('/login', async (req, res) => {
             return res.status(401).json({ success: false, error: 'Credenciales inválidas' });
         }
 
-        const passwordMatch = await bcrypt.compare(password, user.password_hash);
+        const passwordMatch = await comparePassword(password, user.password_hash);
         if (!passwordMatch) {
             return res.status(401).json({ success: false, error: 'Credenciales inválidas' });
         }
