@@ -2,11 +2,9 @@ import transporter from './mail.config.js';
 import handlebars from 'handlebars';
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
 
-// __dirname en ES Modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Obtener el directorio para los templates
+const __dirname = path.join(process.cwd(), 'mail');
 
 /**
  * Función interna para cargar y compilar una plantilla de correo desde un archivo.
@@ -21,7 +19,9 @@ const compileTemplate = (templateName, data) => {
         const template = handlebars.compile(source);
         return template(data);
     } catch (error) {
-        console.error(`Error al leer o compilar la plantilla de correo: ${templateName}`, error);
+        if (NODE_ENV === 'development') {
+            console.error(`Error al leer o compilar la plantilla de correo: ${templateName}`, error);
+        }
         // Devuelve un HTML simple como fallback en caso de error
         return `<p>Ocurrió un error al generar este correo. Por favor, contacta a soporte.</p>`;
     }
