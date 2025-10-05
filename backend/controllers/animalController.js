@@ -50,6 +50,40 @@ export const getAnimalById = async (req, res, next) => {
   }
 };
 
+// ✅ Obtener animales por organización
+export const getAnimalsByOrganization = async (req, res, next) => {
+  try {
+    const result = await pool.query(
+     `
+     SELECT 
+      a.id_animal,
+      a.nombre_animal,
+      a.edad_animal,
+      r.id_raza,
+      s.id_estado_salud,
+      o.nombre_organizacion,
+      u.nombre_usuario
+     FROM animal a
+     JOIN adopcion ad ON ad.id_animal = a.id_animal
+     JOIN usuario u ON u.id_usuario = ad.id_usuario_rescatista
+     JOIN organizacion o ON o.id_organizacion = u.id_organizacion
+     LEFT JOIN raza r ON r.id_raza = a.id_raza
+     LEFT JOIN estado_salud s ON s.id_estado_salud = a.id_estado_salud
+     WHERE o.id_organizacion = $1;
+    `,
+      [req.params.id],
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ success: false, error: 'Animal(es) no encontrado' });
+    }
+
+    res.json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // ✅ Crear un nuevo animal
 export const createAnimal = async (req, res, next) => {
   try {

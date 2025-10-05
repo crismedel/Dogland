@@ -5,6 +5,7 @@ import {
   createAnimal,
   updateAnimal,
   deleteAnimal,
+  getAnimalsByOrganization,
 } from '../controllers/animalController.js';
 
 import { checkPermissions } from '../middlewares/permissions.js';
@@ -15,6 +16,11 @@ const router = express.Router();
 
 router.get('/animals', getAnimals);
 router.get('/animals/:id', getAnimalById);
+
+router.get('/animals/organization/:orgId',
+  checkPermissions('view_organization_animals'),
+  getAnimalsByOrganization
+)
 
 router.post(
   '/animals',
