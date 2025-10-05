@@ -17,7 +17,7 @@ const router = express.Router();
 router.get('/animals', getAnimals);
 router.get('/animals/:id', getAnimalById);
 
-router.get('/animals/organization/:orgId',
+router.get('/animals/organization/:id',
   checkPermissions('view_organization_animals'),
   getAnimalsByOrganization
 )

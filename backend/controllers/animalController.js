@@ -53,6 +53,17 @@ export const getAnimalById = async (req, res, next) => {
 // ✅ Obtener animales por organización
 export const getAnimalsByOrganization = async (req, res, next) => {
   try {
+    const orgResult = await pool.query(
+      `SELECT id_organizacion FROM usuario WHERE id_usuario = $1`,
+      [req.params.id],
+    );
+
+    if (orgResult.rowCount === 0 || orgResult.rows[0].id_organizacion === null) {
+      return res.status(404).json({ success: false, error: 'Usuario no encontrado o sin organización' });
+    }
+
+    const id_organizacion = orgResult.rows[0].id_organizacion;
+
     const result = await pool.query(
      `
      SELECT 
@@ -71,7 +82,7 @@ export const getAnimalsByOrganization = async (req, res, next) => {
      LEFT JOIN estado_salud s ON s.id_estado_salud = a.id_estado_salud
      WHERE o.id_organizacion = $1;
     `,
-      [req.params.id],
+      [id_organizacion],
     );
 
     if (result.rowCount === 0) {
