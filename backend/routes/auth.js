@@ -10,10 +10,9 @@ import {
     sendPasswordResetEmail, 
     sendAccountConfirmationEmail 
 } from '../mail/mail.service.js';
-
+import { JWT_SECRET } from '../config/env.js';
 
 const router = Router();
-const JWT_SECRET = process.env.JWT_SECRET;
 
 // POST /api/auth/register - Registrar nuevo usuario
 router.post('/register', async (req, res) => {
