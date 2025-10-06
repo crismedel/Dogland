@@ -32,7 +32,7 @@ const PerfilCan = () => {
       <Image source={{ uri: imageUrl as string }} style={styles.image} />
       <Text style={styles.name}>{name}</Text>
       <Text style={styles.breed}>{breed}</Text>
-      <Text style={styles.age}>{age} meses</Text>
+      <Text style={styles.age}>{age} </Text>
 
       {/* Botón de solicitar adopción */}
       <TouchableOpacity
