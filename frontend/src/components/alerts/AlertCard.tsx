@@ -9,6 +9,7 @@ import {
 import { useRouter } from 'expo-router';
 import { Alert, alertStyles, riskStyles } from '../../types/alert';
 import { deleteAlert } from '../../api/alerts';
+import { useNotification } from '@/src/components/notifications/NotificationContext';
 import { Ionicons } from '@expo/vector-icons';
 
 interface AlertCardProps {
@@ -18,6 +19,7 @@ interface AlertCardProps {
 
 const AlertCard: React.FC<AlertCardProps> = ({ alert, onDeleteSuccess }) => {
   const router = useRouter();
+  const { confirm, showSuccess, showError } = useNotification();
   const { card, badge } = alertStyles[alert.tipo];
   const riskStyle = riskStyles[alert.nivel_riesgo];
 
@@ -43,31 +45,29 @@ const AlertCard: React.FC<AlertCardProps> = ({ alert, onDeleteSuccess }) => {
   };
 
   const handleDelete = () => {
-    RNAlert.alert(
-      'Confirmar eliminación',
-      '¿Estás seguro de eliminar esta alerta?',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Eliminar',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              console.log('Eliminando alerta ID:', alert.id_alerta);
-              await deleteAlert(alert.id_alerta);
-              RNAlert.alert('Éxito', 'Alerta eliminada correctamente');
-              if (onDeleteSuccess) onDeleteSuccess(alert.id_alerta);
-            } catch (e: any) {
-              console.error('Error al eliminar alerta:', e);
-              RNAlert.alert(
-                'Error',
-                e?.error || 'No se pudo eliminar la alerta',
-              );
-            }
-          },
-        },
-      ],
-    );
+    confirm({
+      title: 'Confirmar eliminación',
+      message: '¿Estás seguro de eliminar esta alerta?',
+      confirmLabel: 'Eliminar',
+      cancelLabel: 'Cancelar',
+      destructive: true,
+      onConfirm: async () => {
+        try {
+          console.log('Eliminando alerta ID:', alert.id_alerta);
+          await deleteAlert(alert.id_alerta);
+          showSuccess('Éxito', 'Alerta eliminada correctamente');
+          if (onDeleteSuccess) onDeleteSuccess(alert.id_alerta);
+        } catch (e: any) {
+          console.error('Error al eliminar alerta:', e);
+          const message =
+            e?.response?.data?.error ||
+            e?.message ||
+            e?.error ||
+            'No se pudo eliminar la alerta';
+          showError('Error', message);
+        }
+      },
+    });
   };
 
   return (

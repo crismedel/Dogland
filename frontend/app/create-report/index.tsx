@@ -16,6 +16,7 @@ import { Dimensions } from 'react-native';
 import * as Location from 'expo-location';
 import MapView, { Marker } from 'react-native-maps';
 import axios, { AxiosError } from 'axios';
+import { useNotification } from '@/src/components/notifications/NotificationContext';
 import apiClient from '../../src/api/client';
 
 const { width } = Dimensions.get('window');
@@ -29,6 +30,7 @@ interface ErrorData {
 const CreateReportScreen = () => {
   const [descripcion, setDescripcion] = useState('');
   const [titulo, setTitulo] = useState('');
+  const { showError, showSuccess, showInfo, confirm } = useNotification();
 
   // ESTADO PARA LA URL DE LA IMAGEN
   const [imageUrl, setImageUrl] = useState('');
@@ -69,12 +71,12 @@ const CreateReportScreen = () => {
   const obtenerUbicacionActual = async () => {
     let { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permiso Denegado', 'No se puede acceder a la ubicación');
+      showError('Permiso Denegado', 'No se puede acceder a la ubicación.');
       return;
     }
     let location = await Location.getCurrentPositionAsync({});
     setUbicacion(location.coords);
-    Alert.alert('Ubicación Obtenida', 'Se ha usado tu ubicación actual.');
+    showInfo('Ubicación Obtenida', 'Se ha usado tu ubicación actual.');
   };
 
   const handleMapPress = (event: any) => {
@@ -98,7 +100,7 @@ const CreateReportScreen = () => {
       !estadoAvistamiento ||
       !ubicacion
     ) {
-      Alert.alert(
+      showError(
         'Error',
         'Todos los campos de texto y ubicación son obligatorios.',
       );
@@ -106,7 +108,7 @@ const CreateReportScreen = () => {
     }
 
     if (!imageUrl) {
-      Alert.alert('Error', 'Debe proporcionar la URL de una foto.');
+      showError('Error', 'Debe proporcionar la URL de una foto.');
       return;
     }
 
@@ -130,7 +132,7 @@ const CreateReportScreen = () => {
       const response = await apiClient.post('/sightings', reportData);
 
       if (response.status === 201) {
-        Alert.alert('Éxito', 'Reporte creado con éxito.');
+        showSuccess('Éxito', 'Reporte creado con éxito.');
         // Limpiar el estado
         setDescripcion('');
         setImageUrl('');
@@ -140,7 +142,7 @@ const CreateReportScreen = () => {
         setUbicacion(null);
         setTitulo('');
       } else {
-        Alert.alert('Error', 'Hubo un problema al crear el reporte.');
+        showError('Error', 'Hubo un problema al crear el reporte.');
       }
     } catch (error) {
       // Guardia de tipo para tipar el error como AxiosError<ErrorData> y resolver los TS2339 y TS18046
@@ -163,10 +165,10 @@ const CreateReportScreen = () => {
             ? errorResponse
             : 'No se pudo conectar con el servidor o hubo un error desconocido.';
 
-        Alert.alert('Error', errorMessage);
+        showError('Error', errorMessage);
       } else {
         console.error('Error inesperado (no-Axios):', error);
-        Alert.alert('Error', 'Ocurrió un error inesperado.');
+        showError('Error', 'Ocurrió un error inesperado.');
       }
     }
   };

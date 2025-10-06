@@ -4,7 +4,6 @@ import {
   View,
   Text,
   TouchableOpacity,
-  Alert,
   StyleSheet,
   Animated,
 } from 'react-native';
@@ -12,6 +11,7 @@ import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
 import apiClient from '../../src/api/client';
+import { useNotification } from '@/src/components/notifications/NotificationContext';
 import { ReporteMarker } from '../../src/components/report/ReporteMarker';
 import { ReporteDetails } from '../../src/components/report/ReporteDetails';
 
@@ -30,6 +30,7 @@ interface Reporte {
 const CommunityMapScreen = () => {
   const router = useRouter();
   const mapRef = useRef<MapView>(null);
+  const { showError, showSuccess, confirm } = useNotification();
 
   const [location, setLocation] = useState<{
     latitude: number;
@@ -59,7 +60,7 @@ const CommunityMapScreen = () => {
         longitudeDelta: 0.0421,
       });
     } else {
-      Alert.alert('Permiso Denegado', 'No se puede acceder a la ubicación.');
+      showError('Permiso Denegado', 'No se puede acceder a la ubicación.');
     }
   };
 
@@ -68,35 +69,31 @@ const CommunityMapScreen = () => {
       const response = await apiClient.get(`/sightings`);
       setReportes(response.data.data);
     } catch {
-      Alert.alert('Error', 'No se pudieron cargar los reportes');
+      showError('Error', 'No se pudieron cargar los reportes');
     }
   };
 
   const handleDelete = async () => {
     if (!selectedSighting) return;
-    Alert.alert(
-      'Confirmar Eliminación',
-      '¿Estás seguro de que deseas eliminar este reporte?',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Eliminar',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await apiClient.delete(
-                `/sightings/${selectedSighting.id_avistamiento}`,
-              );
-              setSelectedSighting(null);
-              obtenerReportes();
-              Alert.alert('Éxito', 'Reporte eliminado');
-            } catch {
-              Alert.alert('Error', 'No se pudo eliminar el reporte.');
-            }
-          },
-        },
-      ],
-    );
+    confirm({
+      title: 'Confirmar Eliminación',
+      message: '¿Estás seguro de que deseas eliminar este reporte?',
+      confirmLabel: 'Eliminar',
+      cancelLabel: 'Cancelar',
+      destructive: true,
+      onConfirm: async () => {
+        try {
+          await apiClient.delete(
+            `/sightings/${selectedSighting.id_avistamiento}`,
+          );
+          setSelectedSighting(null);
+          obtenerReportes();
+          showSuccess('Éxito', 'Reporte eliminado');
+        } catch {
+          showError('Error', 'No se pudo eliminar el reporte.');
+        }
+      },
+    });
   };
 
   useEffect(() => {

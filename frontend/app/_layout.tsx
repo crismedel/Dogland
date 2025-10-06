@@ -2,6 +2,7 @@ import { Stack, useRouter } from 'expo-router';
 import { View, StyleSheet } from 'react-native';
 import { useEffect, useState } from 'react';
 import { Colors } from '@/src/constants/colors';
+import { NotificationProvider } from '@/src/components/notifications/NotificationContext';
 
 export default function RootLayout() {
   const router = useRouter();
@@ -19,19 +20,26 @@ export default function RootLayout() {
     }
   }, [isReady]);
   return (
-    <View style={styles.background}>
-      <Stack
-        screenOptions={{
-          contentStyle: { backgroundColor: 'transparent' }, // 👈 evita sobreescribir el color
-        }}
-      >
-        <Stack.Screen name="auth" options={{ headerShown: false }} />
-        <Stack.Screen name="home" options={{ headerShown: false }} />
-        <Stack.Screen name="alerts" options={{ headerShown: false }} />
-        <Stack.Screen name="adoption" options={{ headerShown: false }} />
-        <Stack.Screen name="community_maps" options={{ headerShown: false }} />
-      </Stack>
-    </View>
+    <NotificationProvider>
+      <View style={styles.background}>
+        <Stack
+          screenOptions={{
+            contentStyle: { backgroundColor: 'transparent' },
+          }}
+        >
+          <Stack.Screen name="auth" options={{ headerShown: false }} />
+          <Stack.Screen name="home" options={{ headerShown: false }} />
+          <Stack.Screen name="alerts" options={{ headerShown: false }} />
+          <Stack.Screen name="adoption" options={{ headerShown: false }} />
+          <Stack.Screen
+            name="community_maps"
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen name="profile" options={{ headerShown: false }} />
+          <Stack.Screen name="settings" options={{ headerShown: false }} />
+        </Stack>
+      </View>
+    </NotificationProvider>
   );
 }
 

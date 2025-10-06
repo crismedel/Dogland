@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Text,
   View,
@@ -10,8 +10,8 @@ import {
   Alert,
   Image,
   ScrollView,
+  Pressable,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import CustomButton from '../../src/components/UI/CustomButton';
@@ -19,8 +19,11 @@ import CustomButton from '../../src/components/UI/CustomButton';
 const { width } = Dimensions.get('window');
 
 export default function Index() {
-  const [menuVisible, setMenuVisible] = useState(false);
-  const [token, setToken] = useState('mi_token'); // Token simulado
+  const userName = 'Victoria';
+  const userInitial = useMemo(
+    () => (userName?.trim()?.[0] || 'U').toUpperCase(),
+    [userName],
+  );
 
   const openSocialMedia = (platform: string) => {
     const urls = {
@@ -29,28 +32,6 @@ export default function Index() {
       instagram: 'https://instagram.com',
     };
     Linking.openURL(urls[platform as keyof typeof urls]);
-  };
-
-  const handleLogout = () => {
-    Alert.alert('Confirmar', '¿Estás seguro de que quieres cerrar sesión?', [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Cerrar sesión',
-        style: 'destructive',
-        onPress: () => {
-          setToken('');
-          setMenuVisible(false);
-          Alert.alert('Sesión cerrada', 'Has cerrado sesión correctamente.', [
-            {
-              text: 'OK',
-              onPress: () => {
-                router.replace('/auth');
-              },
-            },
-          ]);
-        },
-      },
-    ]);
   };
 
   return (
@@ -64,35 +45,22 @@ export default function Index() {
         style={StyleSheet.absoluteFillObject}
       />
 
-      {/* Botón menú arriba */}
-      <View style={styles.menuContainer}>
-        <Ionicons
-          name="settings-outline"
-          size={30}
-          color="black"
-          onPress={() => setMenuVisible(!menuVisible)}
-        />
-
-        {menuVisible && (
-          <View style={styles.dropdownMenu}>
-            <CustomButton
-              title="Perfil"
-              onPress={() => router.push('/profile')}
-              variant="outline"
-              style={{ marginVertical: 5 }}
-            />
-            <CustomButton
-              title="Cerrar sesión"
-              onPress={handleLogout}
-              variant="secondary"
-              style={{ marginVertical: 5 }}
-            />
-          </View>
-        )}
+      {/* Icono de Perfil (inicial del usuario) */}
+      <View style={styles.topBar}>
+        <Pressable
+          onPress={() => router.push('/profile')}
+          accessibilityLabel="Ir al perfil"
+          style={({ pressed }) => [
+            styles.profileBadge,
+            pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] },
+          ]}
+        >
+          <Text style={styles.profileInitial}>{userInitial}</Text>
+        </Pressable>
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.welcomeText}>Bienvenido/a Victoria</Text>
+        <Text style={styles.welcomeText}>Bienvenido/a {userName}</Text>
 
         {/* Bloque 1 (imagen derecha) */}
         <View style={styles.cardRight}>
@@ -170,27 +138,27 @@ export default function Index() {
         <View style={styles.socialContainer}>
           <Text style={styles.socialText}>Puedes buscarnos en :</Text>
           <View style={styles.socialButtons}>
-            <Ionicons
-              name="logo-facebook"
-              size={24}
-              color="black"
+            <Pressable
               style={styles.socialIcon}
               onPress={() => openSocialMedia('facebook')}
-            />
-            <Ionicons
-              name="logo-twitter"
-              size={24}
-              color="black"
+              accessibilityLabel="Abrir Facebook"
+            >
+              <Text style={styles.socialLetter}>f</Text>
+            </Pressable>
+            <Pressable
               style={styles.socialIcon}
               onPress={() => openSocialMedia('twitter')}
-            />
-            <Ionicons
-              name="logo-instagram"
-              size={24}
-              color="black"
+              accessibilityLabel="Abrir Twitter"
+            >
+              <Text style={styles.socialLetter}>t</Text>
+            </Pressable>
+            <Pressable
               style={styles.socialIcon}
               onPress={() => openSocialMedia('instagram')}
-            />
+              accessibilityLabel="Abrir Instagram"
+            >
+              <Text style={styles.socialLetter}>I</Text>
+            </Pressable>
           </View>
         </View>
       </ScrollView>
@@ -198,22 +166,44 @@ export default function Index() {
   );
 }
 
+const BADGE_SIZE = 42;
+
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  menuContainer: {
+
+  // Top bar con badge de perfil
+  topBar: {
     position: 'absolute',
     top: 50,
-    left: 20,
+    right: 20,
     zIndex: 10,
   },
-  dropdownMenu: {
-    marginTop: 10,
-    backgroundColor: 'white',
-    borderRadius: 8,
-    paddingVertical: 5,
-    width: 200,
-    elevation: 6,
+  profileBadge: {
+    width: BADGE_SIZE,
+    height: BADGE_SIZE,
+    borderRadius: BADGE_SIZE / 2,
+    backgroundColor: '#2c3e50',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#ffffff',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOpacity: 0.15,
+        shadowRadius: 5,
+        shadowOffset: { width: 0, height: 2 },
+      },
+      android: { elevation: 6 },
+    }),
   },
+  profileInitial: {
+    color: '#fff',
+    fontWeight: '800',
+    fontSize: 18,
+    letterSpacing: 0.5,
+  },
+
   content: {
     paddingTop: 120,
     paddingBottom: 40,
@@ -237,8 +227,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginHorizontal: 16,
     padding: 16,
-    backgroundColor: 'rgba(255,255,255,0.5)', // transparencia
-    borderTopRightRadius: 70, // lado redondeado hacia la imagen
+    backgroundColor: 'rgba(255,255,255,0.5)',
+    borderTopRightRadius: 70,
     borderBottomRightRadius: 70,
     borderTopLeftRadius: 20,
     borderBottomLeftRadius: 20,
@@ -249,9 +239,7 @@ const styles = StyleSheet.create({
         shadowRadius: 4,
         shadowOffset: { width: 0, height: 0 },
       },
-      android: {
-        elevation: 4,
-      },
+      android: { elevation: 4 },
     }),
   },
   cardLeft: {
@@ -260,8 +248,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginHorizontal: 16,
     padding: 16,
-    backgroundColor: 'rgba(255,255,255,0.5)', // transparencia
-    borderTopLeftRadius: 70, // lado imagen
+    backgroundColor: 'rgba(255,255,255,0.5)',
+    borderTopLeftRadius: 70,
     borderBottomLeftRadius: 70,
     borderTopRightRadius: 20,
     borderBottomRightRadius: 20,
@@ -272,9 +260,7 @@ const styles = StyleSheet.create({
         shadowRadius: 4,
         shadowOffset: { width: 0, height: 0 },
       },
-      android: {
-        elevation: 4,
-      },
+      android: { elevation: 4 },
     }),
   },
 
@@ -302,9 +288,7 @@ const styles = StyleSheet.create({
         shadowRadius: 4,
         shadowOffset: { width: 0, height: 1 },
       },
-      android: {
-        elevation: 6,
-      },
+      android: { elevation: 6 },
     }),
   },
 
@@ -321,6 +305,8 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 25,
     marginHorizontal: 8,
+    minWidth: 44,
+    alignItems: 'center',
     ...Platform.select({
       ios: {
         shadowColor: '#000',
@@ -328,9 +314,13 @@ const styles = StyleSheet.create({
         shadowRadius: 5,
         shadowOffset: { width: 0, height: 2 },
       },
-      android: {
-        elevation: 4,
-      },
+      android: { elevation: 4 },
     }),
+  },
+  socialLetter: {
+    fontWeight: '800',
+    color: '#2c3e50',
+    fontSize: 16,
+    textTransform: 'uppercase',
   },
 });

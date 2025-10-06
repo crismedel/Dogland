@@ -15,6 +15,7 @@ import { authStorage } from '@/src/utils/authStorage';
 import { isAxiosError } from 'axios';
 import { router } from 'expo-router';
 import DynamicForm, { FormField } from '@/src/components/UI/DynamicForm';
+import { useNotification } from '@/src/components/notifications/NotificationContext';
 import { Colors } from '@/src/constants/colors';
 
 const { width } = Dimensions.get('window');
@@ -44,6 +45,7 @@ const loginFields: FormField[] = [
 // El componente es un React Functional Component (React.FC)
 const Index: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
+  const { showError, showSuccess, showWarning } = useNotification();
 
   const [formValues, setFormValues] = useState({
     email: '',
@@ -51,7 +53,7 @@ const Index: React.FC = () => {
   });
 
   const handleValueChange = (name: string, value: string) => {
-    setFormValues(prev => ({ ...prev, [name]: value }));
+    setFormValues((prev) => ({ ...prev, [name]: value }));
   };
 
   // Adaptar handleLogin para que use el estado 'formValues'
@@ -59,7 +61,7 @@ const Index: React.FC = () => {
     const { email, password } = formValues; // Se obtienen los valores del estado
 
     if (!email || !password) {
-      Alert.alert('Atención', 'Por favor, completa todos los campos.');
+      showWarning('Atención', 'Por favor, completa todos los campos.');
       return;
     }
 
@@ -69,7 +71,7 @@ const Index: React.FC = () => {
       interface LoginResponse {
         success: boolean;
         message: string;
-        token?: string; 
+        token?: string;
       }
 
       const response = await apiClient.post<LoginResponse>('/auth/login', {
@@ -82,12 +84,13 @@ const Index: React.FC = () => {
       if (token) {
         // Guardar el token de forma segura
         await authStorage.saveToken(token);
-        Alert.alert('Éxito', 'Has iniciado sesión correctamente.');
+        showSuccess('Éxito', 'Has iniciado sesión correctamente.');
         // Usar router.replace para navegar al home
         router.replace('/home');
-
       } else {
-        throw new Error(response.data.message || 'No se recibió el token de autenticación.');
+        throw new Error(
+          response.data.message || 'No se recibió el token de autenticación.',
+        );
       }
     } catch (error) {
       // Manejo de errores de API
@@ -107,7 +110,7 @@ const Index: React.FC = () => {
       } else if (error instanceof Error) {
         errorMessage = error.message;
       }
-      Alert.alert('Error de inicio de sesión', errorMessage);
+      showError('Error de inicio de sesión', errorMessage);
     } finally {
       // Se ejecuta siempre
       setLoading(false);

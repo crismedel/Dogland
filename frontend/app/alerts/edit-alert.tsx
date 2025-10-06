@@ -8,7 +8,6 @@ import {
   ScrollView,
   Image,
   TouchableOpacity,
-  Alert as RNAlert,
   Switch,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
@@ -16,6 +15,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { fetchAlertById, updateAlert } from '../../src/api/alerts';
 import type { Alert as AlertTypeFromAPI } from '../../src/types/alert';
+import { useNotification } from '@/src/components/notifications/NotificationContext';
 
 const MOCK_TIPOS_ALERTA = [
   { id: 1, nombre: 'Jauria' },
@@ -35,6 +35,7 @@ const MOCK_NIVELES_RIESGO = [
 export default function EditAlertScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
+  const { showError, showSuccess } = useNotification();
 
   const [titulo, setTitulo] = useState<string>('');
   const [descripcion, setDescripcion] = useState<string>('');
@@ -77,7 +78,7 @@ export default function EditAlertScreen() {
         setFechaExpiracion(alertData.fecha_expiracion || null);
         setActiva(alertData.activa);
       } catch (e) {
-        RNAlert.alert('Error', 'No se pudo cargar la alerta');
+        showError('Error', 'No se pudo cargar la alerta');
         router.back();
       } finally {
         setLoading(false);
@@ -88,10 +89,7 @@ export default function EditAlertScreen() {
 
   const handleSave = async () => {
     if (!tipoAlerta || !nivelRiesgo) {
-      RNAlert.alert(
-        'Error',
-        'Debe seleccionar tipo de alerta y nivel de riesgo',
-      );
+      showError('Error', 'Debe seleccionar tipo de alerta y nivel de riesgo');
       return;
     }
 
@@ -116,13 +114,13 @@ export default function EditAlertScreen() {
 
     try {
       await updateAlert(Number(id), updatedData);
-      RNAlert.alert('Éxito', 'Alerta actualizada');
+      showSuccess('Éxito', 'Alerta actualizada');
       router.back();
     } catch (e: any) {
       console.error('EditAlertScreen: Error al actualizar alerta:', e);
       const message =
         e?.response?.data?.error || 'No se pudo actualizar la alerta';
-      RNAlert.alert('Error', message);
+      showError('Error', message);
     }
   };
   if (loading) {
