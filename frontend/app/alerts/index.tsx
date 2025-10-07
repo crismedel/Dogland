@@ -18,7 +18,7 @@ import FilterModal from '../../src/components/alerts/FilterModal';
 import { fetchAlerts } from '../../src/api/alerts';
 
 import { Ionicons } from '@expo/vector-icons';
-import FloatingMenu from '../../src/components/UI/FloatingMenu';
+import FloatingSpeedDial from '../../src/components/UI/FloatingMenu';
 import CustomHeader from '@/src/components/UI/CustomHeader';
 import { Colors } from '@/src/constants/colors';
 
@@ -249,17 +249,45 @@ const CommunityAlertsScreen = () => {
           onFiltersChange={handleFiltersChange}
         />
 
-        <FloatingMenu
+        <FloatingSpeedDial
           visible={menuVisible}
-          onToggle={() => setMenuVisible(!menuVisible)}
-          onNavigateToReports={() => {
-            setMenuVisible(false);
-            router.push('/create-report');
-          }}
-          onNavigateToCreateAlert={() => {
-            setMenuVisible(false);
-            router.push('/alerts/create-alert');
-          }}
+          onToggle={() => setMenuVisible((v) => !v)}
+          actions={[
+            {
+              key: 'Crear Reporte',
+              label: 'Crear Reporte',
+              onPress: () => {
+                setMenuVisible(false);
+                router.push('/create-report');
+              },
+              icon: (
+                <Ionicons
+                  name="document-text-outline"
+                  size={22}
+                  color={Colors.secondary}
+                />
+              ),
+            },
+            {
+              key: 'Crear Alerta',
+              label: 'Crear Alerta',
+              onPress: () => {
+                setMenuVisible(false);
+                router.push('/alerts/create-alert');
+              },
+              icon: (
+                <Ionicons
+                  name="alert-circle-outline"
+                  size={22}
+                  color={Colors.secondary}
+                />
+              ),
+            },
+          ]}
+          placement="left" // el tooltip aparece a la izquierda de cada acción (como el ejemplo)
+          direction="up" // las acciones se expanden hacia arriba
+          gap={12}
+          persistentTooltips // tooltips visibles siempre cuando está abierto
         />
       </View>
     </KeyboardAvoidingView>

@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
   topBar: {
     position: 'absolute',
     top: 50,
-    right: 20,
+    left: 20,
     zIndex: 10,
   },
   profileBadge: {
