@@ -59,7 +59,10 @@ export const getAdoptionById = async (req, res, next) => {
 // Crear solicitud de adopción
 export const createAdoptionRequest = async (req, res, next) => {
   try {
-    const { id_adopcion, id_usuario } = req.body;
+    const { id_adopcion } = req.body;
+
+    // Obtener el id desde el token
+    const id_usuario = req.user.id;
 
     if (!id_adopcion || !id_usuario) {
       return res.status(400).json({ success: false, error: 'id_adopcion e id_usuario son requeridos' });
@@ -180,7 +183,10 @@ export const getAvailableAdoptions = async (req, res, next) => {
 // Crear nueva publicación de adopción
 export const createAdoptionPost = async (req, res, next) => {
   try {
-    const { id_animal, id_usuario_rescatista, descripcion } = req.body;
+    const { id_animal, descripcion } = req.body;
+
+    // Obtener el id de rescatista del token por seguridad
+    const id_usuario_rescatista = req.user.id;
 
     if (!id_animal || !id_usuario_rescatista) {
       return res.status(400).json({ success: false, error: 'id_animal e id_usuario_rescatista son requeridos' });

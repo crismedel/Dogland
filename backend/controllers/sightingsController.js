@@ -91,7 +91,6 @@ export const getSightingById = async (req, res) => {
 export const createSighting = async (req, res) => {
     try {
         const {
-            id_usuario,
             id_estado_avistamiento,
             id_estado_salud,
             id_especie,
@@ -100,6 +99,9 @@ export const createSighting = async (req, res) => {
             direccion,
             url, // URL de la foto
         } = req.body;
+
+        // Obtener id_usuario del token
+        const id_usuario = req.user.id;
 
         if (!id_usuario || !id_estado_avistamiento || !id_estado_salud || !id_especie) {
             return res.status(400).json({ success: false, error: 'Faltan campos obligatorios' });

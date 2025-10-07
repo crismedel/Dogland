@@ -72,12 +72,14 @@ export const createAlert = async (req, res, next) => {
       descripcion,
       id_tipo_alerta,
       id_nivel_riesgo,
-      id_usuario,
       latitude,
       longitude,
       direccion,
       fecha_expiracion,
     } = req.body;
+
+    // Obtener el id desde el token
+    const id_usuario = req.user.id;
 
     // Verifica que los campos obligatorios estén presentes
     if (
