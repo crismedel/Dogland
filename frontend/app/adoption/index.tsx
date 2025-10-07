@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import AnimalCard from './component/card';
 import { fetchAnimalByOrganization } from '@/src/api/animals';
+import { fetchAdoptions } from '@/src/api/adoptions';
 
 import { authStorage } from '../../src/utils/authStorage';
 import { jwtDecode } from 'jwt-decode';
@@ -66,7 +67,8 @@ const Index = () => {
       // Si no es trabajador, cargar animales mock
       const fetchAnimals = async () => {
         try {
-          setAnimals(mockAnimals);
+          const response = await fetchAdoptions();
+          setAnimals(response);
         } catch (error) {
           console.error('Error fetching animals:', error);
         } finally {
@@ -130,10 +132,12 @@ const Index = () => {
 
       {/* Contenedor de botones en fila */}
       <View style={styles.rowButtons}>
+      {isWorker && (
         <TouchableOpacity style={styles.smallButton} onPress={handleVerPostulaciones}>
           <Text style={styles.solicitarButtonText}>Ver mis Postulaciones</Text>
         </TouchableOpacity>
-
+      )}
+      
         <TouchableOpacity style={styles.smallButton} onPress={handleVerHistorialMedico}>
           <Text style={styles.solicitarButtonText}>Ver Historial Médico</Text>
         </TouchableOpacity>

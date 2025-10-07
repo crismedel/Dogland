@@ -1,12 +1,35 @@
 // app/adoption/perfilCan.tsx
 import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
+
+import { authStorage } from '../../src/utils/authStorage';
+import { jwtDecode } from 'jwt-decode';
 
 const PerfilCan = () => {
   const { id, name, breed, age, imageUrl } = useLocalSearchParams();
   const router = useRouter();
+
+  const [isWorker, setIsWorker] = useState(false);
+
+  const checkUserRole = async () => {
+      try {
+        const token = await authStorage.getToken();
+        if (token) {
+          const decoded: any = jwtDecode(token);
+          setIsWorker(decoded.role === '3');
+        } else {
+          setIsWorker(false);
+        }
+      } catch (error) {
+        console.error('Error decoding token:', error);
+      }
+    };
+
+    useEffect(() => {
+      checkUserRole();
+    }, []);
 
   const handleSolicitarAdopcion = () => {
     router.push({
@@ -21,28 +44,54 @@ const PerfilCan = () => {
     });
   };
 
+  const handleEditarPerfil = () => {
+    router.push({
+      pathname: '/adoption/editPerfilCan',
+      params: {
+        id: id,
+        name: name,
+        breed: breed,
+        age: age,
+      },
+    });
+  };
+
   return (
     <View style={styles.container}>
-      {/* Botón de retroceso */}
-      <TouchableOpacity
-        style={styles.backButton}
-        onPress={() => router.back()}
-      ></TouchableOpacity>
+      {/* Barra superior con botones */}
+      <View style={styles.topBar}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.back()}
+        >
+          <Ionicons name="arrow-back" size={26} color="#333" />
+        </TouchableOpacity>
 
+        <TouchableOpacity
+          style={styles.editButton}
+          onPress={handleEditarPerfil}
+        >
+          <Ionicons name="create-outline" size={24} color="#4A90E2" />
+        </TouchableOpacity>
+      </View>
+
+      {/* Imagen y datos del animal */}
       <Image source={{ uri: imageUrl as string }} style={styles.image} />
       <Text style={styles.name}>{name}</Text>
       <Text style={styles.breed}>{breed}</Text>
       <Text style={styles.age}>{age} meses</Text>
 
       {/* Botón de solicitar adopción */}
-      <TouchableOpacity
-        style={styles.adoptionButton}  
-        onPress={handleSolicitarAdopcion}
-      >
-        <Text style={styles.adoptionButtonText}>Solicitar Adopción</Text>
-        <Ionicons name="heart" size={20} color="#fff" />
-      </TouchableOpacity>
-
+      {isWorker && (
+        <TouchableOpacity
+          style={styles.adoptionButton}
+          onPress={handleSolicitarAdopcion}
+        >
+          <Text style={styles.adoptionButtonText}>Solicitar Adopción</Text>
+          <Ionicons name="heart" size={20} color="#fff" />
+        </TouchableOpacity>
+      )}
+      
       {/* Información adicional del animal */}
       <View style={styles.infoSection}>
         <Text style={styles.sectionTitle}>Información del Animal</Text>
@@ -83,10 +132,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#dbe8d3',
   },
-  backButton: {
-    alignSelf: 'flex-start',
-    padding: 10,
+  topBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
     marginBottom: 10,
+  },
+  backButton: {
+    padding: 10,
+  },
+  editButton: {
+    padding: 10,
   },
   image: {
     width: 250,
