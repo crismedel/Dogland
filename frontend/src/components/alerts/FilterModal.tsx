@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { FilterOptions } from '../../types/alert';
+import { Colors } from '@/src/constants/colors';
 
 interface FilterModalProps {
   visible: boolean;
@@ -173,7 +174,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   cancelButton: {
-    backgroundColor: '#dc3545',
+    backgroundColor: Colors.danger,
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 8,

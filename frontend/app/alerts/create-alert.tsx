@@ -13,6 +13,7 @@ import { useForm, Controller } from 'react-hook-form';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { Picker } from '@react-native-picker/picker';
 import { createAlert } from '../../src/api/alerts';
+import { Colors } from '@/src/constants/colors';
 
 type FormData = {
   titulo: string;
@@ -315,7 +316,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#fbbf24',
+    backgroundColor: Colors.background,
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 8,
@@ -384,7 +385,7 @@ const styles = StyleSheet.create({
   },
 
   inputError: {
-    borderColor: '#dc3545',
+    borderColor: Colors.danger,
     borderWidth: 2,
     backgroundColor: '#fff5f5',
   },
@@ -449,19 +450,19 @@ const styles = StyleSheet.create({
   },
 
   clearLocationButtonText: {
-    color: '#dc3545',
+    color: Colors.danger,
     fontSize: 12,
     textDecorationLine: 'underline',
   },
 
   submitButton: {
-    backgroundColor: '#fbbf24',
+    backgroundColor: Colors.background,
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: 'center',
     marginTop: 20,
     marginBottom: 30,
-    shadowColor: '#d97706',
+    shadowColor: Colors.secondary,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
@@ -475,7 +476,7 @@ const styles = StyleSheet.create({
   },
 
   errorText: {
-    color: '#dc3545',
+    color: Colors.danger,
     fontSize: 12,
     marginBottom: 8,
     marginLeft: 4,

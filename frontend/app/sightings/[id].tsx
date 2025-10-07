@@ -1,48 +1,50 @@
+// app/sightings/[id].tsx
 import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
+  Image,
   ActivityIndicator,
+  StatusBar,
+  Dimensions,
   SafeAreaView,
+  Alert, 
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
-import MapView, { Marker } from 'react-native-maps';
+import { Sighting } from '../../src/types/sighting'; 
 import apiClient from '../../src/api/client';
-interface SightingDetails {
-  id_avistamiento: number;
-  descripcion: string;
-  ubicacion: {
-    latitude: number;
-    longitude: number;
-  };
-  especie: {
-    nombre: string;
-  };
-  estadoSalud: {
-    nombre: string;
-  };
-  fecha_creacion: string;
-}
+import { Ionicons } from '@expo/vector-icons';
+import { Colors } from '../../src/constants/colors';
 
-const SightingDetailsScreen = () => {
-  // El ID que se recibe del Link debe ser el id_avistamiento
+const { width } = Dimensions.get('window');
+
+const ImageFallback = () => (
+    <View style={[styles.headerImage, styles.noImagePlaceholder]}>
+        <Ionicons name="image-outline" size={60} color={Colors.lightText} />
+        <Text style={styles.noImageTextLarge}>Sin Imagen Reportada</Text>
+    </View>
+);
+
+const SightingDetailScreen = () => {
   const { id } = useLocalSearchParams();
-  const [sighting, setSighting] = useState<SightingDetails | null>(null);
+  const [sighting, setSighting] = useState<Sighting | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchSightingDetails = async () => {
       try {
-        if (!id) return;
-        // ✨ CORRECCIÓN 1: La ruta del API ahora utiliza el id_avistamiento
+        if (!id) {
+            setError('ID de avistamiento no proporcionado.');
+            return;
+        }
         const response = await apiClient.get(`/sightings/${id}`);
-        // ✨ CORRECCIÓN 2: Accede a 'data' para obtener el avistamiento
         setSighting(response.data.data);
       } catch (err) {
         console.error('Error fetching sighting details:', err);
+        Alert.alert('Error', 'No se pudo cargar la información del avistamiento.');
         setError('No se pudo cargar la información del avistamiento.');
       } finally {
         setLoading(false);
@@ -55,134 +57,189 @@ const SightingDetailsScreen = () => {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#fbbf24" />
+        <ActivityIndicator size="large" color={Colors.accent} />
         <Text style={styles.text}>Cargando detalles...</Text>
       </View>
     );
   }
 
-  if (error) {
+  if (error || !sighting) {
     return (
       <View style={styles.centered}>
-        <Text style={styles.errorText}>{error}</Text>
+        <Text style={styles.errorText}>{error || 'Avistamiento no encontrado.'}</Text>
       </View>
     );
   }
 
-  if (!sighting) {
-    return (
-      <View style={styles.centered}>
-        <Text style={styles.text}>Avistamiento no encontrado.</Text>
+  const primaryImageUrl = sighting.fotos_url && sighting.fotos_url.length > 0
+    ? sighting.fotos_url[0]
+    : null;
+  
+  const showPlaceholder = !primaryImageUrl;
+
+  // ⭐️ CORRECCIONES 3, 4, 5: Definición explícita de tipos para las props (icon, label, value)
+  const DetailRow = ({ 
+    icon, 
+    label, 
+    value 
+  }: { 
+    icon: keyof typeof Ionicons.glyphMap | string; // Tipo para el nombre del ícono de Ionicons
+    label: string; 
+    value: string; 
+  }) => (
+    <View style={styles.detailRow}>
+      {/* Usamos 'as any' para el nombre del ícono para evitar un error de tipo complejo con la librería */}
+      <Ionicons name={icon as any} size={20} color={Colors.darkGray} style={styles.detailIcon} />
+      <View>
+        <Text style={styles.label}>{label}</Text>
+        <Text style={styles.value}>{value}</Text>
       </View>
-    );
-  }
+    </View>
+  );
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollViewContent}>
-        <Text style={styles.title}>Detalles del Avistamiento</Text>
+    <View style={styles.fullScreenContainer}>
+      <StatusBar barStyle="light-content" backgroundColor={Colors.text} /> 
+      
+      {/* 📸 SECCIÓN DE LA IMAGEN */}
+      <View style={styles.imageHeaderContainer}>
+        {showPlaceholder ? (
+          <ImageFallback />
+        ) : (
+          <Image
+            source={{ uri: primaryImageUrl }}
+            style={styles.headerImage}
+          />
+        )}
+      </View>
 
-        <View style={styles.mapContainer}>
-          <MapView
-            style={styles.map}
-            initialRegion={{
-              latitude: sighting.ubicacion?.latitude || -38.7369,
-              longitude: sighting.ubicacion?.longitude || -72.5994,
-              latitudeDelta: 0.005,
-              longitudeDelta: 0.005,
-            }}
-          >
-            {sighting.ubicacion && (
-              <Marker
-                coordinate={sighting.ubicacion}
-                title="Ubicación del Avistamiento"
-              />
-            )}
-          </MapView>
-        </View>
+      <SafeAreaView style={styles.detailsScrollViewWrapper}>
+        <ScrollView contentContainerStyle={styles.detailsScrollViewContent}>
+          
+          <Text style={styles.mainTitle}>{sighting.descripcion}</Text>
+          
+          <View style={styles.infoCard}>
+            <Text style={styles.sectionTitle}>Información Clave</Text>
+            
+            <DetailRow
+              icon="calendar-outline"
+              label="Fecha de Creación"
+              value={new Date(sighting.fecha_creacion).toLocaleDateString()}
+            />
+            
+            <DetailRow
+              icon="bug-outline"
+              label="Especie"
+              value={sighting.especie?.nombre || `ID: ${sighting.id_especie || 'N/A'}`}
+            />
 
-        <View style={styles.detailsContainer}>
-          <View style={styles.infoRow}>
-            <Text style={styles.label}>Descripción:</Text>
-            <Text style={styles.value}>{sighting.descripcion}</Text>
+            <DetailRow
+              icon="medkit-outline"
+              label="Estado de Salud"
+              value={sighting.estadoSalud?.nombre || `ID: ${sighting.id_estado_salud || 'N/A'}`}
+            />
           </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.label}>Especie:</Text>
-            {/* ✨ CORRECCIÓN 3: Muestra el nombre de la especie */}
-            <Text style={styles.value}>
-              {sighting.especie?.nombre || 'Desconocida'}
+
+          <View style={styles.infoCard}>
+            <Text style={styles.sectionTitle}>Ubicación</Text>
+            <DetailRow
+              icon="location-outline"
+              label="Dirección Reportada"
+              value={sighting.direccion || 'Dirección no especificada'}
+            />
+            <DetailRow
+              icon="navigate-circle-outline"
+              label="Coordenadas"
+              value={`Lat: ${sighting.latitude || 'N/A'}, Lon: ${sighting.longitude || 'N/A'}`}
+            />
+          </View>
+
+          <View style={styles.infoCard}>
+            <Text style={styles.sectionTitle}>Descripción Completa</Text>
+            <Text style={styles.fullDescriptionText}>
+              {sighting.descripcion || 'No hay una descripción extendida para este avistamiento.'}
             </Text>
           </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.label}>Estado de Salud:</Text>
-            {/* ✨ CORRECCIÓN 4: Muestra el nombre del estado de salud */}
-            <Text style={styles.value}>
-              {sighting.estadoSalud?.nombre || 'Desconocido'}
-            </Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.label}>Fecha:</Text>
-            {/* Muestra la fecha tal como viene */}
-            <Text style={styles.value}>{sighting.fecha_creacion}</Text>
-          </View>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+
+        </ScrollView>
+      </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f0f4f7' },
-  scrollViewContent: { paddingBottom: 20 },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  text: { fontSize: 16, color: '#6b7280', marginTop: 10 },
-  errorText: { fontSize: 16, color: 'red', textAlign: 'center' },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#1f2937',
-    textAlign: 'center',
-    marginVertical: 20,
+  fullScreenContainer: { 
+    flex: 1, 
+    backgroundColor: Colors.background, 
   },
-  mapContainer: {
-    width: '90%',
-    height: 300,
-    alignSelf: 'center',
-    marginBottom: 20,
-    borderRadius: 12,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
-    elevation: 8,
+  centered: { 
+    flex: 1, 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    backgroundColor: Colors.lightText,
   },
-  map: { ...StyleSheet.absoluteFillObject },
-  detailsContainer: {
-    backgroundColor: '#ffffff',
-    marginHorizontal: 20,
-    padding: 20,
+  text: { fontSize: 16, color: Colors.darkGray, marginTop: 10 },
+  errorText: { fontSize: 18, color: Colors.danger, textAlign: 'center', fontWeight: 'bold' },
+
+  // --- Header/Image Styles ---
+  imageHeaderContainer: {
+    width: width,
+    height: width * 0.6, 
+    backgroundColor: Colors.text, 
+    marginBottom: -20, 
+  },
+  headerImage: {
+    width: '100%',
+    height: '100%',
+  },
+  noImagePlaceholder: { 
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: Colors.text, 
+  },
+  noImageTextLarge: {
+    color: Colors.lightText,
+    fontSize: 18,
+    marginTop: 10,
+    fontWeight: '500',
+  },
+  
+  // --- Details Content Styles ---
+  detailsScrollViewWrapper: { flex: 1 },
+  detailsScrollViewContent: { paddingHorizontal: 20, paddingTop: 0, paddingBottom: 40 },
+  mainTitle: { 
+    fontSize: 26, 
+    fontWeight: '800', 
+    color: Colors.text, 
+    marginTop: 20, 
+    marginBottom: 20, 
+    textAlign: 'left' 
+  },
+  infoCard: {
+    backgroundColor: Colors.lightText, 
+    padding: 15,
     borderRadius: 12,
+    marginBottom: 15,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 3.84,
-    elevation: 5,
+    elevation: 3,
   },
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    marginBottom: 10,
-    flexWrap: 'wrap',
+  sectionTitle: { 
+    fontSize: 18, 
+    fontWeight: '700', 
+    color: Colors.text, 
+    marginBottom: 15, 
+    borderBottomWidth: 1, 
+    borderBottomColor: Colors.gray, 
+    paddingBottom: 8, 
   },
-  label: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#4b5563',
-    minWidth: 120,
-    marginRight: 10,
-  },
-  value: { fontSize: 16, color: '#374151', flexShrink: 1 },
+  detailRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  detailIcon: { marginRight: 15 },
+  label: { fontSize: 14, fontWeight: '600', color: Colors.darkGray },
+  value: { fontSize: 16, color: Colors.text, marginTop: 2, flexShrink: 1 },
+  fullDescriptionText: { fontSize: 16, color: Colors.text, lineHeight: 24 },
 });
 
-export default SightingDetailsScreen;
+export default SightingDetailScreen;

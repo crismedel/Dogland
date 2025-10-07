@@ -15,6 +15,7 @@ import DynamicForm, { FormField } from '@/src/components/UI/DynamicForm';
 import apiClient from '@/src/api/client';
 import { useNotification } from '@/src/components/notifications/NotificationContext';
 import { Region, Ciudad } from '@/src/types/location';
+import { Colors } from '@/src/constants/colors';
 
 const { width } = Dimensions.get('window');
 
@@ -319,7 +320,7 @@ export default function Register() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: Colors.lightText,
   },
   backButton: {
     position: 'absolute',
@@ -349,7 +350,7 @@ const styles = StyleSheet.create({
     marginTop: 15,
   },
   loginLinkText: {
-    color: '#fbbf24',
+    color: Colors.background,
     fontSize: 16,
     fontWeight: '600',
     textDecorationLine: 'underline',

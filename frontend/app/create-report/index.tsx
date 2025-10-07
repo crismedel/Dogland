@@ -18,6 +18,7 @@ import MapView, { Marker } from 'react-native-maps';
 import axios, { AxiosError } from 'axios';
 import { useNotification } from '@/src/components/notifications/NotificationContext';
 import apiClient from '../../src/api/client';
+import { Colors } from '@/src/constants/colors';
 
 const { width } = Dimensions.get('window');
 
@@ -354,7 +355,7 @@ const CreateReportScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: Colors.lightText,
   },
   scrollContainer: {
     flexGrow: 1,
@@ -401,12 +402,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     fontSize: 16,
     color: '#1F2937',
-    backgroundColor: '#ffffff',
+    backgroundColor: Colors.lightText,
     justifyContent: 'center',
     alignItems: 'center',
   },
   dropdownStyle: {
-    backgroundColor: '#ffffff',
+    backgroundColor: Colors.lightText,
     borderColor: '#D1D5DB',
     borderRadius: 12,
   },
@@ -439,7 +440,7 @@ const styles = StyleSheet.create({
     resizeMode: 'cover',
   },
   button: {
-    backgroundColor: '#fbbf24',
+    backgroundColor: Colors.background,
     paddingVertical: 16,
     borderRadius: 12,
     marginTop: 10,
@@ -450,7 +451,7 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   buttonText: {
-    color: '#ffffff',
+    color: Colors.lightText,
     fontSize: 18,
     fontWeight: '700',
     textAlign: 'center',

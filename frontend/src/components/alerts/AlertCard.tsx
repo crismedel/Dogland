@@ -11,6 +11,7 @@ import { Alert, alertStyles, riskStyles } from '../../types/alert';
 import { deleteAlert } from '../../api/alerts';
 import { useNotification } from '@/src/components/notifications/NotificationContext';
 import { Ionicons } from '@expo/vector-icons';
+import { Colors } from '@/src/constants/colors';
 
 interface AlertCardProps {
   alert: Alert;
@@ -86,7 +87,7 @@ const AlertCard: React.FC<AlertCardProps> = ({ alert, onDeleteSuccess }) => {
             </TouchableOpacity>
           )}
           <TouchableOpacity onPress={handleDelete} style={styles.iconButton}>
-            <Ionicons name="trash-outline" size={20} color="#dc3545" />
+            <Ionicons name="trash-outline" size={20} color={Colors.danger} />
           </TouchableOpacity>
         </View>
       </View>

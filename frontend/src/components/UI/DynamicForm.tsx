@@ -50,7 +50,9 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
   onValueChange,
   loadingFields = {},
 }) => {
-  const [showDatePickerFor, setShowDatePickerFor] = useState<string | null>(null);
+  const [showDatePickerFor, setShowDatePickerFor] = useState<string | null>(
+    null,
+  );
 
   const handleSubmit = () => {
     onSubmit(values);
@@ -65,19 +67,38 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
           return (
             <View key={field.name} style={styles.inputContainer}>
               <Text style={styles.inputLabel}>{field.label}</Text>
-              <View style={[styles.inputWrapper, isLoadingField && styles.disabled]}>
-                {field.icon && <Ionicons name={field.icon} size={20} color="#9CA3AF" style={{ marginRight: 8 }} />}
+              <View
+                style={[styles.inputWrapper, isLoadingField && styles.disabled]}
+              >
+                {field.icon && (
+                  <Ionicons
+                    name={field.icon}
+                    size={20}
+                    color="#9CA3AF"
+                    style={{ marginRight: 8 }}
+                  />
+                )}
                 {isLoadingField ? (
-                  <ActivityIndicator size="small" color="#fbbf24" style={{ flex: 1 }} />
+                  <ActivityIndicator
+                    size="small"
+                    color={Colors.background}
+                    style={{ flex: 1 }}
+                  />
                 ) : (
                   <Picker
                     selectedValue={values[field.name]}
-                    onValueChange={(itemValue) => onValueChange(field.name, itemValue)}
+                    onValueChange={(itemValue) =>
+                      onValueChange(field.name, itemValue)
+                    }
                     style={styles.picker}
                     enabled={!isLoadingField}
                   >
                     {field.options?.map((opt) => (
-                      <Picker.Item key={String(opt.value)} label={opt.label} value={opt.value} />
+                      <Picker.Item
+                        key={String(opt.value)}
+                        label={opt.label}
+                        value={opt.value}
+                      />
                     ))}
                   </Picker>
                 )}
@@ -90,17 +111,32 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
           return (
             <View key={field.name} style={styles.inputContainer}>
               <Text style={styles.inputLabel}>{field.label}</Text>
-              <TouchableOpacity onPress={() => setShowDatePickerFor(field.name)}>
+              <TouchableOpacity
+                onPress={() => setShowDatePickerFor(field.name)}
+              >
                 <View style={styles.inputWrapper}>
-                  {field.icon && <Ionicons name={field.icon} size={20} color="#9CA3AF" style={{ marginRight: 8 }} />}
+                  {field.icon && (
+                    <Ionicons
+                      name={field.icon}
+                      size={20}
+                      color="#9CA3AF"
+                      style={{ marginRight: 8 }}
+                    />
+                  )}
                   <Text style={styles.textInput}>
-                    {values[field.name] ? new Date(values[field.name]).toLocaleDateString('es-CL') : field.placeholder}
+                    {values[field.name]
+                      ? new Date(values[field.name]).toLocaleDateString('es-CL')
+                      : field.placeholder}
                   </Text>
                 </View>
               </TouchableOpacity>
               {showDatePickerFor === field.name && (
                 <DateTimePicker
-                  value={values[field.name] ? new Date(values[field.name]) : new Date()}
+                  value={
+                    values[field.name]
+                      ? new Date(values[field.name])
+                      : new Date()
+                  }
                   mode="date"
                   display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                   onChange={(event, selectedDate) => {
@@ -119,7 +155,14 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
           <View key={field.name} style={styles.inputContainer}>
             <Text style={styles.inputLabel}>{field.label}</Text>
             <View style={styles.inputWrapper}>
-              {field.icon && <Ionicons name={field.icon} size={20} color="#9CA3AF" style={{ marginRight: 8 }} />}
+              {field.icon && (
+                <Ionicons
+                  name={field.icon}
+                  size={20}
+                  color="#9CA3AF"
+                  style={{ marginRight: 8 }}
+                />
+              )}
               <TextInput
                 style={[
                   styles.textInput,
@@ -179,8 +222,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#FFF',
     borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderWidth: 1.5,
+    borderColor: Colors.secondary,
     paddingHorizontal: 12,
     minHeight: 50,
   },

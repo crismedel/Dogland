@@ -1,11 +1,13 @@
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useRouter, usePathname } from 'expo-router';
 import { View, StyleSheet } from 'react-native';
 import { useEffect, useState } from 'react';
 import { Colors } from '@/src/constants/colors';
 import { NotificationProvider } from '@/src/components/notifications/NotificationContext';
+import BottomNavBar from '@/src/components/UI/TabBar'; // <- tu navbar inferior
 
 export default function RootLayout() {
   const router = useRouter();
+  const pathname = usePathname();
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
@@ -19,13 +21,14 @@ export default function RootLayout() {
       router.replace('/auth');
     }
   }, [isReady]);
+
+  const showTabBar = pathname && !pathname.startsWith('/auth');
+
   return (
     <NotificationProvider>
       <View style={styles.background}>
         <Stack
-          screenOptions={{
-            contentStyle: { backgroundColor: 'transparent' },
-          }}
+          screenOptions={{ contentStyle: { backgroundColor: 'transparent' } }}
         >
           <Stack.Screen name="auth" options={{ headerShown: false }} />
           <Stack.Screen name="home" options={{ headerShown: false }} />
@@ -38,6 +41,8 @@ export default function RootLayout() {
           <Stack.Screen name="profile" options={{ headerShown: false }} />
           <Stack.Screen name="settings" options={{ headerShown: false }} />
         </Stack>
+
+        {showTabBar && <BottomNavBar />}
       </View>
     </NotificationProvider>
   );

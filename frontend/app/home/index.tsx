@@ -12,9 +12,11 @@ import {
   ScrollView,
   Pressable,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import CustomButton from '../../src/components/UI/CustomButton';
+import { Colors } from '@/src/constants/colors';
 
 const { width } = Dimensions.get('window');
 
@@ -138,27 +140,27 @@ export default function Index() {
         <View style={styles.socialContainer}>
           <Text style={styles.socialText}>Puedes buscarnos en :</Text>
           <View style={styles.socialButtons}>
-            <Pressable
+            <Ionicons
+              name="logo-facebook"
+              size={24}
+              color="black"
               style={styles.socialIcon}
               onPress={() => openSocialMedia('facebook')}
-              accessibilityLabel="Abrir Facebook"
-            >
-              <Text style={styles.socialLetter}>f</Text>
-            </Pressable>
-            <Pressable
+            />
+            <Ionicons
+              name="logo-twitter"
+              size={24}
+              color="black"
               style={styles.socialIcon}
               onPress={() => openSocialMedia('twitter')}
-              accessibilityLabel="Abrir Twitter"
-            >
-              <Text style={styles.socialLetter}>t</Text>
-            </Pressable>
-            <Pressable
+            />
+            <Ionicons
+              name="logo-instagram"
+              size={24}
+              color="black"
               style={styles.socialIcon}
               onPress={() => openSocialMedia('instagram')}
-              accessibilityLabel="Abrir Instagram"
-            >
-              <Text style={styles.socialLetter}>I</Text>
-            </Pressable>
+            />
           </View>
         </View>
       </ScrollView>
@@ -186,7 +188,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: '#ffffff',
+    borderColor: Colors.lightText,
     ...Platform.select({
       ios: {
         shadowColor: '#000',
