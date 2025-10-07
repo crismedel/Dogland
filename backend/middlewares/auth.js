@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import { isTokenBlacklisted } from './blacklist.js';
+import { JWT_SECRET } from '../config/env.js';
 
 export const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
@@ -14,7 +15,7 @@ export const authenticateToken = (req, res, next) => {
     return res.status(401).json({ error: 'Token invalidado' });
   }
 
-  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+  jwt.verify(token, JWT_SECRET, (err, user) => {
     if (err) {
       return res.status(403).json({ error: 'Token no válido' });
     }

@@ -6,7 +6,10 @@ const router = express.Router();
 
 // GET /api/users - Listar todos los usuarios
 // TODO: arreglar permisos
-router.get('/users', authenticateToken, authorizeRol(['Usuario']), async (req, res) => {
+router.get('/users',
+  authenticateToken,
+  authorizeRol(['Admin']),
+  async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT u.id_usuario, u.nombre_usuario, u.apellido_paterno, u.apellido_materno,
@@ -27,7 +30,10 @@ router.get('/users', authenticateToken, authorizeRol(['Usuario']), async (req, r
 });
 
 // GET /api/users/:id - Obtener usuario por ID
-router.get('/users/:id', async (req, res) => {
+router.get('/users/:id',
+  authenticateToken,
+  authorizeRol(['Admin']),
+  async (req, res) => {
   try {
     const result = await pool.query(
       `
@@ -57,7 +63,10 @@ router.get('/users/:id', async (req, res) => {
 });
 
 // POST /api/users - Crear usuario
-router.post('/users', authenticateToken, authorizeRol(['admin', 'trabajador']), async (req, res) => {
+router.post('/users',
+  authenticateToken,
+  authorizeRol(['Admin']),
+  async (req, res) => {
   try {
     const {
       nombre_usuario,
@@ -117,7 +126,10 @@ router.post('/users', authenticateToken, authorizeRol(['admin', 'trabajador']), 
 });
 
 // PUT /api/users/:id - Actualizar usuario
-router.put('/users/:id', async (req, res) => {
+router.put('/users/:id',
+  authenticateToken,
+  authorizeRol(['Admin']),
+  async (req, res) => {
   try {
     const {
       nombre_usuario,
@@ -173,7 +185,10 @@ router.put('/users/:id', async (req, res) => {
 });
 
 // DELETE /api/users/:id - Eliminar usuario
-router.delete('/users/:id', async (req, res) => {
+router.delete('/users/:id',
+  authenticateToken,
+  authorizeRol(['Admin']),
+  async (req, res) => {
   try {
     const result = await pool.query(
       'DELETE FROM usuario WHERE id_usuario = $1 RETURNING *',
@@ -196,14 +211,14 @@ router.delete('/users/:id', async (req, res) => {
 });
 
 router.post('/users/savePushToken', async (req, res) => {
-  const { userId, token } = req.body;
-  if (!userId || !token) {
+  const { id, token } = req.body;
+  if (!id || !token) {
     return res.status(400).json({ success: false, error: 'Faltan datos' });
   }
   try {
     await pool.query(
       'UPDATE usuario SET push_token = $1 WHERE id_usuario = $2',
-      [token, userId],
+      [token, id],
     );
     res.json({ success: true });
   } catch (error) {
