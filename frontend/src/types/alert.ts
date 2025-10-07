@@ -1,3 +1,5 @@
+import { Colors } from '../constants/colors';
+
 // Tipos fijos
 export type AlertType =
   | 'Jauria'
@@ -63,8 +65,8 @@ export const riskStyles: Record<
   RiskLevel,
   { color: string; backgroundColor: string }
 > = {
-  Bajo: { color: '#28a745', backgroundColor: '#d4edda' },
-  Medio: { color: '#ffc107', backgroundColor: '#fff3cd' },
-  Alto: { color: '#fd9800ff', backgroundColor: '#f8d7da' },
-  Crítico: { color: '#dc3545', backgroundColor: '#f8d7da' },
+  Bajo: { color: Colors.success, backgroundColor: '#d4edda' },
+  Medio: { color: Colors.warning, backgroundColor: '#fff3cd' },
+  Alto: { color: Colors.secondary, backgroundColor: '#f8d7da' },
+  Crítico: { color: Colors.danger, backgroundColor: '#f8d7da' },
 };

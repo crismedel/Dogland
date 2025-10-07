@@ -15,6 +15,7 @@ import CustomHeader from '../../src/components/UI/CustomHeader';
 import { useNotification } from '@/src/components/notifications/NotificationContext';
 import { fetchUsers } from '../../src/api/users';
 import { User } from '../../src/types/user';
+import { Colors } from '@/src/constants/colors';
 
 const AVATAR = 'https://placehold.co/200x200/png?text=Avatar';
 
@@ -298,7 +299,7 @@ const styles = StyleSheet.create({
   errorText: { color: '#CC5803', fontSize: 14 },
 
   profileCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.lightText,
     borderRadius: 16,
     paddingVertical: 16,
     paddingHorizontal: 16,
@@ -341,7 +342,7 @@ const styles = StyleSheet.create({
   statsGrid: { flexDirection: 'row', gap: 12, marginTop: 16 },
   statCard: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.lightText,
     borderRadius: 12,
     paddingVertical: 12,
     alignItems: 'center',
@@ -380,7 +381,7 @@ const styles = StyleSheet.create({
   infoValueWrap: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   infoValue: { color: '#1F2937', fontSize: 14, flexShrink: 1 },
   copyPill: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.lightText,
     borderWidth: 1,
     borderColor: '#F2D8A7',
     paddingHorizontal: 10,

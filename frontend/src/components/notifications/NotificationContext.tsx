@@ -5,9 +5,20 @@ import React, {
   useMemo,
   useState,
 } from 'react';
-import { Animated, Easing } from 'react-native';
+import {
+  Animated,
+  Easing,
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Platform,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type ToastType = 'success' | 'error' | 'info' | 'warning';
+type ToastPosition = 'top' | 'bottom';
+
 type ToastOptions = {
   type?: ToastType;
   title: string;
@@ -15,6 +26,9 @@ type ToastOptions = {
   durationMs?: number; // por defecto 3000
   actionLabel?: string;
   onActionPress?: () => void;
+  position?: ToastPosition; // NUEVO: 'top' | 'bottom' (default 'top')
+  underHeader?: boolean; // NUEVO: si 'top', coloca bajo el header
+  tabBarHeight?: number; // NUEVO: si 'bottom', suma altura del TabBar
 };
 
 type ConfirmOptions = {
@@ -29,10 +43,26 @@ type ConfirmOptions = {
 
 type NotificationContextType = {
   showToast: (opts: ToastOptions) => void;
-  showSuccess: (title: string, message?: string) => void;
-  showError: (title: string, message?: string) => void;
-  showInfo: (title: string, message?: string) => void;
-  showWarning: (title: string, message?: string) => void;
+  showSuccess: (
+    title: string,
+    message?: string,
+    opts?: Partial<ToastOptions>,
+  ) => void;
+  showError: (
+    title: string,
+    message?: string,
+    opts?: Partial<ToastOptions>,
+  ) => void;
+  showInfo: (
+    title: string,
+    message?: string,
+    opts?: Partial<ToastOptions>,
+  ) => void;
+  showWarning: (
+    title: string,
+    message?: string,
+    opts?: Partial<ToastOptions>,
+  ) => void;
   confirm: (opts: ConfirmOptions) => void;
 };
 
@@ -49,9 +79,10 @@ type ProviderProps = { children: React.ReactNode };
 
 export const NotificationProvider: React.FC<ProviderProps> = ({ children }) => {
   // Toast state
-  const [toast, setToast] = useState<(ToastOptions & { id: number }) | null>(
-    null,
-  );
+  const [toast, setToast] = useState<
+    | (Required<Pick<ToastOptions, 'type'>> & ToastOptions & { id: number })
+    | null
+  >(null);
   const [toastAnim] = useState(new Animated.Value(0));
   const [toastTimer, setToastTimer] = useState<ReturnType<
     typeof setTimeout
@@ -79,7 +110,14 @@ export const NotificationProvider: React.FC<ProviderProps> = ({ children }) => {
 
       const nextId = toastId + 1;
       setToastId(nextId);
-      setToast({ ...opts, id: nextId, type: opts.type ?? 'info' });
+      setToast({
+        ...opts,
+        id: nextId,
+        type: opts.type ?? 'info',
+        position: opts.position ?? 'top',
+        underHeader: opts.underHeader ?? true,
+        tabBarHeight: opts.tabBarHeight ?? 0,
+      });
 
       // animación in
       Animated.timing(toastAnim, {
@@ -102,13 +140,14 @@ export const NotificationProvider: React.FC<ProviderProps> = ({ children }) => {
   const value = useMemo<NotificationContextType>(
     () => ({
       showToast,
-      showSuccess: (title, message) =>
-        showToast({ type: 'success', title, message }),
-      showError: (title, message) =>
-        showToast({ type: 'error', title, message }),
-      showInfo: (title, message) => showToast({ type: 'info', title, message }),
-      showWarning: (title, message) =>
-        showToast({ type: 'warning', title, message }),
+      showSuccess: (title, message, opts) =>
+        showToast({ type: 'success', title, message, ...(opts ?? {}) }),
+      showError: (title, message, opts) =>
+        showToast({ type: 'error', title, message, ...(opts ?? {}) }),
+      showInfo: (title, message, opts) =>
+        showToast({ type: 'info', title, message, ...(opts ?? {}) }),
+      showWarning: (title, message, opts) =>
+        showToast({ type: 'warning', title, message, ...(opts ?? {}) }),
       confirm,
     }),
     [showToast, confirm],
@@ -128,6 +167,9 @@ export const NotificationProvider: React.FC<ProviderProps> = ({ children }) => {
         actionLabel={toast?.actionLabel}
         onActionPress={toast?.onActionPress}
         onHide={hideToast}
+        position={toast?.position ?? 'top'}
+        underHeader={toast?.underHeader ?? true}
+        tabBarHeight={toast?.tabBarHeight ?? 0}
       />
 
       {/* Confirm Dialog */}
@@ -151,15 +193,7 @@ export const NotificationProvider: React.FC<ProviderProps> = ({ children }) => {
   );
 };
 
-// Toast & ConfirmDialog se implementan abajo
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Platform,
-} from 'react-native';
-
+// UI
 const colors = {
   bg: '#111827',
   text: '#F9FAFB',
@@ -180,6 +214,9 @@ type ToastInnerProps = {
   actionLabel?: string;
   onActionPress?: () => void;
   onHide: () => void;
+  position: ToastPosition;
+  underHeader: boolean;
+  tabBarHeight: number;
 };
 
 const Toast: React.FC<ToastInnerProps> = ({
@@ -191,7 +228,11 @@ const Toast: React.FC<ToastInnerProps> = ({
   actionLabel,
   onActionPress,
   onHide,
+  position,
+  underHeader,
+  tabBarHeight,
 }) => {
+  const insets = useSafeAreaInsets();
   if (!visible) return null;
 
   const typeColor = {
@@ -201,21 +242,60 @@ const Toast: React.FC<ToastInnerProps> = ({
     warning: colors.warning,
   }[type];
 
-  const translateY = anim.interpolate({
+  const translate = anim.interpolate({
     inputRange: [0, 1],
-    outputRange: [40, 0],
+    outputRange: position === 'top' ? [40, 0] : [-40, 0],
   });
   const opacity = anim;
 
+  // Constantes de diseño
+  const H_MARGIN = 16;
+  const V_MARGIN = 12; // espacio extra desde borde seguro
+  const HEADER_HEIGHT = 56; // TODO: ajusta si usas un header distinto
+  const MAX_WIDTH = 440;
+
+  const containerStyle =
+    position === 'top'
+      ? {
+          top: insets.top + (underHeader ? HEADER_HEIGHT : 0) + V_MARGIN,
+          bottom: undefined,
+        }
+      : {
+          bottom: insets.bottom + tabBarHeight + V_MARGIN,
+          top: undefined,
+        };
+
   return (
     <Animated.View
-      style={[styles.toastContainer, { transform: [{ translateY }], opacity }]}
+      pointerEvents="box-none"
+      style={[
+        {
+          position: 'absolute',
+          left: H_MARGIN,
+          right: H_MARGIN,
+          alignItems: 'center',
+          zIndex: 999,
+          transform: [{ translateY: translate }],
+          opacity,
+        },
+        containerStyle,
+      ]}
     >
-      <View style={[styles.toastCard, { borderLeftColor: typeColor }]}>
+      <View
+        style={[
+          styles.toastCard,
+          {
+            borderLeftColor: typeColor,
+            maxWidth: MAX_WIDTH,
+            alignSelf: 'center',
+          },
+        ]}
+      >
         <View style={styles.toastContent}>
           <Text style={styles.toastTitle}>{title}</Text>
           {!!message && <Text style={styles.toastMessage}>{message}</Text>}
         </View>
+
         <View style={styles.toastActions}>
           {actionLabel && (
             <TouchableOpacity
@@ -291,13 +371,6 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
 };
 
 const styles = StyleSheet.create({
-  toastContainer: {
-    position: 'absolute',
-    bottom: 24,
-    left: 16,
-    right: 16,
-    zIndex: 999,
-  },
   toastCard: {
     backgroundColor: colors.surface,
     borderRadius: 12,
@@ -328,7 +401,7 @@ const styles = StyleSheet.create({
 
   dialogOverlay: {
     position: 'absolute',
-    inset: 0,
+    inset: 0 as any,
     backgroundColor: 'rgba(0,0,0,0.4)',
     alignItems: 'center',
     justifyContent: 'center',

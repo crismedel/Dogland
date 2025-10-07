@@ -16,6 +16,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { fetchAlertById, updateAlert } from '../../src/api/alerts';
 import type { Alert as AlertTypeFromAPI } from '../../src/types/alert';
 import { useNotification } from '@/src/components/notifications/NotificationContext';
+import { Colors } from '@/src/constants/colors';
 
 const MOCK_TIPOS_ALERTA = [
   { id: 1, nombre: 'Jauria' },
@@ -265,7 +266,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#fbbf24',
+    backgroundColor: Colors.background,
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 8,
@@ -367,12 +368,12 @@ const styles = StyleSheet.create({
   },
 
   saveButton: {
-    backgroundColor: '#fbbf24',
+    backgroundColor: Colors.background,
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: 'center',
     marginTop: 10,
-    shadowColor: '#d97706',
+    shadowColor: Colors.secondary,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,

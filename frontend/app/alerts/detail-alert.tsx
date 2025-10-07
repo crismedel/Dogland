@@ -11,6 +11,7 @@ import MapView, { Marker, Callout } from 'react-native-maps';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { fetchAlertById } from '../../src/api/alerts';
 import { Alert as AlertType, riskStyles } from '../../src/types/alert';
+import { Colors } from '@/src/constants/colors';
 
 const AlertDetailScreen = () => {
   // Hook para manejar la navegación
@@ -60,7 +61,7 @@ const AlertDetailScreen = () => {
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#d97706" />
+        <ActivityIndicator size="large" color={Colors.secondary} />
         <Text style={styles.loadingText}>Cargando alerta...</Text>
       </View>
     );
@@ -222,7 +223,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 24, fontWeight: 'bold', color: '#222' },
   subtitle: {
     fontSize: 16,
-    color: '#d97706',
+    color: Colors.secondary,
     fontWeight: '600',
     backgroundColor: '#E3F2FD',
     paddingHorizontal: 12,
@@ -250,7 +251,7 @@ const styles = StyleSheet.create({
   noLocation: { textAlign: 'center', padding: 16, color: '#666' },
   // BOTON VOLVER
   backButton: {
-    backgroundColor: '#fbbf24',
+    backgroundColor: Colors.background,
     padding: 14,
     borderRadius: 12,
     marginTop: 10,
@@ -259,7 +260,7 @@ const styles = StyleSheet.create({
   // ESTADOS DE ERROR Y LOADING
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   errorText: { color: '#E53935', marginBottom: 16 },
-  loadingText: { marginTop: 8, color: '#d97706' },
+  loadingText: { marginTop: 8, color: Colors.secondary },
 
   // MARCADOR PERSONALIZADO (estilo mapa comunitario)
   customMarker: { alignItems: 'center' },

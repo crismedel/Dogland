@@ -212,7 +212,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   backButtonInner: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.lightText,
     width: 40,
     height: 40,
     borderRadius: 20,

@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Image,
+  RefreshControl,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Alert, FilterOptions } from '../../src/types/alert';
@@ -26,6 +27,9 @@ const CommunityAlertsScreen = () => {
   const [allAlerts, setAllAlerts] = useState<Alert[]>([]);
   const [filteredAlerts, setFilteredAlerts] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   const [menuVisible, setMenuVisible] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
 
@@ -36,28 +40,26 @@ const CommunityAlertsScreen = () => {
     timeRange: 'todas',
   });
 
-  // --- Archivar alertas expiradas ---
+  // Archivar alertas expiradas
   const checkAndArchiveExpiredAlerts = (alerts: Alert[]): Alert[] => {
     const now = new Date();
     return alerts.map((alert) => {
-      // Verificar que fecha_expiracion no sea null antes de crear Date
       if (alert.fecha_expiracion) {
         const expirationDate = new Date(alert.fecha_expiracion);
         if (expirationDate < now && alert.activa) {
           return { ...alert, activa: false };
         }
       }
-      // Si no hay fecha de expiración o no ha expirado, devolver la alerta sin cambios
       return alert;
     });
   };
 
-  // --- Aplicar filtros ---
+  // Aplicar filtros
   const applyFilters = (
     alerts: Alert[],
     filterOptions: FilterOptions,
-  ): Alert[] => {
-    return alerts.filter((alert) => {
+  ): Alert[] =>
+    alerts.filter((alert) => {
       if (filterOptions.type !== 'todos' && alert.tipo !== filterOptions.type)
         return false;
       if (
@@ -88,50 +90,63 @@ const CommunityAlertsScreen = () => {
       }
       return true;
     });
+
+  // Fetch de alertas (reutilizable)
+  const loadAlerts = async () => {
+    try {
+      setError(null);
+      const result = await fetchAlerts();
+      const updatedAlerts = checkAndArchiveExpiredAlerts(result);
+      setAllAlerts(updatedAlerts);
+    } catch (e: any) {
+      console.error('Error cargando alertas:', e);
+      setError(
+        'No se pudieron cargar las alertas. Revisa tu conexión e inténtalo nuevamente.',
+      );
+      setAllAlerts([]); // opcional: vaciar lista en error
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   };
 
-  // --- Fetch inicial de alertas ---
+  // Fetch inicial
   useEffect(() => {
-    const getAlerts = async () => {
-      try {
-        setLoading(true);
-        const result = await fetchAlerts();
-        const updatedAlerts = checkAndArchiveExpiredAlerts(result);
-        setAllAlerts(updatedAlerts);
-      } catch (error) {
-        console.error('Error cargando alertas:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    getAlerts();
+    setLoading(true);
+    loadAlerts();
   }, []);
 
-  // --- Aplicar filtros cada vez que cambian ---
+  // Aplicar filtros cuando cambien
   useEffect(() => {
     const filtered = applyFilters(allAlerts, filters);
     setFilteredAlerts(filtered);
   }, [allAlerts, filters]);
 
-  const handleFiltersChange = (newFilters: FilterOptions) => {
+  const handleFiltersChange = (newFilters: FilterOptions) =>
     setFilters(newFilters);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadAlerts();
   };
 
+  // Loading
   if (loading) {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color={Colors.primary} />
-        <Text>Cargando alertas...</Text>
+        <Text style={styles.loadingText}>Cargando alertas...</Text>
       </View>
     );
   }
 
+  // UI
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      {/* ✅ Header fuera del contenedor con padding */}
+      {/* Header sin “cuadrado blanco”. Forzamos transparente aquí por si el componente trae fondo por defecto. */}
       <CustomHeader
         title={`Alertas Comunitarias (${filteredAlerts.length})`}
         leftComponent={
@@ -144,17 +159,19 @@ const CommunityAlertsScreen = () => {
         }
         rightComponent={
           <TouchableOpacity
+            // sin fondo, solo borde sutil opcional
             style={styles.filterButton}
             onPress={() => setShowFilters(true)}
           >
-            <Ionicons name="filter" size={24} />
+            <Ionicons name="filter" size={22} color="#fff" />
           </TouchableOpacity>
         }
+        // Si tu CustomHeader acepta estilos del contenedor, asegura transparentes:
+        // containerStyle={{ backgroundColor: 'transparent', elevation: 0, shadowOpacity: 0 }}
+        // contentStyle={{ backgroundColor: 'transparent' }}
       />
 
-      {/* ✅ Todo el contenido va dentro del container */}
       <View style={styles.container}>
-        {/* Resumen de filtros activos */}
         {(filters.type !== 'todos' ||
           filters.riskLevel !== 'todos' ||
           filters.status !== 'activas' ||
@@ -169,13 +186,60 @@ const CommunityAlertsScreen = () => {
           </View>
         )}
 
-        {/* Lista de Alertas */}
-        <FlatList
-          data={filteredAlerts}
-          renderItem={({ item }) => <AlertCard alert={item} />}
-          keyExtractor={(item) => item.id_alerta.toString()}
-          showsVerticalScrollIndicator={false}
-        />
+        {/* Estados vacíos y de error */}
+        {error ? (
+          <View style={styles.emptyState}>
+            <Ionicons
+              name="cloud-offline-outline"
+              size={56}
+              color={Colors.primary}
+            />
+            <Text style={styles.emptyTitle}>
+              No se pudo cargar la información
+            </Text>
+            <Text style={styles.emptySubtitle}>{error}</Text>
+            <TouchableOpacity style={styles.retryBtn} onPress={onRefresh}>
+              <Ionicons name="refresh" size={18} color="#fff" />
+              <Text style={styles.retryText}>Reintentar</Text>
+            </TouchableOpacity>
+          </View>
+        ) : filteredAlerts.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Ionicons
+              name="notifications-off-outline"
+              size={56}
+              color={Colors.primary}
+            />
+            <Text style={styles.emptyTitle}>No hay alertas para mostrar</Text>
+            <Text style={styles.emptySubtitle}>
+              {allAlerts.length === 0
+                ? 'Aún no hay alertas creadas.'
+                : 'Ajusta los filtros o crea una nueva alerta.'}
+            </Text>
+            <TouchableOpacity
+              style={styles.primaryBtn}
+              onPress={() => router.push('/alerts/create-alert')}
+            >
+              <Ionicons name="add" size={18} color="#fff" />
+              <Text style={styles.primaryBtnText}>Crear alerta</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <FlatList
+            data={filteredAlerts}
+            renderItem={({ item }) => <AlertCard alert={item} />}
+            keyExtractor={(item) => item.id_alerta.toString()}
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                tintColor={Colors.primary}
+              />
+            }
+            contentContainerStyle={{ paddingBottom: 16 }}
+          />
+        )}
 
         {/* Modal de filtros */}
         <FilterModal
@@ -184,6 +248,7 @@ const CommunityAlertsScreen = () => {
           filters={filters}
           onFiltersChange={handleFiltersChange}
         />
+
         <FloatingMenu
           visible={menuVisible}
           onToggle={() => setMenuVisible(!menuVisible)}
@@ -207,22 +272,19 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingTop: 8, // evita choques visuales con el header
   },
+
+  // Botón del header sin fondo blanco
   filterButton: {
-    backgroundColor: '#fff',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: Colors.primary,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 16,
+    borderWidth: 0, // sin borde; si quieres un aro: borderWidth: 1, borderColor: 'rgba(255,255,255,0.6)'
+    backgroundColor: 'transparent',
   },
-  filterButtonText: {
-    color: Colors.primary,
-    fontSize: 14,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
+
   activeFilters: {
     backgroundColor: Colors.secondary,
     padding: 8,
@@ -234,9 +296,53 @@ const styles = StyleSheet.create({
     color: '#1976d2',
     fontWeight: '500',
   },
+
   center: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
+  loadingText: { marginTop: 8, color: Colors.secondary },
+
+  emptyState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+    gap: 8,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: Colors.lightText,
+    textAlign: 'center',
+    marginTop: 8,
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    color: Colors.secondary,
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  retryBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  retryText: { color: '#fff', fontWeight: '600' },
+
+  primaryBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  primaryBtnText: { color: '#fff', fontWeight: '700' },
 });

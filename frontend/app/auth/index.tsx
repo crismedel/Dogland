@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   registrationText: {
-    color: '#ffffff',
+    color: Colors.lightText,
     fontSize: 20,
     textAlign: 'center',
     fontWeight: '400',

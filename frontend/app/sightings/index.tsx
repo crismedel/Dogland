@@ -9,8 +9,9 @@ import {
   SafeAreaView,
   TouchableOpacity, // Usaremos TouchableOpacity para las tarjetas
 } from 'react-native';
-import { useRouter } from 'expo-router'; 
+import { useRouter } from 'expo-router';
 import apiClient from '../../src/api/client';
+import { Colors } from '@/src/constants/colors';
 // Ya no necesitamos SightingDetails ni Modal aquí
 
 interface Sighting {
@@ -27,7 +28,7 @@ interface Sighting {
 }
 
 const AvistamientosScreen = () => {
-  const router = useRouter(); 
+  const router = useRouter();
 
   const [sightings, setSightings] = useState<Sighting[]>([]);
   const [loading, setLoading] = useState(true);
@@ -70,9 +71,9 @@ const AvistamientosScreen = () => {
     };
 
     return (
-      <TouchableOpacity 
-        style={styles.card} 
-        onPress={() => handlePressSighting(item.id_avistamiento)} 
+      <TouchableOpacity
+        style={styles.card}
+        onPress={() => handlePressSighting(item.id_avistamiento)}
         activeOpacity={0.8}
       >
         <Text style={styles.cardTitle}>{item.descripcion}</Text>
@@ -97,7 +98,7 @@ const AvistamientosScreen = () => {
   if (loading && sightings.length === 0) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#fbbf24" />
+        <ActivityIndicator size="large" color={Colors.background} />
         <Text style={styles.loadingText}>Cargando avistamientos...</Text>
       </View>
     );
@@ -142,7 +143,7 @@ const styles = StyleSheet.create({
   loadingText: { marginTop: 10, fontSize: 16, color: '#6b7280' },
   listContent: { padding: 10 },
   card: {
-    backgroundColor: '#ffffff',
+    backgroundColor: Colors.lightText,
     padding: 15,
     borderRadius: 12,
     marginBottom: 10,
@@ -162,7 +163,6 @@ const styles = StyleSheet.create({
   label: { fontSize: 14, fontWeight: '500', color: '#4b5563', width: 120 },
   value: { fontSize: 14, color: '#374151', flexShrink: 1 },
   emptyText: { fontSize: 16, color: '#6b7280', textAlign: 'center' },
-
 });
 
 export default AvistamientosScreen;

@@ -1,9 +1,18 @@
 // app/adoption/historialMedico.tsx
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, FlatList, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Image,
+  FlatList,
+  ActivityIndicator,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import TarjetaMedica from './component/terjetasMedicas';
+import { Colors } from '@/src/constants/colors';
 
 const HistorialMedico = () => {
   const router = useRouter();
@@ -13,9 +22,17 @@ const HistorialMedico = () => {
   useEffect(() => {
     // 🔹 Simulación: luego aquí irá el fetch real al backend
     const mockHistorial = [
-      { id: '1', nombre: 'Luna', condicion: 'Vacunada, en recuperación de cirugía menor' },
+      {
+        id: '1',
+        nombre: 'Luna',
+        condicion: 'Vacunada, en recuperación de cirugía menor',
+      },
       { id: '2', nombre: 'Thor', condicion: 'Sano, necesita chequeo dental' },
-      { id: '3', nombre: 'Max', condicion: 'Problemas en la piel, tratamiento en curso' },
+      {
+        id: '3',
+        nombre: 'Max',
+        condicion: 'Problemas en la piel, tratamiento en curso',
+      },
     ];
     setTimeout(() => {
       setHistorial(mockHistorial);
@@ -24,7 +41,7 @@ const HistorialMedico = () => {
   }, []);
 
   const handleAgregarHistorial = () => {
-    console.log("Agregar historial médico");
+    console.log('Agregar historial médico');
     // Aquí después conectarás con backend (POST)
   };
 
@@ -40,7 +57,10 @@ const HistorialMedico = () => {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButtonHeader}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backButtonHeader}
+        >
           <Image
             source={require('../../assets/images/volver.png')}
             style={styles.backIconHeader}
@@ -54,16 +74,16 @@ const HistorialMedico = () => {
         data={historial}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <TarjetaMedica
-            nombre={item.nombre}
-            condicion={item.condicion}
-          />
+          <TarjetaMedica nombre={item.nombre} condicion={item.condicion} />
         )}
         contentContainerStyle={{ paddingTop: 20, paddingBottom: 20 }} // 👈 espacio superior
       />
 
       {/* Botón amarillo Agregar historial */}
-      <TouchableOpacity style={styles.addButton} onPress={handleAgregarHistorial}>
+      <TouchableOpacity
+        style={styles.addButton}
+        onPress={handleAgregarHistorial}
+      >
         <Text style={styles.addButtonText}>+ Agregar historial médico</Text>
       </TouchableOpacity>
     </View>
@@ -79,13 +99,18 @@ const styles = StyleSheet.create({
     padding: 12,
     marginTop: 20,
   },
-  headerTitle: { fontSize: 18, fontWeight: 'bold', color: '#fff', marginLeft: 16 },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginLeft: 16,
+  },
   backButtonHeader: { padding: 6 },
   backIconHeader: { width: 24, height: 24, tintColor: '#fff' },
 
   // Botón amarillo
   addButton: {
-    backgroundColor: '#fbbf24',
+    backgroundColor: Colors.background,
     marginHorizontal: 16,
     marginVertical: 20,
     padding: 15,
