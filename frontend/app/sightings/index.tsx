@@ -7,29 +7,36 @@ import {
   ActivityIndicator,
   RefreshControl,
   SafeAreaView,
+  TouchableOpacity, // Usaremos TouchableOpacity para las tarjetas
 } from 'react-native';
-import { Link } from 'expo-router';
+import { useRouter } from 'expo-router'; 
 import apiClient from '../../src/api/client';
+// Ya no necesitamos SightingDetails ni Modal aquí
 
-// La interfaz debe coincidir con los datos que provienen de tu backend
 interface Sighting {
   id_avistamiento: number;
   descripcion: string;
   id_especie: number;
   id_estado_salud: number;
   fecha_creacion: string;
-  // Añade aquí las demás propiedades si las necesitas, como ubicación, etc.
+  fotos_url: string[];
+  nivel_riesgo: string;
+  activa: boolean;
+  latitude?: number;
+  longitude?: number;
 }
 
 const AvistamientosScreen = () => {
+  const router = useRouter(); 
+
   const [sightings, setSightings] = useState<Sighting[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  // Eliminamos: selectedSighting y modalVisible
 
   const fetchSightings = useCallback(async () => {
     try {
       const response = await apiClient.get('/sightings');
-      // Asegúrate de acceder a los datos de la misma forma que en el mapa
       setSightings(response.data.data);
     } catch (error) {
       console.error('Error al obtener los avistamientos:', error);
@@ -40,63 +47,61 @@ const AvistamientosScreen = () => {
     }
   }, []);
 
+  const handlePressSighting = (id: number) => {
+    router.push({
+      pathname: '/sightings/[id]',
+      params: { id: id.toString() },
+    });
+  };
+
   useEffect(() => {
     fetchSightings();
   }, [fetchSightings]);
 
-  if (loading) {
-    return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#fbbf24" />
-        <Text style={styles.loadingText}>Cargando reportes...</Text>
-      </View>
-    );
-  }
-
-  const renderItem = ({ item, index }: { item: Sighting; index: number }) => {
-    // Función para formatear la fecha a dd-mm-yyyy si es necesario
+  const renderItem = ({ item }: { item: Sighting; index: number }) => {
     const formatDate = (dateString: string) => {
       if (!dateString) return 'Fecha inválida';
-      const parts = dateString.split('-'); // Asume formato dd-mm-yyyy
-      if (parts.length === 3) {
-        return `${parts[0]}-${parts[1]}-${parts[2]}`;
+      try {
+        const date = new Date(dateString);
+        return date.toLocaleDateString();
+      } catch {
+        return 'Fecha inválida';
       }
-      return 'Fecha inválida';
     };
 
     return (
-      <Link
-        href={{
-          pathname: '/sightings/[id]',
-          params: { id: item.id_avistamiento },
-        }}
-        asChild
+      <TouchableOpacity 
+        style={styles.card} 
+        onPress={() => handlePressSighting(item.id_avistamiento)} 
+        activeOpacity={0.8}
       >
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>{item.descripcion}</Text>
-          <View style={styles.infoRow}>
-            <Text style={styles.label}>Especie:</Text>
-            <Text style={styles.value}>{item.id_especie || 'Desconocida'}</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.label}>Estado de Salud:</Text>
-            <Text style={styles.value}>
-              {item.id_estado_salud || 'Desconocido'}
-            </Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.label}>Fecha:</Text>
-
-            <Text style={styles.value}>{formatDate(item.fecha_creacion)}</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.label}>ID Avistamiento:</Text>
-            <Text style={styles.value}>{item.id_avistamiento}</Text>
-          </View>
+        <Text style={styles.cardTitle}>{item.descripcion}</Text>
+        <View style={styles.infoRow}>
+          <Text style={styles.label}>Especie ID:</Text>
+          <Text style={styles.value}>{item.id_especie || 'Desconocida'}</Text>
         </View>
-      </Link>
+        <View style={styles.infoRow}>
+          <Text style={styles.label}>Estado Salud ID:</Text>
+          <Text style={styles.value}>
+            {item.id_estado_salud || 'Desconocido'}
+          </Text>
+        </View>
+        <View style={styles.infoRow}>
+          <Text style={styles.label}>Fecha:</Text>
+          <Text style={styles.value}>{formatDate(item.fecha_creacion)}</Text>
+        </View>
+      </TouchableOpacity>
     );
   };
+
+  if (loading && sightings.length === 0) {
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" color="#fbbf24" />
+        <Text style={styles.loadingText}>Cargando avistamientos...</Text>
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -157,6 +162,7 @@ const styles = StyleSheet.create({
   label: { fontSize: 14, fontWeight: '500', color: '#4b5563', width: 120 },
   value: { fontSize: 14, color: '#374151', flexShrink: 1 },
   emptyText: { fontSize: 16, color: '#6b7280', textAlign: 'center' },
+
 });
 
 export default AvistamientosScreen;
