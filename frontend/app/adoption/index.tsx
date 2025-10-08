@@ -144,14 +144,7 @@ const Index = () => {
       </View>
 
       {/* Footer */}
-      <View style={styles.footer}>
-        <Text style={styles.footerText}>Puedes buscarnos en :</Text>
-        <View style={styles.socials}>
-          <Ionicons name="logo-twitter" size={24} color="black" />
-          <Ionicons name="logo-facebook" size={24} color="black" />
-          <Ionicons name="logo-instagram" size={24} color="black" />
-        </View>
-      </View>
+
     </View>
   );
 };

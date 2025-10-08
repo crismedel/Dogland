@@ -11,7 +11,7 @@ export default function AdopcionesLayout() {
           title: 'Perfil canino',
           headerStyle: { backgroundColor: '#4A90E2' },
           headerTintColor: '#fff',
-          headerShown: true,
+          headerShown: false,
         }}
       />
 
@@ -21,7 +21,7 @@ export default function AdopcionesLayout() {
           title: 'Solicitar Adopción',
           headerStyle: { backgroundColor: '#4A90E2' },
           headerTintColor: '#fff',
-          headerShown: true,
+          headerShown: false,
         }}
       />
 

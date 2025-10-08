@@ -1,7 +1,14 @@
 // app/adoption/perfilCan.tsx
-import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
 import React from 'react';
+import {
+  View,
+  Text,
+  Image,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+} from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 const PerfilCan = () => {
@@ -22,71 +29,107 @@ const PerfilCan = () => {
   };
 
   return (
-    <View style={styles.container}>
-      {/* Botón de retroceso */}
-      <TouchableOpacity
-        style={styles.backButton}
-        onPress={() => router.back()}
-      ></TouchableOpacity>
+    <View style={styles.screen}>
+      {/* 🔹 Header igual al de index.tsx */}
+      <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.backButtonHeader}
+          onPress={() => router.back()}
+        >
+          <Image
+            source={require('../../assets/images/volver.png')}
+            style={styles.backIconHeader}
+          />
+        </TouchableOpacity>
 
-      <Image source={{ uri: imageUrl as string }} style={styles.image} />
-      <Text style={styles.name}>{name}</Text>
-      <Text style={styles.breed}>{breed}</Text>
-      <Text style={styles.age}>{age} </Text>
+        <Text style={styles.headerTitle}>Perfil del Animal</Text>
 
-      {/* Botón de solicitar adopción */}
-      <TouchableOpacity
-        style={styles.adoptionButton}  
-        onPress={handleSolicitarAdopcion}
+        {/* Espaciador invisible para centrar el título */}
+        <View style={{ width: 24 }} />
+      </View>
+
+      {/* 🔹 Contenido principal con scroll */}
+      <ScrollView
+        contentContainerStyle={styles.container}
+        showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.adoptionButtonText}>Solicitar Adopción</Text>
-        <Ionicons name="heart" size={20} color="#fff" />
-      </TouchableOpacity>
+        {/* Imagen y datos principales */}
+        <Image source={{ uri: imageUrl as string }} style={styles.image} />
+        <Text style={styles.name}>{name}</Text>
+        <Text style={styles.breed}>{breed}</Text>
+        <Text style={styles.age}>{age} meses</Text>
 
-      {/* Información adicional del animal */}
-      <View style={styles.infoSection}>
-        <Text style={styles.sectionTitle}>Información del Animal</Text>
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Edad:</Text>
-          <Text style={styles.infoValue}>{age} meses</Text>
-        </View>
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Raza:</Text>
-          <Text style={styles.infoValue}>{breed}</Text>
-        </View>
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Estado:</Text>
-          <Text style={styles.infoValue}>Disponible para adopción</Text>
-        </View>
-      </View>
+        {/* Botón de solicitar adopción */}
+        <TouchableOpacity
+          style={styles.adoptionButton}
+          onPress={handleSolicitarAdopcion}
+        >
+          <Text style={styles.adoptionButtonText}>Solicitar Adopción</Text>
+          <Ionicons name="heart" size={20} color="#fff" />
+        </TouchableOpacity>
 
-      {/* Requisitos de adopción */}
-      <View style={styles.requirementsSection}>
-        <Text style={styles.sectionTitle}>Requisitos de Adopción</Text>
-        <Text style={styles.requirementText}>
-          • Compromiso de cuidado responsable
-        </Text>
-        <Text style={styles.requirementText}>• Vivienda adecuada</Text>
-        <Text style={styles.requirementText}>• Tiempo para dedicarle</Text>
-        <Text style={styles.requirementText}>
-          • Compromiso de esterilización
-        </Text>
-      </View>
+        {/* Información adicional del animal */}
+        <View style={styles.infoSection}>
+          <Text style={styles.sectionTitle}>Información del Animal</Text>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Edad:</Text>
+            <Text style={styles.infoValue}>{age} meses</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Raza:</Text>
+            <Text style={styles.infoValue}>{breed}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Estado:</Text>
+            <Text style={styles.infoValue}>Disponible para adopción</Text>
+          </View>
+        </View>
+
+        {/* Requisitos de adopción */}
+        <View style={styles.requirementsSection}>
+          <Text style={styles.sectionTitle}>Requisitos de Adopción</Text>
+          <Text style={styles.requirementText}>
+            • Compromiso de cuidado responsable
+          </Text>
+          <Text style={styles.requirementText}>• Vivienda adecuada</Text>
+          <Text style={styles.requirementText}>• Tiempo para dedicarle</Text>
+          <Text style={styles.requirementText}>
+            • Compromiso de esterilización
+          </Text>
+        </View>
+      </ScrollView>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  screen: {
     flex: 1,
-    padding: 20,
-    alignItems: 'center',
     backgroundColor: '#dbe8d3',
   },
-  backButton: {
-    alignSelf: 'flex-start',
-    padding: 10,
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#4A90E2',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginTop: 20,
     marginBottom: 10,
+  },
+  backButtonHeader: { padding: 6 },
+  backIconHeader: { width: 24, height: 24, tintColor: '#fff' },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#fff',
+    textAlign: 'center',
+    flex: 1,
+  },
+  container: {
+    padding: 20,
+    alignItems: 'center',
   },
   image: {
     width: 250,
@@ -154,6 +197,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 3,
     elevation: 2,
+    marginBottom: 30,
   },
   sectionTitle: {
     fontSize: 18,
