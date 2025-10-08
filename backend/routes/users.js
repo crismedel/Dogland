@@ -41,6 +41,42 @@ router.get(
 );
 
 
+// GET /api/users/profile - obtener datos del usuario logeado
+router.get(
+  '/users/profile',
+  authenticateToken,
+  async (req, res) => {
+    try {
+      const userId = req.user.id;
+
+      const result = await pool.query(
+        `
+        SELECT u.id_usuario, u.nombre_usuario, u.apellido_paterno, u.apellido_materno,
+               u.telefono, u.email, u.fecha_nacimiento, u.fecha_creacion, u.activo,
+               r.nombre_rol, c.nombre_ciudad, s.sexo, o.nombre_organizacion
+        FROM usuario u
+        JOIN rol r ON u.id_rol = r.id_rol
+        JOIN ciudad c ON u.id_ciudad = c.id_ciudad
+        JOIN sexo s ON u.id_sexo = s.id_sexo
+        LEFT JOIN organizacion o ON u.id_organizacion = o.id_organizacion
+        WHERE u.id_usuario = $1
+        `,
+        [userId]
+      );
+
+      if (result.rowCount === 0) {
+        return res.status(404).json({ success: false, error: 'Usuario no encontrado' });
+      }
+
+      res.json({ success: true, data: result.rows[0] });
+    } catch (error) {
+      console.error('Error obteniendo perfil:', error);
+      res.status(500).json({ success: false, error: 'Error interno al obtener perfil' });
+    }
+  }
+);
+
+
 // GET /api/users/:id - Obtener usuario por ID
 router.get(
   '/users/:id',
