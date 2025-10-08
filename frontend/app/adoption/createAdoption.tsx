@@ -59,39 +59,39 @@ export default function CreateAdoptionScreen() {
   };
 
   useEffect(() => {
-    const fetchRaces = async () => {
+    const fetchSpecies = async () => {
       try {
-        const response = await apiClient.get('/races');
-        setRaza(response.data.data);
+        const response = await apiClient.get('/species');
+        setEspecie(response.data.data);
       } catch (error: any) {
         showError('Error al cargar las razas');
       } finally {
         setIsLoadingRaces(false);
       }
     };
-    fetchRaces();
+    fetchSpecies();
   }, []);
 
   useEffect(() => {
-    const fetchSpecies = async (id_raza: number | null) => {
-      if (!id_raza) {
-        setEspecie([]);
+    const fetchRaces = async (id_especie: number | null) => {
+      if (!id_especie) {
+        setRaza([]);
         return;
       }
       setIsLoadingSpecies(true);
-      setEspecie([]);
+      setRaza([]);
 
       try {
-        const response = await apiClient.get(`/species/${id_raza}`);
-        setEspecie(response.data.data);
+        const response = await apiClient.get(`/races/${id_especie}`);
+        setRaza(response.data.data);
       } catch (error: any) {
         showError('Error al cargar las especies');
       } finally {
         setIsLoadingSpecies(false);
       }
     };
-    fetchSpecies(formValues.id_raza);
-  }, [formValues.id_raza]);
+    fetchRaces(formValues.id_especie);
+  }, [formValues.id_especie]);
 
   useEffect(() => {
     const fetchHealthStates = async () => {
