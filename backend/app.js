@@ -1,6 +1,5 @@
 import express from 'express';
 import cors from 'cors';
-import pool from './db/db.js';
 import { NODE_ENV, PORT } from './config/env.js';
 
 // middlewares
@@ -59,19 +58,5 @@ app.use((err, req, res, next) => {
 });
 
 app.use(errorHandler);
-
-(async () => {
-  try {
-    const result = await pool.query('SELECT NOW()');
-    if (NODE_ENV === 'development') {
-      console.log('Conexión exitosa:', result.rows[0]);
-    }
-  } catch (error) {
-    console.error('Error de conexión:', error.message);
-  }
-  // } finally {
-  //   await pool.end();
-  // }
-})();
 
 export default app;

@@ -1,5 +1,6 @@
 import request from 'supertest';
-import app from '../../index.js';
+import app from '../../app.js';
+import pool from '../../db/db.js';
 
 describe('Endpoints protegidos con JWT', () => {
   
