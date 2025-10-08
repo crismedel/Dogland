@@ -3,7 +3,7 @@ import pool from '../db/db.js'
 
 const router = express.Router();
 
-router.get('/species', async (req, res) => {
+router.get('/health-states', async (req, res) => {
   try {
     const result = await pool.query(
       `

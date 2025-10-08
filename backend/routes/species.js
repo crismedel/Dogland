@@ -8,9 +8,9 @@ router.get('/species', async (req, res) => {
     const result = await pool.query(
       `
         SELECT 
-          id_especie, nombre_especie
+          e.id_especie, e.nombre_especie
         FROM 
-          especie
+          especie AS e
       `
     );
     res.json({ success: true, data: result.rows, count: result.rowCount })

@@ -17,6 +17,9 @@ import animalsRouter from './routes/animals.js';
 import adoptionsRouter from './routes/adoptions.js';
 import regionsRouter from './routes/regions.js';
 import citiesRouter from './routes/cities.js';
+import speciesRouter from './routes/species.js';
+import racesRouter from './routes/races.js';
+import healthRouter from './routes/health-states.js';
 
 const app = express();
 
@@ -42,6 +45,9 @@ app.use('/api', regionsRouter);
 app.use('/api', citiesRouter);
 app.use('/api', animalsRouter);
 app.use('/api', adoptionsRouter);
+app.use('/api', speciesRouter);
+app.use('/api', racesRouter);
+app.use('/api', healthRouter);
 
 // Middleware de manejo de errores general
 app.use((err, req, res, next) => {

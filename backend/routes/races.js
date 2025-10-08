@@ -4,7 +4,7 @@ import pool from '../db/db.js';
 const router = express.Router();
 
 router.get('/races/:speciesId', async (req, res) => {
-  const { regionId } = req.params;
+  const { speciesId } = req.params;
   try {
     const result = await pool.query(
       ` 
@@ -13,7 +13,7 @@ router.get('/races/:speciesId', async (req, res) => {
         FROM 
             raza
         WHERE id_especie = $1
-    `, [regionId]
+    `, [speciesId]
     );  
     res.json({ success: true, data: result.rows, count: result.rowCount });
   } catch (error) {
