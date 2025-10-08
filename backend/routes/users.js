@@ -81,7 +81,7 @@ router.get(
 router.get(
   '/users/:id',
   authenticateToken,
-  authorizeRol(['Admin','Usuario','Trabajador']),
+  authorizeRol(['Admin']),
   async (req, res) => {
     try {
       // validacion del parametro de la URL
@@ -91,17 +91,6 @@ router.get(
         return res.status(400).json({
           success: false,
           error: validationResult.error.issues.map(issue => issue.message).join(', '),
-        });
-      }
-
-      const { id: validatedId } = validationResult.data;
-
-      // Verifica si no es admin y el id no coincide
-      if (req.user.role !== 'Admin' && req.user.id !== validatedId) {
-        // 403 Forbidden
-        return res.status(403).json({
-          success: false,
-          error: 'No tienes permiso para acceder a este recurso.',
         });
       }
 
