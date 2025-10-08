@@ -1,6 +1,13 @@
 import express from 'express';
 import pool from '../db/db.js';
 import { authenticateToken, authorizeRol } from '../middlewares/auth.js';
+import { validateSchema } from '../middlewares/validateSchema.js';
+import {
+  createUserSchema,
+  updateUserSchema,
+  paramsSchema,
+  savePushTokenSchema
+} from '../schemas/user.js';
 
 const router = express.Router();
 
@@ -66,6 +73,7 @@ router.get('/users/:id',
 router.post('/users',
   authenticateToken,
   authorizeRol(['Admin']),
+  validateSchema(createUserSchema),
   async (req, res) => {
   try {
     const {
@@ -129,6 +137,7 @@ router.post('/users',
 router.put('/users/:id',
   authenticateToken,
   authorizeRol(['Admin']),
+  validateSchema(updateUserSchema),
   async (req, res) => {
   try {
     const {
