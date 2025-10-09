@@ -8,6 +8,8 @@ interface Animal {
   breed: string;
   age: string;
   imageUrl: string;
+  estadoMedico?: number; // 1: sano, 2: tratamiento, 3: recuperado
+  descripcionMedica?: string;
 }
 
 interface Props {
@@ -27,6 +29,8 @@ const AnimalCard: React.FC<Props> = ({ animal }) => {
       breed: animal.breed,
       age: animal.age,
       imageUrl: animal.imageUrl,
+      estadoMedico: animal.estadoMedico, // 👈 agregar este campo
+      descripcionMedica: animal.descripcionMedica, // 👈 y este también
     },
   });
 };

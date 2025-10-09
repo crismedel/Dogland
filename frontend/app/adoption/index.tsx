@@ -37,7 +37,6 @@ const Index = () => {
     fetchAnimals();
   }, []);
 
-  // Aplicar filtros múltiples
   const handleApplyFilters = (filters: { 
     ageRange: number[];
     selectedBreeds: string[];
@@ -45,28 +44,16 @@ const Index = () => {
     selectedSizes: string[];
   }) => {
     const filtered = animals.filter((animal) => {
-      // Filtro por edad
       const ageMatch = animal.age >= filters.ageRange[0] && animal.age <= filters.ageRange[1];
-      
-      // Filtro por raza
-      const breedMatch = filters.selectedBreeds.length === 0 || 
-                         filters.selectedBreeds.includes(animal.breed);
-      
-      // Filtro por estado de salud
-      const healthMatch = filters.selectedHealth.length === 0 || 
-                         filters.selectedHealth.includes(animal.health);
-      
-      // Filtro por tamaño
-      const sizeMatch = filters.selectedSizes.length === 0 || 
-                       filters.selectedSizes.includes(animal.size);
-
+      const breedMatch = filters.selectedBreeds.length === 0 || filters.selectedBreeds.includes(animal.breed);
+      const healthMatch = filters.selectedHealth.length === 0 || filters.selectedHealth.includes(animal.health);
+      const sizeMatch = filters.selectedSizes.length === 0 || filters.selectedSizes.includes(animal.size);
       return ageMatch && breedMatch && healthMatch && sizeMatch;
     });
 
     setFilteredAnimals(filtered);
     setShowFilters(false);
     
-    // Actualizar filtros activos para mostrar en la UI
     const active = [];
     if (filters.selectedBreeds.length > 0) active.push(`${filters.selectedBreeds.length} razas`);
     if (filters.selectedHealth.length > 0) active.push(`${filters.selectedHealth.length} estados`);
@@ -102,6 +89,15 @@ const Index = () => {
           <Ionicons name="options-outline" size={24} color="#fff" />
         </TouchableOpacity>
       </View>
+
+      {/* 🔹 NUEVO BOTÓN: Ver historiales médicos */}
+      <TouchableOpacity
+        style={styles.medicalButton}
+        onPress={() => router.push('/adoption/historialMedico')}
+      >
+        <Ionicons name="medkit-outline" size={18} color="#fff" style={{ marginRight: 6 }} />
+        <Text style={styles.medicalButtonText}>Ver historiales médicos</Text>
+      </TouchableOpacity>
 
       {/* Filtros activos */}
       {activeFilters.length > 0 && (
@@ -142,9 +138,6 @@ const Index = () => {
           />
         )}
       </View>
-
-      {/* Footer */}
-
     </View>
   );
 };
@@ -159,12 +152,30 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 8,
-    marginBottom: 16,
+    marginBottom: 10,
     marginTop: 20,
   },
   headerTitle: { fontSize: 18, fontWeight: 'bold', color: '#fff' },
   backButtonHeader: { padding: 6 },
   backIconHeader: { width: 24, height: 24, tintColor: '#fff' },
+
+  // 🔹 Estilo del nuevo botón
+  medicalButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1976d2',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    alignSelf: 'center',
+    marginBottom: 10,
+  },
+  medicalButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+
   activeFiltersContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -175,69 +186,15 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 10,
   },
-  activeFiltersText: {
-    fontSize: 14,
-    color: '#1976d2',
-  },
-  clearFiltersText: {
-    fontSize: 14,
-    color: '#f44336',
-    fontWeight: 'bold',
-  },
-  content: { 
-    flex: 1, 
-    backgroundColor: '#fff', 
-    margin: 10, 
-    borderRadius: 10, 
-    padding: 10 
-  },
-  title: { 
-    fontSize: 18, 
-    fontWeight: 'bold', 
-    marginBottom: 10, 
-    textAlign: 'center', 
-    color: '#333' 
-  },
-  list: { 
-    paddingBottom: 20 
-  },
-  noResults: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 50,
-  },
-  noResultsText: {
-    fontSize: 18,
-    color: '#666',
-    marginTop: 10,
-  },
-  noResultsSubtext: {
-    fontSize: 14,
-    color: '#999',
-    marginTop: 5,
-  },
-  footer: { 
-    backgroundColor: '#fff', 
-    padding: 10, 
-    borderTopWidth: 1, 
-    borderColor: '#ccc', 
-    alignItems: 'center' 
-  },
-  footerText: { 
-    marginBottom: 5, 
-    fontSize: 12, 
-    color: '#333' 
-  },
-  socials: { 
-    flexDirection: 'row', 
-    gap: 15 
-  },
-  center: { 
-    flex: 1, 
-    justifyContent: 'center', 
-    alignItems: 'center' 
-  },
+  activeFiltersText: { fontSize: 14, color: '#1976d2' },
+  clearFiltersText: { fontSize: 14, color: '#f44336', fontWeight: 'bold' },
+  content: { flex: 1, backgroundColor: '#fff', margin: 10, borderRadius: 10, padding: 10 },
+  title: { fontSize: 18, fontWeight: 'bold', marginBottom: 10, textAlign: 'center', color: '#333' },
+  list: { paddingBottom: 20 },
+  noResults: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 50 },
+  noResultsText: { fontSize: 18, color: '#666', marginTop: 10 },
+  noResultsSubtext: { fontSize: 14, color: '#999', marginTop: 5 },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 });
 
 export default Index;

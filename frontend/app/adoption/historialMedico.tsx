@@ -11,8 +11,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import TarjetaMedica from './component/terjetasMedicas';
-import { Colors } from '@/src/constants/colors';
+import TarjetaMedica from './component/terjetasMedicas'; // <<-- fíjate en el nombre exacto
+// import { Colors } from '@/src/constants/colors'; // opcional: si lo usas, revisa que exista
 
 const HistorialMedico = () => {
   const router = useRouter();
@@ -20,29 +20,36 @@ const HistorialMedico = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 🔹 Simulación: luego aquí irá el fetch real al backend
+    // Mock que incluye estadoMedico + descripcion (nuevo esquema)
     const mockHistorial = [
       {
         id: '1',
         nombre: 'Luna',
-        condicion: 'Vacunada, en recuperación de cirugía menor',
+        estadoMedico: 2,
+        descripcion: 'Vacunada, en recuperación de cirugía menor',
       },
-      { id: '2', nombre: 'Thor', condicion: 'Sano, necesita chequeo dental' },
+      {
+        id: '2',
+        nombre: 'Thor',
+        estadoMedico: 1,
+        descripcion: 'Sano, necesita chequeo dental',
+      },
       {
         id: '3',
         nombre: 'Max',
-        condicion: 'Problemas en la piel, tratamiento en curso',
+        estadoMedico: 2,
+        descripcion: 'Problemas en la piel, tratamiento en curso',
       },
     ];
+
     setTimeout(() => {
       setHistorial(mockHistorial);
       setLoading(false);
-    }, 800);
+    }, 600);
   }, []);
 
   const handleAgregarHistorial = () => {
     console.log('Agregar historial médico');
-    // Aquí después conectarás con backend (POST)
   };
 
   if (loading) {
@@ -66,7 +73,7 @@ const HistorialMedico = () => {
             style={styles.backIconHeader}
           />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Volver</Text>
+        <Text style={styles.headerTitle}>Historial Médico</Text>
       </View>
 
       {/* Lista de tarjetas médicas */}
@@ -74,16 +81,18 @@ const HistorialMedico = () => {
         data={historial}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <TarjetaMedica nombre={item.nombre} condicion={item.condicion} />
+          <TarjetaMedica
+            nombre={item.nombre}
+            estadoMedico={item.estadoMedico}
+            descripcion={item.descripcion}
+            condicion={item.condicion} // por compatibilidad si existiera
+          />
         )}
-        contentContainerStyle={{ paddingTop: 20, paddingBottom: 20 }} // 👈 espacio superior
+        contentContainerStyle={{ paddingTop: 20, paddingBottom: 20 }}
       />
 
       {/* Botón amarillo Agregar historial */}
-      <TouchableOpacity
-        style={styles.addButton}
-        onPress={handleAgregarHistorial}
-      >
+      <TouchableOpacity style={styles.addButton} onPress={handleAgregarHistorial}>
         <Text style={styles.addButtonText}>+ Agregar historial médico</Text>
       </TouchableOpacity>
     </View>
@@ -99,18 +108,12 @@ const styles = StyleSheet.create({
     padding: 12,
     marginTop: 20,
   },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginLeft: 16,
-  },
+  headerTitle: { fontSize: 18, fontWeight: 'bold', color: '#fff', marginLeft: 16 },
   backButtonHeader: { padding: 6 },
   backIconHeader: { width: 24, height: 24, tintColor: '#fff' },
 
-  // Botón amarillo
   addButton: {
-    backgroundColor: Colors.background,
+    backgroundColor: '#fbbf24', // si usas Colors.background reestablece
     marginHorizontal: 16,
     marginVertical: 20,
     padding: 15,
