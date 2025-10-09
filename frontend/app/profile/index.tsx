@@ -1,21 +1,20 @@
+import { useNotification } from '@/src/components/notifications/NotificationContext';
+import { Colors } from '@/src/constants/colors';
+import { router } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Image,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
-import { router } from 'expo-router';
+import { fetchUserProfile } from '../../src/api/users';
 import CustomButton from '../../src/components/UI/CustomButton';
 import CustomHeader from '../../src/components/UI/CustomHeader';
-import { useNotification } from '@/src/components/notifications/NotificationContext';
-import { fetchUsers } from '../../src/api/users';
 import { User } from '../../src/types/user';
-import { Colors } from '@/src/constants/colors';
 
 const AVATAR = 'https://placehold.co/200x200/png?text=Avatar';
 
@@ -25,10 +24,10 @@ export default function ProfileScreen() {
   const { showInfo } = useNotification();
 
   useEffect(() => {
-    fetchUsers()
-      .then((users) => users.length > 0 && setUser(users[0]))
-      .catch((err) => console.error('Error cargando usuario:', err))
-      .finally(() => setLoading(false));
+  fetchUserProfile()
+    .then((userData) => setUser(userData))
+    .catch((err) => console.error('Error cargando usuario:', err))
+    .finally(() => setLoading(false));
   }, []);
 
   const onEditProfile = () => console.log('Edit profile');
@@ -103,8 +102,8 @@ export default function ProfileScreen() {
           title="Reintentar"
           onPress={() => {
             setLoading(true);
-            fetchUsers()
-              .then((users) => users.length && setUser(users[0]))
+            fetchUserProfile()
+              .then((userData) => setUser(userData))
               .finally(() => setLoading(false));
           }}
           variant="primary"
