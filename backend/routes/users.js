@@ -8,6 +8,7 @@ import {
   paramsSchema,
   savePushTokenSchema
 } from '../schemas/user.js';
+import { validateParams } from '../middlewares/validateParams.js';
 
 const router = express.Router();
 
@@ -64,13 +65,8 @@ router.get(
         [userId]
       );
 
-      if (result.rowCount === 0) {
-        return res.status(404).json({ success: false, error: 'Usuario no encontrado' });
-      }
-
       res.json({ success: true, data: result.rows[0] });
     } catch (error) {
-      console.error('Error obteniendo perfil:', error);
       res.status(500).json({ success: false, error: 'Error interno al obtener perfil' });
     }
   }
@@ -82,17 +78,10 @@ router.get(
   '/users/:id',
   authenticateToken,
   authorizeRol(['Admin']),
+  validateParams(paramsSchema),
   async (req, res) => {
     try {
-      // validacion del parametro de la URL
-      const validationResult = paramsSchema.safeParse(req.params);
-
-      if (!validationResult.success) {
-        return res.status(400).json({
-          success: false,
-          error: validationResult.error.issues.map(issue => issue.message).join(', '),
-        });
-      }
+      const { id } = req.validatedParams;
 
       const result = await pool.query(
         `
@@ -106,11 +95,14 @@ router.get(
           LEFT JOIN organizacion o ON u.id_organizacion = o.id_organizacion
           WHERE u.id_usuario = $1
         `,
-        [validatedId],
+        [id],
       );
 
       if (result.rowCount === 0) {
-        return res.status(404).json({ success: false, error: 'Usuario no encontrado' });
+        return res.status(404).json({
+          success: false,
+          error: 'Usuario no encontrado'
+        });
       }
 
       res.json({ success: true, data: result.rows[0] });
@@ -193,14 +185,10 @@ router.put(
   authenticateToken,
   authorizeRol(['Admin']),
   validateSchema(updateUserSchema),
+  validateParams(paramsSchema),
   async (req, res) => {
     try {
-      const paramsValidation = paramsSchema.safeParse(req.params);
-
-      if (!paramsValidation.success) {
-        return res.status(400).json({ success: false, error: 'ID de usuario inválido.' });
-      }
-      const { id: id } = paramsValidation.data;
+      const { id } = req.validatedParams;
 
       const {
         nombre_usuario,
@@ -281,58 +269,65 @@ router.delete(
   authorizeRol(['Admin']),
   async (req, res) => {
     const { id } = req.params;
-    const client = await pool.connect();
+    try{
+      const client = await pool.connect();
+      try {
+        await client.query('BEGIN');
 
-    try {
-      await client.query('BEGIN');
+        // TODO: Borrar dependencias no criticas
+        /// ...
 
-      // TODO: Borrar dependencias no criticas
-      /// ...
+        // Borrar usuario y retornar id/email
+        const result = await client.query(
+          'DELETE FROM usuario WHERE id_usuario = $1 RETURNING id_usuario, email',
+          [id]
+        );
 
-      // Borrar usuario y retornar id/email
-      const result = await client.query(
-        'DELETE FROM usuario WHERE id_usuario = $1 RETURNING id_usuario, email',
-        [id]
-      );
+        if (result.rowCount === 0) {
+          await client.query('ROLLBACK');
+          return res.status(404).json({ success: false, error: 'Usuario no encontrado' });
+        }
 
-      if (result.rowCount === 0) {
+        await client.query('COMMIT');
+
+        res.json({
+          success: true,
+          message: 'Usuario eliminado correctamente',
+          data: result.rows[0],
+        });
+      } catch (error) {
         await client.query('ROLLBACK');
-        return res.status(404).json({ success: false, error: 'Usuario no encontrado' });
+
+        console.error('Error borrando usuario:', error);
+        res.status(500).json({ 
+          success: false, 
+          error: 'Error interno al borrar usuario' 
+        });
+
+      } finally {
+        client.release();
       }
-
-      await client.query('COMMIT');
-
-      res.json({
-        success: true,
-        message: 'Usuario eliminado correctamente',
-        data: result.rows[0],
-      });
     } catch (error) {
-      await client.query('ROLLBACK');
-
-      console.error('Error borrando usuario:', error);
-      res.status(500).json({ 
-        success: false, 
-        error: 'Error interno al borrar usuario' 
+      res.status(500).json({
+        success: false,
+        error: 'Error interno al borrar usuario'
       });
-
-    } finally {
-      client.release();
     }
   }
 );
 
-
-// PATCH /api/users/:id/deactivate - Desactivar usuario
 router.patch(
   '/users/:id/deactivate',
   authenticateToken,
   authorizeRol(['Admin']),
+  validateParams(paramsSchema),
   async (req, res) => {
     const { id } = req.params;
 
+    let client;
     try {
-      const result = await pool.query(
+      client = await pool.connect();
+      const result = await client.query(
         `UPDATE usuario
          SET activo = false, deleted_at = NOW()
          WHERE id_usuario = $1
@@ -351,10 +346,9 @@ router.patch(
       });
     } catch (error) {
       console.error('Error desactivando usuario:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Error al desactivar usuario'
-      });
+      res.status(500).json({ success: false, error: 'Error al desactivar usuario' });
+    } finally {
+      if (client) client.release();
     }
   }
 );
@@ -365,10 +359,14 @@ router.patch(
   '/users/:id/activate',
   authenticateToken,
   authorizeRol(['Admin']),
+  validateParams(paramsSchema),
   async (req, res) => {
     const { id } = req.params;
+    let client;
+    
     try {
-      const result = await pool.query(
+      client = await pool.connect();
+      const result = await client.query(
         `UPDATE usuario
          SET activo = true, deleted_at = NULL
          WHERE id_usuario = $1
@@ -377,7 +375,10 @@ router.patch(
       );
 
       if (result.rowCount === 0) {
-        return res.status(404).json({ success: false, error: 'Usuario no encontrado' });
+        return res.status(404).json({ 
+          success: false, 
+          error: 'Usuario no encontrado' 
+        });
       }
 
       res.json({
@@ -387,10 +388,12 @@ router.patch(
       });
     } catch (error) {
       console.error('Error activando usuario:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Error al activar usuario'
+      res.status(500).json({ 
+        success: false, 
+        error: 'Error al activar usuario' 
       });
+    } finally {
+      if (client) client.release();
     }
   }
 );
