@@ -1,5 +1,16 @@
 export const errorHandler = (err, req, res, next) => {
-  console.error('Error:', err);
+  // Log según el tipo de error
+  if (process.env.NODE_ENV !== 'test') {
+    if (err.code) {
+      // Errores de PostgreSQL
+      console.error(`[DB Error ${err.code}]: ${err.message}`);
+    } else if (err.message === 'CORS no permitido para este origen') {
+      console.error('[CORS Error]:', err.message);
+    } else {
+      // Otros errores
+      console.error('Error:', err.message);
+    }
+  }
 
   // CORS Error
   if (err.message === 'CORS no permitido para este origen') {

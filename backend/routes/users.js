@@ -12,13 +12,12 @@ import { validateParams } from '../middlewares/validateParams.js';
 
 const router = express.Router();
 
-
 // GET /api/users - Listar todos los usuarios
 router.get(
   '/users',
   authenticateToken,
   authorizeRol(['Admin']),
-  async (req, res) => {
+  async (req, res, next) => {
     try {
       const result = await pool.query(`
         SELECT u.id_usuario, u.nombre_usuario, u.apellido_paterno, u.apellido_materno,
@@ -31,25 +30,24 @@ router.get(
         LEFT JOIN organizacion o ON u.id_organizacion = o.id_organizacion
         ORDER BY u.id_usuario DESC
       `);
-      res.json({ success: true, data: result.rows, count: result.rowCount });
-    } catch (error) {
-      res.status(500).json({ 
-        success: false, 
-        error: 'Error interno al obtener usuarios' 
+      res.json({
+        success: true,
+        data: result.rows,
+        count: result.rowCount
       });
+    } catch (error) {
+      next(error);
     }
   }
 );
-
 
 // GET /api/users/profile - obtener datos del usuario logeado
 router.get(
   '/users/profile',
   authenticateToken,
-  async (req, res) => {
+  async (req, res, next) => {
     try {
       const userId = req.user.id;
-
       const result = await pool.query(
         `
         SELECT u.id_usuario, u.nombre_usuario, u.apellido_paterno, u.apellido_materno,
@@ -64,14 +62,15 @@ router.get(
         `,
         [userId]
       );
-
-      res.json({ success: true, data: result.rows[0] });
+      res.json({
+        success: true,
+        data: result.rows[0]
+      });
     } catch (error) {
-      res.status(500).json({ success: false, error: 'Error interno al obtener perfil' });
+      next(error);
     }
   }
 );
-
 
 // GET /api/users/:id - Obtener usuario por ID
 router.get(
@@ -79,10 +78,9 @@ router.get(
   authenticateToken,
   authorizeRol(['Admin']),
   validateParams(paramsSchema),
-  async (req, res) => {
+  async (req, res, next) => {
     try {
       const { id } = req.validatedParams;
-
       const result = await pool.query(
         `
           SELECT u.id_usuario, u.nombre_usuario, u.apellido_paterno, u.apellido_materno,
@@ -107,14 +105,10 @@ router.get(
 
       res.json({ success: true, data: result.rows[0] });
     } catch (error) {
-      res.status(500).json({ 
-        success: false, 
-        error: 'Error interno al obtener usuario por id' 
-      });
+      next(error);
     }
   },
 );
-
 
 // POST /api/users - Crear usuario
 router.post(
@@ -122,7 +116,7 @@ router.post(
   authenticateToken,
   authorizeRol(['Admin']),
   validateSchema(createUserSchema),
-  async (req, res) => {
+  async (req, res, next) => {
     try {
       const {
         nombre_usuario,
@@ -161,23 +155,15 @@ router.post(
         ]
       );
 
-      res.status(201).json({ success: true, data: result.rows[0] });
-    } catch (error) {
-      if (error.code === '23505') {
-        return res.status(409).json({
-          success: false,
-          error: 'El email ya está registrado',
-        });
-      }
-      console.error('Error creando usuario:', error);
-      res.status(500).json({ 
-        success: false, 
-        error: 'Error interno al crear usuario' 
+      res.status(201).json({
+        success: true,
+        data: result.rows[0]
       });
+    } catch (error) {
+      next(error);
     }
   }
 );
-
 
 // PUT /api/users/:id - Actualizar usuario
 router.put(
@@ -186,10 +172,9 @@ router.put(
   authorizeRol(['Admin']),
   validateSchema(updateUserSchema),
   validateParams(paramsSchema),
-  async (req, res) => {
+  async (req, res, next) => {
     try {
       const { id } = req.validatedParams;
-
       const {
         nombre_usuario,
         apellido_paterno,
@@ -207,7 +192,6 @@ router.put(
           'SELECT 1 FROM ciudad WHERE id_ciudad = $1',
           [id_ciudad]
         );
-
         if (cityExistsResult.rowCount === 0) {
           return res.status(400).json({
             success: false,
@@ -241,36 +225,39 @@ router.put(
           id_organizacion,
           id_rol,
           activo,
-          req.params.id,
+          id,
         ],
       );
 
       if (result.rowCount === 0) {
         return res
           .status(404)
-          .json({ success: false, error: 'Usuario no encontrado' });
+          .json({
+            success: false,
+            error: 'Usuario no encontrado'
+          });
       }
 
       res.json({ success: true, data: result.rows[0] });
     } catch (error) {
-      res.status(500).json({ 
-        success: false, 
-        error: 'Error interno al actualizar usuario' 
-      });
+      next(error);
     }
   },
 );
-
 
 // DELETE /api/users/:id - Borrar usuario controlado
 router.delete(
   '/users/:id',
   authenticateToken,
   authorizeRol(['Admin']),
-  async (req, res) => {
-    const { id } = req.params;
-    try{
-      const client = await pool.connect();
+  validateParams(paramsSchema),
+  async (req, res, next) => {
+    const { id } = req.validatedParams;
+    let client;
+    
+    try {
+      client = await pool.connect();
+      
       try {
         await client.query('BEGIN');
 
@@ -297,21 +284,12 @@ router.delete(
         });
       } catch (error) {
         await client.query('ROLLBACK');
-
-        console.error('Error borrando usuario:', error);
-        res.status(500).json({ 
-          success: false, 
-          error: 'Error interno al borrar usuario' 
-        });
-
-      } finally {
-        client.release();
+        throw error; // Re-lanzar para el catch externo
       }
     } catch (error) {
-      res.status(500).json({
-        success: false,
-        error: 'Error interno al borrar usuario'
-      });
+      next(error);
+    } finally {
+      if (client) client.release();
     }
   }
 );
@@ -321,10 +299,10 @@ router.patch(
   authenticateToken,
   authorizeRol(['Admin']),
   validateParams(paramsSchema),
-  async (req, res) => {
-    const { id } = req.params;
-
+  async (req, res, next) => {
+    const { id } = req.validatedParams;
     let client;
+    
     try {
       client = await pool.connect();
       const result = await client.query(
@@ -345,14 +323,12 @@ router.patch(
         data: result.rows[0],
       });
     } catch (error) {
-      console.error('Error desactivando usuario:', error);
-      res.status(500).json({ success: false, error: 'Error al desactivar usuario' });
+      next(error);
     } finally {
       if (client) client.release();
     }
   }
 );
-
 
 // PATCH /api/users/:id/activate - Activar usuario
 router.patch(
@@ -360,8 +336,8 @@ router.patch(
   authenticateToken,
   authorizeRol(['Admin']),
   validateParams(paramsSchema),
-  async (req, res) => {
-    const { id } = req.params;
+  async (req, res, next) => {
+    const { id } = req.validatedParams;
     let client;
     
     try {
@@ -387,17 +363,12 @@ router.patch(
         data: result.rows[0],
       });
     } catch (error) {
-      console.error('Error activando usuario:', error);
-      res.status(500).json({ 
-        success: false, 
-        error: 'Error al activar usuario' 
-      });
+      next(error);
     } finally {
       if (client) client.release();
     }
   }
 );
-
 
 // POST /api/users/savePushToken - guardar token push
 router.post(
@@ -405,11 +376,10 @@ router.post(
   authenticateToken,
   authorizeRol(['Admin','Usuario', 'Trabajador']),
   validateSchema(savePushTokenSchema),
-  async (req, res) => {
-    //Recibir desde el body y desde el jwt
+  async (req, res, next) => {
     const { token, plataforma } = req.validatedBody;
     const id = req.user.id;
-
+    
     try {
       const query = `
         INSERT INTO dispositivo (id_usuario, token, plataforma)
@@ -420,20 +390,14 @@ router.post(
           plataforma = EXCLUDED.plataforma,
           fecha_actualizacion = NOW();
       `;
-
       await pool.query(query, [id, token, plataforma]);
-
+      
       res.json({
         success: true,
         message: 'Dispositivo registrado exitosamente.'
       });
-
     } catch (error) {
-      console.error('Error guardando token push:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Error al registrar el dispositivo'
-      });
+      next(error);
     }
   },
 );
