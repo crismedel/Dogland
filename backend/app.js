@@ -49,14 +49,7 @@ app.use('/api', racesRouter);
 app.use('/api', healthRouter);
 
 // Middleware de manejo de errores general
-app.use((err, req, res, next) => {
-  console.error('Error capturado:', err);
-  if (err.message === 'CORS no permitido para este origen') {
-    return res.status(403).json({ error: 'CORS: Origen no permitido' });
-  }
-  res.status(500).json({ error: 'Error interno del servidor' });
-});
-
+// TODO: centralizar errores en el errorHandler
 app.use(errorHandler);
 
 export default app;
