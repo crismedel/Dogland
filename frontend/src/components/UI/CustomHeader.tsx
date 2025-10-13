@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, ViewStyle, Platform } from 'react-native';
 import { Colors } from '@/src/constants/colors';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 
 interface CustomHeaderProps {
   /** Texto centrado del header */
@@ -20,17 +21,18 @@ const CustomHeader: React.FC<CustomHeaderProps> = ({
   style,
 }) => {
   return (
-    <View style={[styles.outerContainer, style]}>
+    <Animated.View
+      entering={FadeInDown.duration(220)}
+      style={[styles.outerContainer, style]}
+    >
       <View style={styles.container}>
         <View style={styles.side}>{leftComponent}</View>
-
         <Text style={styles.title} numberOfLines={1}>
           {title}
         </Text>
-
         <View style={styles.side}>{rightComponent}</View>
       </View>
-    </View>
+    </Animated.View>
   );
 };
 
@@ -38,7 +40,7 @@ export default CustomHeader;
 
 const styles = StyleSheet.create({
   outerContainer: {
-    // marginHorizontal: 10,
+    marginHorizontal: 10,
     marginTop: 30,
     marginBottom: 16,
     // Sombra exterior para efecto 3D profundo

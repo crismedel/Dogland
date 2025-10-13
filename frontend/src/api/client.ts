@@ -11,7 +11,7 @@ import { authStorage } from '../utils/authStorage';
 let API_URL = process.env.EXPO_PUBLIC_API_URL; // fallback
 
 if (Platform.OS === 'android') {
-  API_URL = process.env.EXPO_PUBLIC_API_URL_ANDROID // emulador Android
+  API_URL = process.env.EXPO_PUBLIC_API_URL_ANDROID; // emulador Android
 } else if (Platform.OS === 'ios') {
   API_URL = process.env.EXPO_PUBLIC_API_URL_IOS; // simulador iOS
 }

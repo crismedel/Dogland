@@ -6,12 +6,16 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   ScrollView,
+  Image,
 } from 'react-native';
 import MapView, { Marker, Callout } from 'react-native-maps';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { fetchAlertById } from '../../src/api/alerts';
 import { Alert as AlertType, riskStyles } from '../../src/types/alert';
 import { Colors } from '@/src/constants/colors';
+import CustomHeader from '@/src/components/UI/CustomHeader';
+import CustomButton from '@/src/components/UI/CustomButton';
+import { Ionicons } from '@expo/vector-icons';
 
 const AlertDetailScreen = () => {
   // Hook para manejar la navegación
@@ -60,9 +64,22 @@ const AlertDetailScreen = () => {
   // Mostrar indicador de carga mientras se obtienen los datos
   if (loading) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color={Colors.secondary} />
-        <Text style={styles.loadingText}>Cargando alerta...</Text>
+      <View style={styles.container}>
+        <CustomHeader
+          title="Detalle de Alerta"
+          leftComponent={
+            <TouchableOpacity onPress={() => router.back()}>
+              <Image
+                source={require('../../assets/images/volver.png')}
+                style={{ width: 24, height: 24, tintColor: '#fff' }}
+              />
+            </TouchableOpacity>
+          }
+        />
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={Colors.secondary} />
+          <Text style={styles.loadingText}>Cargando alerta...</Text>
+        </View>
       </View>
     );
   }
@@ -70,15 +87,30 @@ const AlertDetailScreen = () => {
   // Mostrar mensaje de error si ocurrió un problema o no se encontró la alerta
   if (error || !alert) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.errorText}>{error || 'Alerta no encontrada'}</Text>
-        <TouchableOpacity
-          onPress={() => router.back()} // Botón para volver a la pantalla anterior
-          style={styles.backButton}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.backButtonText}>Volver</Text>
-        </TouchableOpacity>
+      <View style={styles.container}>
+        <CustomHeader
+          title="Detalle de Alerta"
+          leftComponent={
+            <TouchableOpacity onPress={() => router.back()}>
+              <Image
+                source={require('../../assets/images/volver.png')}
+                style={{ width: 24, height: 24, tintColor: '#fff' }}
+              />
+            </TouchableOpacity>
+          }
+        />
+        <View style={styles.center}>
+          <Text style={styles.errorText}>
+            {error || 'Alerta no encontrada'}
+          </Text>
+          <CustomButton
+            title="Volver"
+            onPress={() => router.back()}
+            variant="primary"
+            icon="arrow-back-outline"
+            style={{ marginTop: 16 }}
+          />
+        </View>
       </View>
     );
   }
@@ -89,6 +121,28 @@ const AlertDetailScreen = () => {
   // Renderizado principal con detalles de la alerta
   return (
     <View style={styles.container}>
+      {/* Header con back y acción opcional */}
+      <CustomHeader
+        title="Detalle de Alerta"
+        leftComponent={
+          <TouchableOpacity onPress={() => router.back()}>
+            <Image
+              source={require('../../assets/images/volver.png')}
+              style={{ width: 24, height: 24, tintColor: '#fff' }}
+            />
+          </TouchableOpacity>
+        }
+        rightComponent={
+          <TouchableOpacity
+            onPress={() => {
+              /* acción opcional: compartir, editar, etc. */
+            }}
+          >
+            <Ionicons name="share-outline" size={22} color="#fff" />
+          </TouchableOpacity>
+        }
+      />
+
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Encabezado con título y tipo de alerta */}
         <View style={styles.headerDetail}>
@@ -199,14 +253,14 @@ const AlertDetailScreen = () => {
           )}
         </View>
 
-        {/* Botón para volver a la pantalla anterior */}
-        <TouchableOpacity
+        {/* Botón para volver a la pantalla anterior con CustomButton */}
+        <CustomButton
+          title="Volver a la lista"
           onPress={() => router.back()}
-          style={styles.backButton}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.backButtonText}>Volver a la lista</Text>
-        </TouchableOpacity>
+          variant="primary"
+          icon="arrow-back-outline"
+          style={{ marginTop: 10 }}
+        />
       </ScrollView>
     </View>
   );
@@ -249,17 +303,14 @@ const styles = StyleSheet.create({
   mapCard: { borderRadius: 12, overflow: 'hidden' },
   map: { height: 250, width: '100%' },
   noLocation: { textAlign: 'center', padding: 16, color: '#666' },
-  // BOTON VOLVER
-  backButton: {
-    backgroundColor: Colors.background,
-    padding: 14,
-    borderRadius: 12,
-    marginTop: 10,
-  },
-  backButtonText: { color: '#fff', fontWeight: '700', textAlign: 'center' },
   // ESTADOS DE ERROR Y LOADING
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  errorText: { color: '#E53935', marginBottom: 16 },
+  errorText: {
+    color: '#E53935',
+    marginBottom: 16,
+    fontSize: 16,
+    textAlign: 'center',
+  },
   loadingText: { marginTop: 8, color: Colors.secondary },
 
   // MARCADOR PERSONALIZADO (estilo mapa comunitario)

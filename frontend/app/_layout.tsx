@@ -1,9 +1,9 @@
 import { Stack, useRouter, usePathname } from 'expo-router';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Platform } from 'react-native';
 import { useEffect, useState } from 'react';
 import { Colors } from '@/src/constants/colors';
 import { NotificationProvider } from '@/src/components/notifications/NotificationContext';
-import BottomNavBar from '@/src/components/UI/TabBar'; // <- tu navbar inferior
+import BottomNavBar from '@/src/components/UI/TabBar';
 
 export default function RootLayout() {
   const router = useRouter();
@@ -28,9 +28,15 @@ export default function RootLayout() {
     <NotificationProvider>
       <View style={styles.background}>
         <Stack
-          screenOptions={{ contentStyle: { backgroundColor: 'transparent' } }}
+          screenOptions={{
+            contentStyle: { backgroundColor: 'transparent' },
+            // iOS slide por defecto para pushes internos
+            animation: Platform.select({ ios: 'default', android: 'fade' }),
+          }}
         >
           <Stack.Screen name="auth" options={{ headerShown: false }} />
+
+          {/* Secciones principales sin header */}
           <Stack.Screen name="home" options={{ headerShown: false }} />
           <Stack.Screen name="alerts" options={{ headerShown: false }} />
           <Stack.Screen name="adoption" options={{ headerShown: false }} />
@@ -40,6 +46,7 @@ export default function RootLayout() {
           />
           <Stack.Screen name="profile" options={{ headerShown: false }} />
           <Stack.Screen name="settings" options={{ headerShown: false }} />
+          <Stack.Screen name="create-report" options={{ headerShown: false }} />
         </Stack>
 
         {showTabBar && <BottomNavBar />}

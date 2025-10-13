@@ -163,7 +163,7 @@ const CommunityAlertsScreen = () => {
             style={styles.filterButton}
             onPress={() => setShowFilters(true)}
           >
-            <Ionicons name="filter" size={22} color="#fff" />
+            <Ionicons name="options-outline" size={22} color="#fff" />
           </TouchableOpacity>
         }
         // Si tu CustomHeader acepta estilos del contenedor, asegura transparentes:
@@ -299,7 +299,6 @@ export default CommunityAlertsScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
     paddingHorizontal: 16,
     paddingTop: 8, // evita choques visuales con el header
   },
@@ -309,7 +308,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 16,
-    borderWidth: 0, // sin borde; si quieres un aro: borderWidth: 1, borderColor: 'rgba(255,255,255,0.6)'
+    borderWidth: 0,
     backgroundColor: 'transparent',
   },
 

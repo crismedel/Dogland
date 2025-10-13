@@ -1,14 +1,13 @@
 // app/settings.tsx
-import React, { useState } from 'react';
-import { Alert, StyleSheet, View, Text } from 'react-native';
+import React from 'react';
+import { StyleSheet, View, Text } from 'react-native';
 import { router } from 'expo-router';
 import { useNotification } from '@/src/components/notifications/NotificationContext';
+import { authStorage } from '@/src/utils/authStorage';
 import CustomHeader from '@/src/components/UI/CustomHeader';
 import CustomButton from '@/src/components/UI/CustomButton';
 
 export default function SettingsScreen() {
-  // Si manejas el token en contexto/secure storage, reemplaza este estado local
-  const [token, setToken] = useState('mi_token');
   const { confirm, showSuccess } = useNotification();
 
   const handleLogout = () => {
@@ -18,13 +17,20 @@ export default function SettingsScreen() {
       confirmLabel: 'Cerrar sesión',
       cancelLabel: 'Cancelar',
       destructive: true,
-      onConfirm: () => {
-        setToken('');
-        showSuccess('Sesión cerrada', 'Has cerrado sesión correctamente.');
-        // Pequeño delay para que el usuario vea el toast antes de navegar
-        setTimeout(() => {
-          router.replace('/auth');
-        }, 500);
+      onConfirm: async () => {
+        try {
+          // Eliminar el token usando tu utilidad
+          await authStorage.removeToken();
+
+          showSuccess('Sesión cerrada', 'Has cerrado sesión correctamente.');
+
+          // Pequeño delay para que el usuario vea el toast antes de navegar
+          setTimeout(() => {
+            router.replace('/auth');
+          }, 500);
+        } catch (error) {
+          console.error('Error al cerrar sesión:', error);
+        }
       },
     });
   };

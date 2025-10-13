@@ -14,6 +14,9 @@ import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { Picker } from '@react-native-picker/picker';
 import { createAlert } from '../../src/api/alerts';
 import { Colors } from '@/src/constants/colors';
+import CustomHeader from '@/src/components/UI/CustomHeader';
+import CustomButton from '@/src/components/UI/CustomButton';
+import { Ionicons } from '@expo/vector-icons';
 
 type FormData = {
   titulo: string;
@@ -39,7 +42,14 @@ const MOCK_NIVELES_RIESGO = [
 ];
 
 export default function CreateAlertScreen() {
-  const { control, handleSubmit, reset } = useForm<FormData>({
+  const router = useRouter();
+  const {
+    control,
+    handleSubmit,
+    reset,
+    setValue,
+    formState: { isSubmitting },
+  } = useForm<FormData>({
     defaultValues: {
       titulo: '',
       descripcion: '',
@@ -48,15 +58,17 @@ export default function CreateAlertScreen() {
       fechaExpiracion: null,
     },
   });
-  const router = useRouter();
+
   const [pickerVisible, setPickerVisible] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
   const showDatePicker = () => setPickerVisible(true);
   const hideDatePicker = () => setPickerVisible(false);
 
   const onConfirmDate = (date: Date) => {
-    setSelectedDate(date);
+    setValue('fechaExpiracion', date, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
     hideDatePicker();
   };
 
@@ -67,30 +79,30 @@ export default function CreateAlertScreen() {
     }
 
     const payload = {
-      titulo: data.titulo,
-      descripcion: data.descripcion,
+      titulo: data.titulo.trim(),
+      descripcion: data.descripcion.trim(),
       id_tipo_alerta: data.tipoAlerta,
       id_nivel_riesgo: data.nivelRiesgo,
-      fecha_expiracion: selectedDate ? selectedDate.toISOString() : null,
-      id_usuario: 1, // <-- Aquí agregas el id_usuario fijo
-      latitude: null, // o el valor que obtengas
-      longitude: null, // o el valor que obtengas
-      direccion: '', // o el valor que obtengas
+      fecha_expiracion: data.fechaExpiracion
+        ? data.fechaExpiracion.toISOString()
+        : null,
+      id_usuario: 1, // TODO: reemplazar por ID real del usuario autenticado
+      latitude: null, // TODO: integrar ubicación real
+      longitude: null,
+      direccion: '',
     };
 
-    console.log('CreateAlertScreen: Payload a enviar:', payload);
     try {
       const newAlert = await createAlert(payload);
       console.log('CreateAlertScreen: Alerta creada con éxito:', newAlert);
       alert('Alerta creada con éxito!');
-      reset();
-      setSelectedDate(null);
-      // router.back() o navegar a la lista de alertas
+      reset(); // limpia formulario
+      // router.back(); // o navegar a la lista de alertas
     } catch (error: any) {
       console.error('CreateAlertScreen: Error al crear alerta:', error);
       alert(
         `Error al crear alerta: ${
-          error.response?.data?.error || 'Inténtalo de nuevo.'
+          error?.response?.data?.error || 'Inténtalo de nuevo.'
         }`,
       );
     }
@@ -98,28 +110,32 @@ export default function CreateAlertScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Header con back + título */}
-      <View style={styles.header}>
-        {/* Botón volver */}
-        <TouchableOpacity
-          style={styles.backButtonHeader}
-          activeOpacity={0.8}
-          onPress={() => router.back()}
-        >
-          <Image
-            source={require('../../assets/images/volver.png')}
-            style={styles.backIconHeader}
-          />
-        </TouchableOpacity>
-
-        {/* Título centrado */}
-        <Text style={styles.headerTitle}>Crear Alerta</Text>
-      </View>
+      {/* Header con back + título + acción enviar */}
+      <CustomHeader
+        title="Crear Alerta"
+        leftComponent={
+          <TouchableOpacity onPress={() => router.back()}>
+            <Image
+              source={require('../../assets/images/volver.png')}
+              style={{ width: 24, height: 24, tintColor: '#fff' }}
+            />
+          </TouchableOpacity>
+        }
+        rightComponent={
+          <TouchableOpacity
+            onPress={handleSubmit(onSubmit)}
+            disabled={isSubmitting}
+          >
+            <Ionicons name="checkmark-done-outline" size={22} color="#fff" />
+          </TouchableOpacity>
+        }
+      />
 
       <ScrollView
         style={styles.scrollContainer}
         contentContainerStyle={styles.contentContainer}
         keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
         {/* Datos básicos */}
         <View style={styles.card}>
@@ -129,7 +145,10 @@ export default function CreateAlertScreen() {
           <Controller
             control={control}
             name="titulo"
-            rules={{ required: 'El título es obligatorio.' }}
+            rules={{
+              required: 'El título es obligatorio.',
+              minLength: { value: 3, message: 'Mínimo 3 caracteres.' },
+            }}
             render={({ field: { onChange, value }, fieldState: { error } }) => (
               <>
                 <TextInput
@@ -147,7 +166,10 @@ export default function CreateAlertScreen() {
           <Controller
             control={control}
             name="descripcion"
-            rules={{ required: 'La descripción es obligatoria.' }}
+            rules={{
+              required: 'La descripción es obligatoria.',
+              minLength: { value: 5, message: 'Mínimo 5 caracteres.' },
+            }}
             render={({ field: { onChange, value }, fieldState: { error } }) => (
               <>
                 <TextInput
@@ -247,13 +269,24 @@ export default function CreateAlertScreen() {
           <Text style={styles.label}>
             Fecha y Hora de Expiración (Opcional)
           </Text>
-          <TouchableOpacity onPress={showDatePicker} style={styles.dateButton}>
-            <Text style={styles.dateButtonText}>
-              {selectedDate
-                ? selectedDate.toLocaleString()
-                : 'Toca para seleccionar fecha y hora'}
-            </Text>
-          </TouchableOpacity>
+          <Controller
+            control={control}
+            name="fechaExpiracion"
+            render={({ field: { value } }) => (
+              <>
+                <TouchableOpacity
+                  onPress={showDatePicker}
+                  style={styles.dateButton}
+                >
+                  <Text style={styles.dateButtonText}>
+                    {value
+                      ? value.toLocaleString()
+                      : 'Toca para seleccionar fecha y hora'}
+                  </Text>
+                </TouchableOpacity>
+              </>
+            )}
+          />
         </View>
 
         {/* Ubicación */}
@@ -278,20 +311,23 @@ export default function CreateAlertScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Botón de envío */}
-        <TouchableOpacity
-          style={styles.submitButton}
+        {/* Botón principal con CustomButton */}
+        <CustomButton
+          title="Crear Alerta"
           onPress={handleSubmit(onSubmit)}
-        >
-          <Text style={styles.submitButtonText}>Crear Alerta</Text>
-        </TouchableOpacity>
+          variant="primary"
+          icon="checkmark-done-outline"
+          loading={isSubmitting}
+          disabled={isSubmitting}
+          style={{ marginTop: 10, paddingVertical: 14 }}
+        />
 
         <DateTimePickerModal
           isVisible={pickerVisible}
           mode="datetime"
           onConfirm={onConfirmDate}
           onCancel={hideDatePicker}
-          date={selectedDate || new Date()}
+          date={new Date()}
           minimumDate={new Date()}
         />
       </ScrollView>
@@ -300,49 +336,9 @@ export default function CreateAlertScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f0f2f5',
-  },
-  scrollContainer: {
-    flex: 1,
-  },
-  contentContainer: {
-    padding: 20,
-  },
-
-  // Header styles
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: Colors.background,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 8,
-    marginBottom: 16,
-    marginTop: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    elevation: 4,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#fff',
-    flex: 1,
-    textAlign: 'center',
-  },
-  backButtonHeader: {
-    padding: 6,
-  },
-  backIconHeader: {
-    width: 24,
-    height: 24,
-    tintColor: '#fff',
-  },
+  container: { flex: 1, backgroundColor: '#f0f2f5' },
+  scrollContainer: { flex: 1 },
+  contentContainer: { padding: 20 },
 
   // Card styles
   card: {
@@ -390,10 +386,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff5f5',
   },
 
-  textarea: {
-    minHeight: 90,
-    textAlignVertical: 'top',
-  },
+  textarea: { minHeight: 90, textAlignVertical: 'top' },
 
   pickerContainer: {
     borderWidth: 1,
@@ -404,10 +397,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
 
-  picker: {
-    height: 50,
-    width: '100%',
-  },
+  picker: { height: 50, width: '100%' },
 
   dateButton: {
     paddingVertical: 12,
@@ -419,11 +409,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     alignItems: 'flex-start',
   },
-
-  dateButtonText: {
-    color: '#555',
-    fontSize: 14,
-  },
+  dateButtonText: { color: '#555', fontSize: 14 },
 
   locationButton: {
     backgroundColor: '#e3f2fd',
@@ -435,12 +421,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 10,
   },
-
-  locationButtonText: {
-    fontSize: 14,
-    color: '#1976d2',
-    fontWeight: '500',
-  },
+  locationButtonText: { fontSize: 14, color: '#1976d2', fontWeight: '500' },
 
   clearLocationButton: {
     alignSelf: 'flex-end',
@@ -448,7 +429,6 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     paddingHorizontal: 8,
   },
-
   clearLocationButtonText: {
     color: Colors.danger,
     fontSize: 12,
@@ -468,12 +448,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-
-  submitButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
+  submitButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
 
   errorText: {
     color: Colors.danger,

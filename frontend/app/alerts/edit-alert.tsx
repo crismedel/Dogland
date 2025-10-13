@@ -101,7 +101,7 @@ export default function EditAlertScreen() {
       id_nivel_riesgo: nivelRiesgo,
       fecha_expiracion: fechaExpiracion ?? undefined,
       activa,
-      id_usuario: 1, // <-- Aquí agregas el id_usuario fijo
+      id_usuario: 1,
       latitude,
       longitude,
       direccion,

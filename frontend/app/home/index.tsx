@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React from 'react';
 import {
   Text,
   View,
@@ -7,47 +7,126 @@ import {
   KeyboardAvoidingView,
   Platform,
   Linking,
-  Alert,
   Image,
   ScrollView,
   Pressable,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import CustomButton from '../../src/components/UI/CustomButton';
 import { Colors } from '@/src/constants/colors';
+import { fetchUserProfile } from '@/src/api/users'; // <-- importa tu función
+import { authStorage } from '@/src/utils/authStorage'; // para logout en caso 401 opcional
 
 const { width } = Dimensions.get('window');
+const BADGE_SIZE = 42;
 
 export default function Index() {
-  const userName = 'Victoria';
-  const userInitial = useMemo(
+  const [userName, setUserName] = React.useState<string>('');
+  const [loading, setLoading] = React.useState<boolean>(true);
+  const [error, setError] = React.useState<string | null>(null);
+
+  // Cargar perfil al montar
+  React.useEffect(() => {
+    let isMounted = true;
+    (async () => {
+      try {
+        const user = await fetchUserProfile();
+        if (!isMounted) return;
+
+        // Ajusta según tu backend. Con /users/me recibes:
+        // { id_usuario, nombre_usuario, ... , nombre_rol, ... }
+        const name = user?.nombre_usuario || user?.nombre_usuario || '';
+        setUserName(name);
+      } catch (err: any) {
+        if (!isMounted) return;
+        // Manejo de errores básicos
+        if (err?.response?.status === 401) {
+          // Token inválido/expirado → limpiar y mandar a login
+          await authStorage.removeToken?.();
+          router.replace('/auth');
+          return;
+        }
+        setError(
+          err?.response?.data?.error ??
+            err?.message ??
+            'No se pudo cargar el perfil',
+        );
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    })();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const userInitial = React.useMemo(
     () => (userName?.trim()?.[0] || 'U').toUpperCase(),
     [userName],
   );
 
-  const openSocialMedia = (platform: string) => {
+  const openSocialMedia = (platform: 'facebook' | 'twitter' | 'instagram') => {
     const urls = {
       facebook: 'https://facebook.com',
       twitter: 'https://twitter.com',
       instagram: 'https://instagram.com',
     };
-    Linking.openURL(urls[platform as keyof typeof urls]);
+    Linking.openURL(urls[platform]);
   };
+
+  // Loading/errores arriba del layout
+  if (loading) {
+    return (
+      <View
+        style={[
+          styles.container,
+          { justifyContent: 'center', alignItems: 'center' },
+        ]}
+      >
+        <ActivityIndicator size="large" color="#2c3e50" />
+        <Text style={{ marginTop: 12, color: '#2c3e50' }}>
+          Cargando tu perfil…
+        </Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View
+        style={[
+          styles.container,
+          { justifyContent: 'center', alignItems: 'center', padding: 16 },
+        ]}
+      >
+        <Text
+          style={{ color: 'crimson', textAlign: 'center', marginBottom: 12 }}
+        >
+          {error}
+        </Text>
+        <CustomButton
+          title="Reintentar"
+          onPress={() => router.replace('/')}
+          variant="primary"
+        />
+      </View>
+    );
+  }
 
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      {/* Fondo degradado */}
       <LinearGradient
         colors={['#F2E2C4', '#F2E2C4']}
         style={StyleSheet.absoluteFillObject}
       />
 
-      {/* Icono de Perfil (inicial del usuario) */}
+      {/* Badge con inicial del usuario real */}
       <View style={styles.topBar}>
         <Pressable
           onPress={() => router.push('/profile')}
@@ -62,7 +141,9 @@ export default function Index() {
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.welcomeText}>Bienvenido/a {userName}</Text>
+        <Text style={styles.welcomeText}>
+          Bienvenido/a {userName || 'Usuario'}
+        </Text>
 
         {/* Bloque 1 (imagen derecha) */}
         <View style={styles.cardRight}>
@@ -168,18 +249,11 @@ export default function Index() {
   );
 }
 
-const BADGE_SIZE = 42;
-
 const styles = StyleSheet.create({
   container: { flex: 1 },
 
   // Top bar con badge de perfil
-  topBar: {
-    position: 'absolute',
-    top: 50,
-    left: 20,
-    zIndex: 10,
-  },
+  topBar: { position: 'absolute', top: 50, left: 20, zIndex: 10 },
   profileBadge: {
     width: BADGE_SIZE,
     height: BADGE_SIZE,
@@ -205,12 +279,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     letterSpacing: 0.5,
   },
-
-  content: {
-    paddingTop: 120,
-    paddingBottom: 40,
-    gap: 30,
-  },
+  content: { paddingTop: 120, paddingBottom: 40, gap: 30 },
   welcomeText: {
     fontSize: 28,
     fontWeight: '800',
@@ -265,9 +334,7 @@ const styles = StyleSheet.create({
       android: { elevation: 4 },
     }),
   },
-
   textBlock: { flex: 1, alignItems: 'center', marginHorizontal: 10 },
-
   questionText: {
     fontSize: 18,
     fontWeight: '600',
@@ -275,7 +342,6 @@ const styles = StyleSheet.create({
     color: '#000',
     textAlign: 'center',
   },
-
   circleImage: {
     width: width * 0.28,
     height: width * 0.28,
@@ -293,7 +359,6 @@ const styles = StyleSheet.create({
       android: { elevation: 6 },
     }),
   },
-
   socialContainer: { alignItems: 'center', marginTop: 30 },
   socialText: {
     fontSize: 16,
@@ -318,11 +383,5 @@ const styles = StyleSheet.create({
       },
       android: { elevation: 4 },
     }),
-  },
-  socialLetter: {
-    fontWeight: '800',
-    color: '#2c3e50',
-    fontSize: 16,
-    textTransform: 'uppercase',
   },
 });
