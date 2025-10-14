@@ -19,6 +19,7 @@ import citiesRouter from './routes/cities.js';
 import speciesRouter from './routes/species.js';
 import racesRouter from './routes/races.js';
 import healthRouter from './routes/health-states.js';
+import medicalHistoryRouter from './routes/medicalHistory.js';
 
 const app = express();
 
@@ -47,9 +48,9 @@ app.use('/api', adoptionsRouter);
 app.use('/api', speciesRouter);
 app.use('/api', racesRouter);
 app.use('/api', healthRouter);
+app.use('/api', medicalHistoryRouter);
 
 // Middleware de manejo de errores general
-// TODO: centralizar errores en el errorHandler
 app.use(errorHandler);
 
 export default app;
