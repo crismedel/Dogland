@@ -20,7 +20,7 @@ import speciesRouter from './routes/species.js';
 import racesRouter from './routes/races.js';
 import healthRouter from './routes/health-states.js';
 import medicalHistoryRouter from './routes/medicalHistory.js';
-
+import statRoutes from './routes/stats.js';
 const app = express();
 
 // Configuraciones base
@@ -36,6 +36,7 @@ app.get('/', (req, res) => {
   res.send('Servidor funcionando correctamente');
 });
 
+app.use('/api/stats', statRoutes);//estadisticas de avistamientos
 app.use('/api/auth', authRouter);
 app.use('/api', sightingsRouter);
 app.use('/api', alertsRouter);
