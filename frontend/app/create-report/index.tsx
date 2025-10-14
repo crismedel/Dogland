@@ -10,27 +10,20 @@ import {
   Platform,
   KeyboardAvoidingView,
   Image,
+  Dimensions,
   ActivityIndicator,
 } from 'react-native';
 import DropDownPicker from 'react-native-dropdown-picker';
-import { Dimensions } from 'react-native';
 import * as Location from 'expo-location';
 import MapView, { Marker } from 'react-native-maps';
-import axios, { AxiosError } from 'axios';
+import { AxiosError } from 'axios';
 import { useNotification } from '@/src/components/notifications/NotificationContext';
 import apiClient from '../../src/api/client';
 import { Colors } from '@/src/constants/colors';
-
-// IMPORTACIONES NECESARIAS PARA OBTENER EL USUARIO
-import { fetchUsers } from '../../src/api/users';
 import CustomHeader from '@/src/components/UI/CustomHeader';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import CustomButton from '@/src/components/UI/CustomButton'; // <-- importa tu botón
-
-interface User {
-  id_usuario: number;
-}
+import CustomButton from '@/src/components/UI/CustomButton';
 
 const { width } = Dimensions.get('window');
 
@@ -41,17 +34,15 @@ interface ErrorData {
 
 const CreateReportScreen = () => {
   const router = useRouter();
+  const { showError, showSuccess, showInfo } = useNotification();
 
   // ESTADOS DEL FORMULARIO
   const [descripcion, setDescripcion] = useState('');
-  const [titulo, setTitulo] = useState(''); // Estado para el título
+  const [titulo, setTitulo] = useState('');
   const [imageUrl, setImageUrl] = useState('');
 
-  // ESTADOS CRÍTICOS DEL USUARIO
-  const [userId, setUserId] = useState<number | null>(null);
-  const [userLoading, setUserLoading] = useState(true);
-
-  const { showError, showSuccess, showInfo } = useNotification();
+  // 🚨 CAMBIO CLAVE: Eliminamos el estado del usuario. El ID se obtiene del token en el backend.
+  const [loading, setLoading] = useState(false); // Nuevo estado para el loading del botón
 
   // ESTADOS DE DROPDOWN
   const [especie, setEspecie] = useState<number | null>(null);
@@ -72,9 +63,7 @@ const CreateReportScreen = () => {
     { label: 'Grave', value: 3 },
   ]);
 
-  const [estadoAvistamiento, setEstadoAvistamiento] = useState<number | null>(
-    null,
-  );
+  const [estadoAvistamiento, setEstadoAvistamiento] = useState<number | null>(null);
   const [openEstadoAvistamiento, setOpenEstadoAvistamiento] = useState(false);
   const [itemsEstadoAvistamiento, setItemsEstadoAvistamiento] = useState([
     { label: 'Salud Pública', value: 1 },
@@ -90,24 +79,8 @@ const CreateReportScreen = () => {
   } | null>(null);
   const [mostrarMapa, setMostrarMapa] = useState(false);
 
-  // LÓGICA DE CARGA DEL ID DEL USUARIO
-  useEffect(() => {
-    fetchUsers()
-      .then((users: User[]) => {
-        if (users.length > 0) {
-          setUserId(users[0].id_usuario); // Obtiene el ID
-        } else {
-          showError('Error de Usuario', 'No se encontró un usuario activo.');
-        }
-      })
-      .catch((err) => {
-        console.error('Error cargando ID de usuario:', err);
-        showError('Error de Sistema', 'No se pudo obtener el ID del usuario.');
-      })
-      .finally(() => setUserLoading(false));
-  }, []);
+  // Ya no necesitamos la lógica de `useEffect` para `fetchUsers`. La eliminamos.
 
-  // FUNCIONES DE UBICACIÓN
   const obtenerUbicacionActual = async () => {
     let { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== 'granted') {
@@ -124,26 +97,19 @@ const CreateReportScreen = () => {
     setUbicacion(coordinate);
     Alert.alert(
       'Ubicación Seleccionada',
-      `Lat: ${coordinate.latitude.toFixed(
-        4,
-      )}, Lon: ${coordinate.longitude.toFixed(4)}`,
+      `Lat: ${coordinate.latitude.toFixed(4)}, Lon: ${coordinate.longitude.toFixed(4)}`,
     );
     setMostrarMapa(false);
   };
 
   const handleCreateReport = async () => {
-    if (userLoading || userId === null) {
-      showError('Error', 'Esperando ID de usuario. Intente nuevamente.');
-      return;
-    }
-
-    // 1. Validaciones (Foto es Opcional)
+    // 1. Validaciones
     if (
       !titulo ||
       !descripcion ||
-      !especie ||
-      !estadoSalud ||
-      !estadoAvistamiento ||
+      especie === null ||
+      estadoSalud === null ||
+      estadoAvistamiento === null ||
       !ubicacion
     ) {
       showError(
@@ -153,11 +119,10 @@ const CreateReportScreen = () => {
       return;
     }
 
+    setLoading(true); // Se activa el estado de carga
+    
     // 2. Pre-procesamiento de la URL de la foto
-    // Envía la URL si es válida, de lo contrario, envía NULL.
-    const finalImageUrl =
-      imageUrl && imageUrl.startsWith('http') ? imageUrl : null;
-
+    const finalImageUrl = imageUrl && imageUrl.startsWith('http') ? imageUrl : null;
     if (imageUrl && !finalImageUrl) {
       showInfo(
         'Advertencia',
@@ -165,9 +130,9 @@ const CreateReportScreen = () => {
       );
     }
 
-    // 3. Data para la API
+    // 🚨 CAMBIO CLAVE: reportData ya NO contiene id_usuario
+    // El backend lo obtendrá del token JWT.
     const reportData = {
-      id_usuario: userId, // ID de usuario dinámico
       id_estado_avistamiento: estadoAvistamiento,
       id_estado_salud: estadoSalud,
       id_especie: especie,
@@ -178,10 +143,10 @@ const CreateReportScreen = () => {
         latitude: ubicacion.latitude,
       },
       direccion: 'Ubicación seleccionada en el mapa',
-      url: finalImageUrl, // NULL o URL válida
+      url: finalImageUrl,
     };
 
-    // 4. Petición a la API y manejo de errores
+    // 3. Petición a la API y manejo de errores
     try {
       const response = await apiClient.post('/sightings', reportData);
 
@@ -207,40 +172,27 @@ const CreateReportScreen = () => {
           'Error al enviar el reporte (Axios):',
           error.response?.data || error.message,
         );
-
         const errorData = error.response?.data;
         const errorResponse = errorData?.error || errorData?.message;
-
         const errorMessage =
           typeof errorResponse === 'string'
             ? errorResponse
             : 'No se pudo conectar con el servidor o hubo un error desconocido.';
-
         showError('Error', errorMessage);
       } else {
         console.error('Error inesperado (no-Axios):', error);
         showError('Error', 'Ocurrió un error inesperado.');
       }
+    } finally {
+      setLoading(false); // Se desactiva el estado de carga
     }
   };
 
-  // Pantalla de carga mientras se obtiene el ID del usuario
-  if (userLoading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={Colors.background} />
-        <Text style={styles.loadingText}>Cargando datos de usuario...</Text>
-      </View>
-    );
-  }
-
-  // JSX DEL FORMULARIO
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      {/* Header */}
       <CustomHeader
         title="Crear Reporte"
         leftComponent={
@@ -253,7 +205,11 @@ const CreateReportScreen = () => {
         }
         rightComponent={
           <TouchableOpacity onPress={handleCreateReport}>
-            <Ionicons name="checkmark-done-outline" size={22} color="#fff" />
+            {loading ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Ionicons name="checkmark-done-outline" size={22} color="#fff" />
+            )}
           </TouchableOpacity>
         }
       />
@@ -264,7 +220,6 @@ const CreateReportScreen = () => {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.formContainer}>
-          {/* TÍTULO */}
           <View style={styles.inputContainer}>
             <Text style={styles.inputLabel}>Título del Reporte:</Text>
             <TextInput
@@ -275,7 +230,6 @@ const CreateReportScreen = () => {
             />
           </View>
 
-          {/* DESCRIPCIÓN */}
           <View style={styles.inputContainer}>
             <Text style={styles.inputLabel}>Descripción del Reporte:</Text>
             <TextInput
@@ -290,13 +244,7 @@ const CreateReportScreen = () => {
             />
           </View>
 
-          {/* Especie */}
-          <View
-            style={[
-              styles.inputContainer,
-              Platform.OS === 'ios' && { zIndex: 5000 },
-            ]}
-          >
+          <View style={[styles.inputContainer, Platform.OS === 'ios' && { zIndex: 5000 }]}>
             <Text style={styles.inputLabel}>Especie del Animal:</Text>
             <DropDownPicker
               open={openEspecie}
@@ -311,13 +259,7 @@ const CreateReportScreen = () => {
             />
           </View>
 
-          {/* Estado de Salud */}
-          <View
-            style={[
-              styles.inputContainer,
-              Platform.OS === 'ios' && { zIndex: 4000 },
-            ]}
-          >
+          <View style={[styles.inputContainer, Platform.OS === 'ios' && { zIndex: 4000 }]}>
             <Text style={styles.inputLabel}>Estado de Salud del Animal:</Text>
             <DropDownPicker
               open={openEstadoSalud}
@@ -332,13 +274,7 @@ const CreateReportScreen = () => {
             />
           </View>
 
-          {/* Estado del Avistamiento */}
-          <View
-            style={[
-              styles.inputContainer,
-              Platform.OS === 'ios' && { zIndex: 3000 },
-            ]}
-          >
+          <View style={[styles.inputContainer, Platform.OS === 'ios' && { zIndex: 3000 }]}>
             <Text style={styles.inputLabel}>Estado del Avistamiento:</Text>
             <DropDownPicker
               open={openEstadoAvistamiento}
@@ -353,7 +289,6 @@ const CreateReportScreen = () => {
             />
           </View>
 
-          {/* CASILLERO PARA LA URL DE LA IMAGEN (OPCIONAL) */}
           <View style={[styles.inputContainer, { zIndex: 2000 }]}>
             <Text style={styles.inputLabel}>URL de la Foto (Opcional):</Text>
             <TextInput
@@ -364,25 +299,19 @@ const CreateReportScreen = () => {
               keyboardType="url"
               autoCapitalize="none"
             />
-
-            {/* Opcional: Previsualización de la Imagen */}
             {imageUrl.startsWith('http') && (
               <View style={styles.imagePreviewContainer}>
                 <Image
                   source={{ uri: imageUrl }}
                   style={styles.imagePreview}
-                  onError={() =>
-                    console.log('Error al cargar la URL de previsualización')
-                  }
+                  onError={() => console.log('Error al cargar la URL de previsualización')}
                 />
               </View>
             )}
           </View>
 
-          {/* Ubicación */}
           <View style={styles.inputContainer}>
             <Text style={styles.inputLabel}>Ubicación:</Text>
-
             <TouchableOpacity
               style={styles.textInput}
               onPress={() =>
@@ -390,14 +319,8 @@ const CreateReportScreen = () => {
                   'Selecciona una opción',
                   '¿Quieres seleccionar en el mapa o usar tu ubicación actual?',
                   [
-                    {
-                      text: 'Ver en Mapa',
-                      onPress: () => setMostrarMapa(true),
-                    },
-                    {
-                      text: 'Usar Ubicación Actual',
-                      onPress: obtenerUbicacionActual,
-                    },
+                    { text: 'Ver en Mapa', onPress: () => setMostrarMapa(true) },
+                    { text: 'Usar Ubicación Actual', onPress: obtenerUbicacionActual },
                     { text: 'Cancelar', style: 'cancel' },
                   ],
                 )
@@ -405,15 +328,12 @@ const CreateReportScreen = () => {
             >
               <Text style={{ color: ubicacion ? '#000' : '#888' }}>
                 {ubicacion
-                  ? `${ubicacion.latitude.toFixed(
-                      4,
-                    )}, ${ubicacion.longitude.toFixed(4)}`
+                  ? `${ubicacion.latitude.toFixed(4)}, ${ubicacion.longitude.toFixed(4)}`
                   : 'Seleccionar ubicación'}
               </Text>
             </TouchableOpacity>
           </View>
 
-          {/* Mapa para seleccionar ubicación */}
           {mostrarMapa && (
             <View style={styles.mapContainer}>
               <MapView
@@ -436,14 +356,13 @@ const CreateReportScreen = () => {
             </View>
           )}
 
-          {/* Botón principal con CustomButton */}
           <CustomButton
             title="Generar Reporte"
             onPress={handleCreateReport}
             variant="primary"
             icon="checkmark-done-outline"
-            loading={false /* si agregas estado de envío, colócalo aquí */}
-            disabled={userLoading}
+            loading={loading}
+            disabled={loading}
             style={{ marginTop: 10 }}
           />
         </View>
@@ -453,6 +372,7 @@ const CreateReportScreen = () => {
 };
 
 const styles = StyleSheet.create({
+  // ... (tus estilos)
   container: {
     flex: 1,
     backgroundColor: Colors.lightText,
