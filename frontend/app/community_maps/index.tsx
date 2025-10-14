@@ -271,6 +271,12 @@ const CommunityMapScreen = () => {
     currentLoadingState ||
     (hasSearchedWithFilters && reportsToRender.length === 0);
 
+
+  const goToStatsScreen = () => {
+    setMenuVisible(false); // Cerrar el menú flotante
+    router.push('../stats'); // Asume que la ruta al componente es '/stats'
+  };
+
   return (
     <View style={styles.container}>
       <CustomHeader
@@ -407,11 +413,24 @@ const CommunityMapScreen = () => {
           onDelete={handleDelete}
         />
       )}
-
       <FloatingSpeedDial
         visible={menuVisible}
         onToggle={() => setMenuVisible((v) => !v)}
         actions={[
+          // Botón para ir a Estadísticas
+          {
+            key: 'Estadísticas',
+            label: 'Estadísticas',
+            onPress: goToStatsScreen,
+            icon: (
+              <Ionicons
+                name="bar-chart-outline"
+                size={22}
+                color={Colors.secondary}
+              />
+            ),
+          },
+          // Botón para Crear Reporte
           {
             key: 'Crear Reporte',
             label: 'Crear Reporte',
@@ -427,6 +446,7 @@ const CommunityMapScreen = () => {
               />
             ),
           },
+          // Botón para Crear Alerta
           {
             key: 'Crear Alerta',
             label: 'Crear Alerta',
