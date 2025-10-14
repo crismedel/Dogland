@@ -26,7 +26,7 @@ interface Reporte {
   descripcion: string;
   direccion: string;
   id_especie: number;
-  id_estado_salud: number; // Usado para la priorización (ID 3 = Grave/Crítico)
+  id_estado_salud: number;
   id_estado_avistamiento: number;
   fecha_creacion: string;
   latitude: number;
@@ -44,14 +44,11 @@ const CommunityMapScreen = () => {
   const mapRef = useRef<MapView>(null);
   const { showError, showSuccess, confirm } = useNotification();
 
-  // ESTADOS GENERALES DE FILTRO
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [currentFilters, setCurrentFilters] = useState<CurrentFilters>({});
   const [hasActiveFilters, setHasActiveFilters] = useState(false);
   const [loading, setLoading] = useState(false);
   const [hasSearchedWithFilters, setHasSearchedWithFilters] = useState(false);
-
-  // ESTADOS DEL MAPA Y REPORTES
   const [location, setLocation] = useState<{
     latitude: number;
     longitude: number;
@@ -67,15 +64,13 @@ const CommunityMapScreen = () => {
   const [selectedSighting, setSelectedSighting] = useState<Reporte | null>(
     null,
   );
-
   const [showCriticalReports, setShowCriticalReports] = useState(false);
   const [criticalReports, setCriticalReports] = useState<Reporte[]>([]);
-  // Se elimina isCriticalDataLoaded para forzar la recarga de datos críticos (emergencias)
   const [criticalLoading, setCriticalLoading] = useState(false);
+  //Usamos useRef para el conteo y evitar el re-renderizado
+  const previousCriticalCount = useRef(0);
+  const [criticalCountForBadge, setCriticalCountForBadge] = useState(0);
 
-  // --- LÓGICA DE FILTROS Y REPORTES GENERALES ---
-
-  // Verificar si hay filtros activos
   useEffect(() => {
     const hasFilters =
       Object.keys(currentFilters).length > 0 &&
@@ -139,83 +134,44 @@ const CommunityMapScreen = () => {
     [showError],
   );
 
-  // --- LÓGICA DE REPORTES CRÍTICOS  ---
-
-  const fetchCriticalReports = async () => {
+  const fetchCriticalReports = useCallback(async () => {
     setCriticalLoading(true);
     try {
-      //  Usamos el endpoint de filtro con el ID de estado 3 (Crítico/Grave)
       const response = await apiClient.get<{ data: Reporte[] }>(
         '/sightings/filter',
         {
-          params: { id_estado_salud: 3 }, // Solo reportes con estado de salud Crítico/Grave
+          params: { id_estado_salud: 3 },
         },
       );
-
       const validReports = response.data.data.filter(
         (r: Reporte) => r.latitude && r.longitude,
       );
-
       setCriticalReports(validReports);
-      // Ya no es necesario setIsCriticalDataLoaded(true);
-
-      if (validReports.length > 0) {
-        showSuccess(
-          'Alerta Crítica',
-          `Se encontraron ${validReports.length} avistamientos de ALTA prioridad.`,
-        );
-      } else {
-        showSuccess(
-          'Alivio',
-          'No se encontraron reportes críticos. ¡Todo tranquilo!',
-        );
-      }
+      setCriticalCountForBadge(validReports.length);
     } catch (error: any) {
       console.error('Error al obtener reportes críticos:', error);
-      showError(
-        'Error Crítico',
-        'No se pudieron cargar los reportes críticos.',
-      );
     } finally {
       setCriticalLoading(false);
     }
-  };
+  }, []);
 
   const toggleCriticalView = async () => {
     const newState = !showCriticalReports;
     setShowCriticalReports(newState);
-
-    // Desactivar el detalle de cualquier reporte seleccionado
     setSelectedSighting(null);
-
     if (newState) {
-      // 💡 CORRECCIÓN: Siempre volvemos a obtener los datos críticos
-      // al activar la vista para garantizar que estén frescos y evitar el bug de estado.
       await fetchCriticalReports();
     } else {
-      // Si volvemos al modo normal, recargamos los reportes generales con los filtros activos
       obtenerReportes(currentFilters);
     }
   };
 
-  /**
-   *  PRIORIZACIÓN VISUAL: Devuelve el color del pin si está en modo crítico
-   * @param report Reporte a evaluar
-   * @returns Color ('red', 'yellow') o undefined si no es crítico.
-   */
   const getMarkerColor = (report: Reporte): string | undefined => {
-    if (!showCriticalReports) return undefined; // Solo aplica color en modo crítico
-
-    // 3: Grave (Máxima Prioridad - Rojo)
+    if (!showCriticalReports) return undefined;
     if (report.id_estado_salud === 3) return Colors.danger || 'red';
-
-    // 2: Herido (Prioridad Media - Amarillo)
     if (report.id_estado_salud === 2) return Colors.warning || 'yellow';
-
-    return undefined; // Si es crítico (estamos mostrando la lista de críticos) pero no 2 o 3, usa el color base
+    return undefined;
   };
-
-  // --- MANEJO DE ACCIONES ---
 
   const handleDelete = async () => {
     if (!selectedSighting) return;
@@ -231,7 +187,6 @@ const CommunityMapScreen = () => {
             `/sightings/${selectedSighting.id_avistamiento}`,
           );
           setSelectedSighting(null);
-          // Recargar la vista actual (crítica o general)
           if (showCriticalReports) {
             fetchCriticalReports();
           } else {
@@ -248,29 +203,66 @@ const CommunityMapScreen = () => {
   const handleApplyFilter = (filters: CurrentFilters) => {
     setCurrentFilters(filters);
     setFilterModalVisible(false);
-    // Desactivamos el modo crítico si aplicamos un filtro general
     setShowCriticalReports(false);
   };
 
   const handleClearFilters = () => {
     setCurrentFilters({});
     setHasSearchedWithFilters(false);
-    setShowCriticalReports(false); // Aseguramos que el modo crítico esté apagado
+    setShowCriticalReports(false);
   };
 
-  // --- USE EFFECTS ---
+  useEffect(() => {
+    if (showCriticalReports || hasActiveFilters) {
+      return;
+    }
+    const intervalId = setInterval(async () => {
+      try {
+        const response = await apiClient.get<{ data: Reporte[] }>(
+          '/sightings/filter',
+          {
+            params: { id_estado_salud: 3 },
+          },
+        );
+        const newReports = response.data.data.filter(
+          (r: Reporte) => r.latitude && r.longitude,
+        );
 
+        // Notificar si hay nuevos reportes críticos
+        const newCount = newReports.length;
+        const currentCount = previousCriticalCount.current;
+        if (newCount > currentCount) {
+          showSuccess(
+            '¡Alerta!',
+            `Se ha detectado ${newCount - currentCount} avistamiento de alta prioridad.`,
+          );
+        }
+        
+        // Actualizar el estado para la insignia y la referencia para el próximo chequeo
+        setCriticalCountForBadge(newCount);
+        previousCriticalCount.current = newCount;
+        setCriticalReports(newReports);
+
+      } catch (error) {
+        console.error('Error fetching critical reports:', error);
+      }
+    }, 30000);
+
+    return () => clearInterval(intervalId);
+  }, [showCriticalReports, hasActiveFilters, showSuccess]);
+
+  // Se mantiene este useEffect para la carga inicial de reportes generales
   useEffect(() => {
     if (!showCriticalReports) {
       obtenerReportes(currentFilters);
     }
   }, [currentFilters, obtenerReportes, showCriticalReports]);
 
+  // Se mantiene este useEffect para la ubicación y la carga inicial de críticos
   useEffect(() => {
     obtenerUbicacionActual();
-  }, [obtenerUbicacionActual]);
-
-  // --- RENDERIZADO ---
+    fetchCriticalReports();
+  }, [obtenerUbicacionActual, fetchCriticalReports]);
 
   const reportsToRender = showCriticalReports ? criticalReports : reportes;
   const currentLoadingState =
@@ -281,7 +273,6 @@ const CommunityMapScreen = () => {
 
   return (
     <View style={styles.container}>
-      {/* Header con back + título + botón de filtros */}
       <CustomHeader
         title="Mapa Comunitario"
         leftComponent={
@@ -305,7 +296,6 @@ const CommunityMapScreen = () => {
         }
       />
 
-      {/* BOTÓN DE FILTRO GENERAL (Izquierda) */}
       <TouchableOpacity
         style={styles.filterButton}
         onPress={() => {
@@ -327,7 +317,6 @@ const CommunityMapScreen = () => {
         )}
       </TouchableOpacity>
 
-      {/* BOTÓN DE REPORTES CRÍTICOS (Derecha) */}
       <TouchableOpacity
         style={[
           styles.criticalButton,
@@ -347,9 +336,13 @@ const CommunityMapScreen = () => {
             }
           />
         )}
+        {criticalCountForBadge > 0 && !showCriticalReports && (
+          <View style={styles.criticalBadge}>
+            <Text style={styles.criticalBadgeText}>{criticalCountForBadge}</Text>
+          </View>
+        )}
       </TouchableOpacity>
 
-      {/* Estado de carga */}
       {currentLoadingState && (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={Colors.primary} />
@@ -361,7 +354,6 @@ const CommunityMapScreen = () => {
         </View>
       )}
 
-      {/* Estado sin resultados con filtros */}
       {!currentLoadingState &&
         shouldHideMap &&
         reportsToRender.length === 0 && (
@@ -398,7 +390,6 @@ const CommunityMapScreen = () => {
           />
         )}
 
-        {/* RENDERING CRÍTICO/GENERAL */}
         {reportsToRender.map((r) => (
           <ReporteMarker
             key={r.id_avistamiento}
@@ -417,7 +408,6 @@ const CommunityMapScreen = () => {
         />
       )}
 
-      {/* Menú flotante (reemplaza el FAB y el menú manual) */}
       <FloatingSpeedDial
         visible={menuVisible}
         onToggle={() => setMenuVisible((v) => !v)}
@@ -482,10 +472,9 @@ const styles = StyleSheet.create({
   map: { flex: 1 },
   hiddenMap: { opacity: 0.3 },
 
-  // Botón de filtro (flotante izquierdo)
   filterButton: {
     position: 'absolute',
-    top: 100, // ajusta según altura del header
+    top: 100,
     left: 20,
     backgroundColor: Colors.accent || '#007AFF',
     borderRadius: 30,
@@ -498,10 +487,9 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
 
-  // Botón crítico (flotante derecho)
   criticalButton: {
     position: 'absolute',
-    top: 100, // igual que filterButton para alinearlos
+    top: 100,
     right: 20,
     backgroundColor: Colors.lightText || 'white',
     borderRadius: 30,
@@ -522,7 +510,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.5,
   },
 
-  // Indicador de filtros activos
   filterIndicator: {
     position: 'absolute',
     top: 8,
@@ -533,7 +520,23 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.success || '#4CAF50',
   },
 
-  // --- CONTENEDORES DE ESTADO ---
+  criticalBadge: {
+    position: 'absolute',
+    top: -5,
+    right: -5,
+    backgroundColor: Colors.danger || 'red',
+    borderRadius: 10,
+    width: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  criticalBadgeText: {
+    color: Colors.lightText || 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+
   loadingContainer: {
     position: 'absolute',
     top: '50%',

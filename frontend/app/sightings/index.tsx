@@ -7,12 +7,16 @@ import {
   ActivityIndicator,
   RefreshControl,
   SafeAreaView,
-  TouchableOpacity, // Usaremos TouchableOpacity para las tarjetas
+  TouchableOpacity,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import apiClient from '../../src/api/client';
 import { Colors } from '@/src/constants/colors';
-// Ya no necesitamos SightingDetails ni Modal aquí
+import { useNotification } from '@/src/components/notifications/NotificationContext';
+import {
+  obtenerNombreEspecie,
+  obtenerNombreEstadoSalud,
+} from '../../src/types/report';
 
 interface Sighting {
   id_avistamiento: number;
@@ -29,11 +33,12 @@ interface Sighting {
 
 const AvistamientosScreen = () => {
   const router = useRouter();
+  const { showSuccess } = useNotification();
 
   const [sightings, setSightings] = useState<Sighting[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  // Eliminamos: selectedSighting y modalVisible
+  const [criticalSightings, setCriticalSightings] = useState<Sighting[]>([]);
 
   const fetchSightings = useCallback(async () => {
     try {
@@ -41,10 +46,20 @@ const AvistamientosScreen = () => {
       setSightings(response.data.data);
     } catch (error) {
       console.error('Error al obtener los avistamientos:', error);
-      alert('Hubo un problema al cargar los avistamientos.');
     } finally {
       setLoading(false);
       setRefreshing(false);
+    }
+  }, []);
+
+  const fetchCriticalSightings = useCallback(async () => {
+    try {
+      const response = await apiClient.get('/sightings/filter', {
+        params: { id_estado_salud: 3 },
+      });
+      setCriticalSightings(response.data.data);
+    } catch (error) {
+      console.error('Error al obtener avistamientos críticos:', error);
     }
   }, []);
 
@@ -57,7 +72,25 @@ const AvistamientosScreen = () => {
 
   useEffect(() => {
     fetchSightings();
-  }, [fetchSightings]);
+    fetchCriticalSightings();
+  }, [fetchSightings, fetchCriticalSightings]);
+
+  useEffect(() => {
+    const intervalId = setInterval(async () => {
+      const currentCriticalCount = criticalSightings.length;
+      await fetchCriticalSightings();
+      const newCriticalCount = criticalSightings.length;
+
+      if (newCriticalCount > currentCriticalCount) {
+        showSuccess(
+          '¡Alerta!',
+          `Hay ${newCriticalCount - currentCriticalCount} nuevos avistamientos críticos.`,
+        );
+      }
+    }, 30000);
+
+    return () => clearInterval(intervalId);
+  }, [criticalSightings, fetchCriticalSightings, showSuccess]);
 
   const renderItem = ({ item }: { item: Sighting; index: number }) => {
     const formatDate = (dateString: string) => {
@@ -70,21 +103,26 @@ const AvistamientosScreen = () => {
       }
     };
 
+    const isCritical = item.id_estado_salud === 3;
+    const cardStyle = isCritical ? styles.criticalCard : styles.card;
+
     return (
       <TouchableOpacity
-        style={styles.card}
+        style={cardStyle}
         onPress={() => handlePressSighting(item.id_avistamiento)}
         activeOpacity={0.8}
       >
         <Text style={styles.cardTitle}>{item.descripcion}</Text>
         <View style={styles.infoRow}>
-          <Text style={styles.label}>Especie ID:</Text>
-          <Text style={styles.value}>{item.id_especie || 'Desconocida'}</Text>
+          <Text style={styles.label}>Especie:</Text>
+          <Text style={styles.value}>
+            {obtenerNombreEspecie(item.id_especie) || 'Desconocida'}
+          </Text>
         </View>
         <View style={styles.infoRow}>
-          <Text style={styles.label}>Estado Salud ID:</Text>
+          <Text style={styles.label}>Estado Salud:</Text>
           <Text style={styles.value}>
-            {item.id_estado_salud || 'Desconocido'}
+            {obtenerNombreEstadoSalud(item.id_estado_salud) || 'Desconocido'}
           </Text>
         </View>
         <View style={styles.infoRow}>
@@ -98,16 +136,23 @@ const AvistamientosScreen = () => {
   if (loading && sightings.length === 0) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color={Colors.background} />
+        <ActivityIndicator size="large" color={Colors.primary} />
         <Text style={styles.loadingText}>Cargando avistamientos...</Text>
       </View>
     );
   }
 
+  const combinedSightings = [
+    ...criticalSightings,
+    ...sightings.filter(
+      (s) => !criticalSightings.find((c) => c.id_avistamiento === s.id_avistamiento)
+    ),
+  ];
+
   return (
     <SafeAreaView style={styles.container}>
       <FlatList
-        data={sightings}
+        data={combinedSightings}
         renderItem={renderItem}
         keyExtractor={(item) => item.id_avistamiento?.toString()}
         contentContainerStyle={styles.listContent}
@@ -124,6 +169,7 @@ const AvistamientosScreen = () => {
             onRefresh={() => {
               setRefreshing(true);
               fetchSightings();
+              fetchCriticalSightings();
             }}
           />
         }
@@ -152,6 +198,19 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 3.84,
     elevation: 5,
+  },
+  criticalCard: {
+    backgroundColor: '#FFE5E5',
+    borderColor: Colors.danger || 'red',
+    borderWidth: 2,
+    padding: 15,
+    borderRadius: 12,
+    marginBottom: 10,
+    shadowColor: Colors.danger || 'red',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5.46,
+    elevation: 8,
   },
   cardTitle: {
     fontSize: 18,
