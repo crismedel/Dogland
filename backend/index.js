@@ -1,15 +1,19 @@
-const express = require('express')
-const app = express()
+import app from './app.js';
+import pool from './db/db.js';
+import { PORT, NODE_ENV } from './config/env.js';
 
-// conffiguraciones
-app.set('port', 3000)
+if (NODE_ENV !== 'test') {
+  (async () => {
+    try {
+      const result = await pool.query('SELECT NOW()');
+      console.log('Conexión exitosa:', result.rows[0]);
 
-// rutas
-app.get('/', (req, res) => {
-    res.send('Servidor funcionando correctamente')
-})
-
-app.listen(app.get('port'), () => {
-    console.log(`Servidor correindo en http://localhost:${app.get('port')}`)
-})
-
+      app.listen(PORT, () => {
+        console.log(`Servidor corriendo en http://localhost:${PORT}`);
+      });
+    } catch (error) {
+      console.error('Error de conexión:', error.message);
+      process.exit(1);
+    }
+  })();
+}
