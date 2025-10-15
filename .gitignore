@@ -138,6 +138,3 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
-# Expo files
-.expo/
-expo-env.d.ts
