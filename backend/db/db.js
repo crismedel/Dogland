@@ -1,17 +1,16 @@
 import pkg from 'pg';
-import dotenv from 'dotenv';
+import { DB_USER, DB_HOST, DB_NAME, DB_PASS, DB_PORT } from '../config/env.js';
 
 //Conexion a la base de datos!
 
-dotenv.config();
 const { Pool } = pkg;
 
 const pool = new Pool({
-  user: process.env.DB_USER,
-  host: process.env.DB_HOST,
-  database: process.env.DB_NAME,
-  password: process.env.DB_PASS,
-  port: process.env.DB_PORT
+  user: DB_USER,
+  host: DB_HOST,
+  database: DB_NAME,
+  password: DB_PASS,
+  port: DB_PORT
 });
 
 export default pool;

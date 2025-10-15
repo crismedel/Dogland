@@ -10,10 +10,9 @@ import {
     sendPasswordResetEmail, 
     sendAccountConfirmationEmail 
 } from '../mail/mail.service.js';
-
+import { JWT_SECRET } from '../config/env.js';
 
 const router = Router();
-const JWT_SECRET = process.env.JWT_SECRET;
 
 // POST /api/auth/register - Registrar nuevo usuario
 router.post('/register', async (req, res) => {
@@ -51,7 +50,7 @@ router.post('/register', async (req, res) => {
         return res.status(201).json({
             success: true,
             message: 'Usuario registrado exitosamente',
-            userId: newUser.id
+            id: newUser.id_usuario
         });
 
     } catch (error) {
@@ -78,11 +77,15 @@ router.post('/login', async (req, res) => {
         // Obtener el rol del usuario desde la base de datos
         const rolResult = await pool.query('SELECT nombre_rol FROM rol WHERE id_rol = $1', [user.id_rol]);
         const userRole = rolResult.rows[0].nombre_rol;
+        // Payload que contendra el JWT generado
+        const payload = {
+          id: user.id_usuario,
+          role: userRole,
+          email: user.email
+        };
 
-        // Incluir el ID de usuario y el rol en el token JWT
-        const token = jwt.sign({ userId: user.id, email: user.email, role: userRole }, JWT_SECRET, {
-            expiresIn: '1h',
-        });
+        // Incluir el payload en el token JWT
+        const token = jwt.sign(payload, JWT_SECRET, {expiresIn: '1h' });
 
         res.json({ success: true, message: 'Inicio de sesión exitoso', token });
     } catch (error) {

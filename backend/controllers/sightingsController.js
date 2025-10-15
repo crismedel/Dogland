@@ -1,41 +1,33 @@
 import pool from '../db/db.js';
 
-// Función auxiliar para expandir la geometría (ubicación) y las relaciones
-const getSightingBaseQuery = () => `
-    SELECT 
-        av.id_avistamiento, 
-        av.id_usuario, 
-        av.fecha_creacion, 
-        av.fecha_actualizacion, 
-        av.descripcion, 
-        av.direccion,
-        -- Expande la geometría a Longitude y Latitude
-        ST_X(av.ubicacion::geometry) AS longitude,
-        ST_Y(av.ubicacion::geometry) AS latitude,
-        -- Añade los datos de la relación (para el frontend)
-        json_build_object('nombre', es.nombre, 'id', av.id_especie) AS especie,
-        json_build_object('nombre', ests.estado_salud, 'id', av.id_estado_salud) AS estado_salud,
-        json_build_object('nombre', esta.estado_avistamiento, 'id', av.id_estado_avistamiento) AS estado_avistamiento,
-        -- Agrupa todas las URLs de fotos en un array JSON
-        COALESCE(
-            json_agg(af.url) FILTER (WHERE af.url IS NOT NULL), 
-            '[]'
-        ) AS fotos_url
-    FROM avistamiento av
-    LEFT JOIN avistamiento_foto af ON av.id_avistamiento = af.id_avistamiento
-    LEFT JOIN especie es ON av.id_especie = es.id_especie
-    LEFT JOIN estado_salud ests ON av.id_estado_salud = ests.id_estado_salud
-    LEFT JOIN estado_avistamiento esta ON av.id_estado_avistamiento = esta.id_estado_avistamiento
-`;
+// --- FUNCIONES DE LECTURA (GET) ---
 
-// --- FUNCIONES DE LECTURA (GET) CORREGIDAS ---
-
-// Función para obtener todos los avistamientos con fotos y detalles asociados
+// Función para obtener todos los avistamientos con fotos
 export const getSightings = async (req, res) => {
     try {
         const result = await pool.query(`
-            ${getSightingBaseQuery()}
-            GROUP BY av.id_avistamiento, es.nombre, ests.estado_salud, esta.estado_avistamiento
+            SELECT 
+                av.id_avistamiento, 
+                av.id_usuario, 
+                av.id_estado_avistamiento, 
+                av.id_estado_salud, 
+                av.id_especie, 
+                av.fecha_creacion, 
+                av.fecha_actualizacion, 
+                av.descripcion, 
+                av.direccion,
+                -- Expande la geometría a Longitude y Latitude
+                ST_X(av.ubicacion::geometry) AS longitude,
+                ST_Y(av.ubicacion::geometry) AS latitude,
+                
+                -- Agrupa todas las URLs de fotos en un array JSON
+                COALESCE(
+                    json_agg(af.url) FILTER (WHERE af.url IS NOT NULL), 
+                    '[]'
+                ) AS fotos_url
+            FROM avistamiento av
+            LEFT JOIN avistamiento_foto af ON av.id_avistamiento = af.id_avistamiento
+            GROUP BY av.id_avistamiento
             ORDER BY av.fecha_creacion DESC
         `);
 
@@ -46,19 +38,39 @@ export const getSightings = async (req, res) => {
         res.status(200).json({ success: true, data: result.rows });
     } catch (error) {
         console.error('Error al obtener los avistamientos:', error);
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, error: 'Error interno del servidor al obtener avistamientos.' });
     }
 };
 
 
-// Función para obtener un avistamiento por ID con fotos y detalles
+// Función para obtener un avistamiento por ID con fotos
 export const getSightingById = async (req, res) => {
     try {
         const { id } = req.params;
         const result = await pool.query(`
-            ${getSightingBaseQuery()}
+            SELECT 
+                av.id_avistamiento, 
+                av.id_usuario, 
+                av.id_estado_avistamiento, 
+                av.id_estado_salud, 
+                av.id_especie, 
+                av.fecha_creacion, 
+                av.fecha_actualizacion, 
+                av.descripcion, 
+                av.direccion,
+                -- Expande la geometría a Longitude y Latitude
+                ST_X(av.ubicacion::geometry) AS longitude,
+                ST_Y(av.ubicacion::geometry) AS latitude,
+                
+                -- Agrupa todas las URLs de fotos en un array JSON
+                COALESCE(
+                    json_agg(af.url) FILTER (WHERE af.url IS NOT NULL), 
+                    '[]'
+                ) AS fotos_url
+            FROM avistamiento av
+            LEFT JOIN avistamiento_foto af ON av.id_avistamiento = af.id_avistamiento
             WHERE av.id_avistamiento = $1
-            GROUP BY av.id_avistamiento, es.nombre, ests.estado_salud, esta.estado_avistamiento
+            GROUP BY av.id_avistamiento
         `, [id]);
 
         if (result.rows.length === 0) {
@@ -68,17 +80,17 @@ export const getSightingById = async (req, res) => {
         res.status(200).json({ success: true, data: result.rows[0] });
     } catch (error) {
         console.error('Error al obtener el avistamiento:', error);
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, error: 'Error interno del servidor al obtener el avistamiento.' });
     }
 };
 
-// --- FUNCIÓN DE ESCRITURA (POST) CORREGIDA ---
 
-// Función para crear un nuevo avistamiento
+
+// --- FUNCIÓN DE ESCRITURA (POST) ---
+
 export const createSighting = async (req, res) => {
     try {
         const {
-            id_usuario,
             id_estado_avistamiento,
             id_estado_salud,
             id_especie,
@@ -87,6 +99,9 @@ export const createSighting = async (req, res) => {
             direccion,
             url, // URL de la foto
         } = req.body;
+
+        // Obtener id_usuario del token
+        const id_usuario = req.user.id;
 
         if (!id_usuario || !id_estado_avistamiento || !id_estado_salud || !id_especie) {
             return res.status(400).json({ success: false, error: 'Faltan campos obligatorios' });
@@ -114,7 +129,7 @@ export const createSighting = async (req, res) => {
 
         const avistamiento = result.rows[0];
 
-        // 2. Si se ha enviado una URL de foto, se inserta en la tabla avistamiento_foto
+        // 2. Insertar foto
         if (url) {
             await pool.query(
                 `
@@ -125,27 +140,46 @@ export const createSighting = async (req, res) => {
             );
         }
         
-        // 3. Volvemos a consultar el avistamiento completo para devolver la respuesta con los datos anidados
-        // Esto garantiza que la URL de la foto (y otros joins) estén en la respuesta
+        // 3. Volvemos a consultar el avistamiento completo para devolver la respuesta
         const finalResult = await pool.query(`
-            ${getSightingBaseQuery()}
+            SELECT 
+                av.id_avistamiento, 
+                av.id_usuario, 
+                av.id_estado_avistamiento, 
+                av.id_estado_salud, 
+                av.id_especie, 
+                av.fecha_creacion, 
+                av.fecha_actualizacion, 
+                av.descripcion, 
+                av.direccion,
+                -- Expande la geometría a Longitude y Latitude
+                ST_X(av.ubicacion::geometry) AS longitude,
+                ST_Y(av.ubicacion::geometry) AS latitude,
+                
+                -- Agrupa todas las URLs de fotos en un array JSON
+                COALESCE(
+                    json_agg(af.url) FILTER (WHERE af.url IS NOT NULL), 
+                    '[]'
+                ) AS fotos_url
+            FROM avistamiento av
+            LEFT JOIN avistamiento_foto af ON av.id_avistamiento = af.id_avistamiento
             WHERE av.id_avistamiento = $1
-            GROUP BY av.id_avistamiento, es.nombre, ests.estado_salud, esta.estado_avistamiento
+            GROUP BY av.id_avistamiento
         `, [avistamiento.id_avistamiento]);
         
         const fullSighting = finalResult.rows[0];
 
-
         res.status(201).json({ success: true, data: fullSighting });
     } catch (error) {
         console.error('Error al crear el avistamiento:', error);
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, error: 'Error interno del servidor al crear el avistamiento.' });
     }
 };
 
-// --- FUNCIONES DE ACTUALIZACIÓN Y ELIMINACIÓN (UPDATE & DELETE) ---
 
-// Función para actualizar un avistamiento
+
+// --- FUNCIONES DE ACTUALIZACIÓN Y ELIMINACIÓN ---
+
 export const updateSighting = async (req, res) => {
     try {
         const { id } = req.params;
@@ -189,7 +223,7 @@ export const updateSighting = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Avistamiento no encontrado' });
         }
 
-        // 2. Si se incluye una URL de foto, actualizar/insertar en avistamiento_foto
+        // 2. Actualizar/insertar foto
         if (url) {
             const updatePhoto = await pool.query(
                 `
@@ -213,11 +247,31 @@ export const updateSighting = async (req, res) => {
             }
         }
         
-        // 3. Volvemos a consultar el avistamiento completo para devolver la respuesta con los datos anidados
+        // 3. Volvemos a consultar el avistamiento completo 
         const finalResult = await pool.query(`
-            ${getSightingBaseQuery()}
+            SELECT 
+                av.id_avistamiento, 
+                av.id_usuario, 
+                av.id_estado_avistamiento, 
+                av.id_estado_salud, 
+                av.id_especie, 
+                av.fecha_creacion, 
+                av.fecha_actualizacion, 
+                av.descripcion, 
+                av.direccion,
+                -- Expande la geometría a Longitude y Latitude
+                ST_X(av.ubicacion::geometry) AS longitude,
+                ST_Y(av.ubicacion::geometry) AS latitude,
+                
+                -- Agrupa todas las URLs de fotos en un array JSON
+                COALESCE(
+                    json_agg(af.url) FILTER (WHERE af.url IS NOT NULL), 
+                    '[]'
+                ) AS fotos_url
+            FROM avistamiento av
+            LEFT JOIN avistamiento_foto af ON av.id_avistamiento = af.id_avistamiento
             WHERE av.id_avistamiento = $1
-            GROUP BY av.id_avistamiento, es.nombre, ests.estado_salud, esta.estado_avistamiento
+            GROUP BY av.id_avistamiento
         `, [id]);
         
         const fullSighting = finalResult.rows[0];
@@ -225,11 +279,12 @@ export const updateSighting = async (req, res) => {
         res.status(200).json({ success: true, data: fullSighting });
     } catch (error) {
         console.error('Error al actualizar el avistamiento:', error);
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, error: 'Error interno del servidor al actualizar el avistamiento.' });
     }
 };
 
-// Función para eliminar un avistamiento
+
+
 export const deleteSighting = async (req, res) => {
     try {
         const { id } = req.params;
@@ -253,11 +308,14 @@ export const deleteSighting = async (req, res) => {
         });
     } catch (error) {
         console.error('Error al eliminar el avistamiento:', error);
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, error: 'Error interno del servidor al eliminar el avistamiento.' });
     }
 };
 
-// Función para obtener avistamientos por ubicación (sin cambios necesarios en la lógica de fotos)
+
+
+// --- FUNCIONES DE UBICACIÓN Y FILTRO ---
+
 export const getSightingsByLocation = async (req, res) => {
     try {
         const { longitude, latitude, distance } = req.query;
@@ -268,9 +326,29 @@ export const getSightingsByLocation = async (req, res) => {
 
         const result = await pool.query(
             `
-            ${getSightingBaseQuery()}
+            SELECT 
+                av.id_avistamiento, 
+                av.id_usuario, 
+                av.id_estado_avistamiento, 
+                av.id_estado_salud, 
+                av.id_especie, 
+                av.fecha_creacion, 
+                av.fecha_actualizacion, 
+                av.descripcion, 
+                av.direccion,
+                -- Expande la geometría a Longitude y Latitude
+                ST_X(av.ubicacion::geometry) AS longitude,
+                ST_Y(av.ubicacion::geometry) AS latitude,
+                
+                -- Agrupa todas las URLs de fotos en un array JSON
+                COALESCE(
+                    json_agg(af.url) FILTER (WHERE af.url IS NOT NULL), 
+                    '[]'
+                ) AS fotos_url
+            FROM avistamiento av
+            LEFT JOIN avistamiento_foto af ON av.id_avistamiento = af.id_avistamiento
             WHERE ST_DWithin(av.ubicacion, ST_SetSRID(ST_MakePoint($1, $2), 4326), $3)
-            GROUP BY av.id_avistamiento, es.nombre, ests.estado_salud, esta.estado_avistamiento
+            GROUP BY av.id_avistamiento
             `,
             [longitude, latitude, distance]
         );
@@ -282,54 +360,147 @@ export const getSightingsByLocation = async (req, res) => {
         res.status(200).json({ success: true, data: result.rows });
     } catch (error) {
         console.error('Error al obtener avistamientos por ubicación:', error);
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, error: 'Error interno del servidor al filtrar por ubicación.' });
     }
 };
 
-// Función para filtrar avistamientos (sin cambios necesarios en la lógica de fotos)
+
+
 export const filterSightings = async (req, res) => {
+    // Obtener los parámetros de la consulta
+    const { id_especie, id_estado_salud, id_estado_avistamiento } = req.query;
+
+    // Array para almacenar las condiciones WHERE
+    const filters = [];
+    // Array para almacenar los valores de los filtros
+    const values = [];
+    let paramIndex = 1;
+
     try {
-        const { id_especie, id_estado_salud, id_estado_avistamiento } = req.query;
+        // --- 🔍 DEBUG MEJORADO ---
+        console.log('🔍 Parámetros de filtro recibidos:');
+        console.log('- id_especie:', id_especie, 'Tipo:', typeof id_especie);
+        console.log('- id_estado_salud:', id_estado_salud, 'Tipo:', typeof id_estado_salud);
+        console.log('- id_estado_avistamiento:', id_estado_avistamiento, 'Tipo:', typeof id_estado_avistamiento);
 
-        const filters = [];
-        const values = [];
-        let query = getSightingBaseQuery();
-
-        let paramIndex = 1;
-
-        if (id_especie) {
+        // 1. Construir dinámicamente las condiciones de filtro
+        // MEJORA: También verificar que no sea 'null' o 'undefined'
+        if (id_especie && id_especie !== '' && id_especie !== 'null' && id_especie !== 'undefined') {
             filters.push(`av.id_especie = $${paramIndex}`);
-            values.push(id_especie);
+            values.push(parseInt(id_especie)); // Asegurar que sea número
             paramIndex++;
+            console.log(`✅ Filtro especie agregado: ${id_especie}`);
         }
-        if (id_estado_salud) {
+        
+        if (id_estado_salud && id_estado_salud !== '' && id_estado_salud !== 'null' && id_estado_salud !== 'undefined') {
             filters.push(`av.id_estado_salud = $${paramIndex}`);
-            values.push(id_estado_salud);
+            values.push(parseInt(id_estado_salud)); // Asegurar que sea número
             paramIndex++;
+            console.log(`✅ Filtro estado salud agregado: ${id_estado_salud}`);
         }
-        if (id_estado_avistamiento) {
+        
+        if (id_estado_avistamiento && id_estado_avistamiento !== '' && id_estado_avistamiento !== 'null' && id_estado_avistamiento !== 'undefined') {
             filters.push(`av.id_estado_avistamiento = $${paramIndex}`);
-            values.push(id_estado_avistamiento);
+            values.push(parseInt(id_estado_avistamiento)); // Asegurar que sea número
             paramIndex++;
+            console.log(`✅ Filtro estado avistamiento agregado: ${id_estado_avistamiento}`);
         }
 
+        // 2. Definir la consulta base
+        let query = `
+            SELECT 
+                av.id_avistamiento, 
+                av.id_usuario, 
+                av.id_estado_avistamiento, 
+                av.id_estado_salud, 
+                av.id_especie, 
+                av.fecha_creacion, 
+                av.fecha_actualizacion,
+                av.descripcion, 
+                av.direccion,
+                ST_X(av.ubicacion::geometry) AS longitude,
+                ST_Y(av.ubicacion::geometry) AS latitude,
+                COALESCE(json_agg(af.url) FILTER (WHERE af.url IS NOT NULL), '[]') AS fotos_url
+            FROM avistamiento av
+            LEFT JOIN avistamiento_foto af ON av.id_avistamiento = af.id_avistamiento
+        `;
+        
+        // 3. Si hay filtros, agregamos la condición WHERE
         if (filters.length > 0) {
             query += ` WHERE ` + filters.join(" AND ");
         }
-        
-        // Siempre agrupar al final de la consulta base
-        query += ` GROUP BY av.id_avistamiento, es.nombre, ests.estado_salud, esta.estado_avistamiento`;
 
+        // 4. Finalizar la consulta
+        query += ` GROUP BY av.id_avistamiento ORDER BY av.fecha_creacion DESC`;
 
+        // --- 🔍 DEBUG: Mostrar consulta final antes de ejecutar ---
+        console.log('📝 Consulta SQL FINAL:', query);
+        console.log('🎯 Valores a inyectar:', values);
+        console.log('🔢 Número de filtros aplicados:', filters.length);
+
+        // 5. Ejecutar la consulta
         const result = await pool.query(query, values);
 
+        console.log(`📊 Resultados encontrados: ${result.rows.length}`);
+
+        // Si no se encontraron avistamientos
         if (result.rows.length === 0) {
-            return res.status(404).json({ success: false, message: 'No se encontraron avistamientos con los filtros aplicados' });
+            return res.status(404).json({ 
+                success: false, 
+                message: 'No se encontraron avistamientos con los filtros aplicados',
+                filtersApplied: {
+                    id_especie: id_especie || 'No aplicado',
+                    id_estado_salud: id_estado_salud || 'No aplicado',
+                    id_estado_avistamiento: id_estado_avistamiento || 'No aplicado'
+                }
+            });
         }
 
+        // Responder con los avistamientos filtrados
+        res.status(200).json({ 
+            success: true, 
+            data: result.rows,
+            filtersApplied: filters.length,
+            totalResults: result.rows.length
+        });
+        
+    } catch (error) {
+        console.error('❌ Error al filtrar los avistamientos:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Error interno del servidor al aplicar filtros.',
+            details: error.message 
+        });
+    }
+};
+
+export const getEspecies = async (req, res) => {
+    try {
+        // 🚨 CORRECCIÓN: Usamos 'nombre_especie' y lo renombramos a 'nombre' para el frontend
+        const result = await pool.query(`
+            SELECT id_especie AS id, nombre_especie AS nombre 
+            FROM especie 
+            ORDER BY nombre_especie
+        `);
         res.status(200).json({ success: true, data: result.rows });
     } catch (error) {
-        console.error('Error al filtrar los avistamientos:', error);
-        res.status(500).json({ success: false, error: error.message });
+        console.error('Error al obtener especies:', error);
+        res.status(500).json({ success: false, error: 'Error interno del servidor al obtener especies.' });
+    }
+};
+
+// Función para obtener todos los estados de salud
+export const getEstadosSalud = async (req, res) => {
+    try {
+        // 🚨 CORRECCIÓN: Usamos 'estado_salud' (nombre de la columna) y lo renombramos a 'nombre' para el frontend
+        const result = await pool.query(`
+            SELECT id_estado_salud AS id, estado_salud AS nombre 
+            FROM estado_salud 
+            ORDER BY estado_salud
+        `);
+        res.status(200).json({ success: true, data: result.rows });
+    } catch (error) {
+        console.error('Error al obtener estados de salud:', error);
+        res.status(500).json({ success: false, error: 'Error interno del servidor al obtener estados de salud.' });
     }
 };
