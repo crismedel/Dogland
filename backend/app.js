@@ -7,6 +7,7 @@ import { corsOptions, corsBlocker } from './middlewares/corsConfig.js';
 import { errorHandler } from './middlewares/errorHandler.js';
 
 // routes
+
 import sightingsRouter from './routes/sightings.js';
 import alertsRouter from './routes/alerts.js';
 import authRouter from './routes/auth.js';
@@ -21,6 +22,9 @@ import racesRouter from './routes/races.js';
 import healthRouter from './routes/health-states.js';
 import medicalHistoryRouter from './routes/medicalHistory.js';
 import statRoutes from './routes/stats.js';
+import infoCompAnimales from './routes/infoCompAnimales.js'; //info de animales completa (en teoria)
+
+
 const app = express();
 
 // Configuraciones base
@@ -50,6 +54,8 @@ app.use('/api', speciesRouter);
 app.use('/api', racesRouter);
 app.use('/api', healthRouter);
 app.use('/api', medicalHistoryRouter);
+app.use('/api', infoCompAnimales);
+
 
 // Middleware de manejo de errores general
 app.use(errorHandler);
