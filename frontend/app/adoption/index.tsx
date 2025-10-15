@@ -95,6 +95,7 @@ const Index = () => {
   useEffect(() => {
     const fetchAnimals = async () => {
       try {
+        // por ahora solo usamos los datos de ejemplo
         setAnimals(mockAnimals);
         setFilteredAnimals(mockAnimals);
       } catch (error) {
@@ -179,7 +180,7 @@ const Index = () => {
         }
       />
 
-      {/* 🔹 NUEVO BOTÓN: Ver historiales médicos */}
+      {/* 🔹 Botón para ver historiales médicos */}
       <TouchableOpacity
         style={styles.medicalButton}
         onPress={() => router.push('/adoption/historialMedico')}
@@ -191,6 +192,20 @@ const Index = () => {
           style={{ marginRight: 6 }}
         />
         <Text style={styles.medicalButtonText}>Ver historiales médicos</Text>
+      </TouchableOpacity>
+
+      {/* 🔹 NUEVO BOTÓN TEMPORAL: Agregar Perrito */}
+      <TouchableOpacity
+        style={styles.addButton}
+        onPress={() => router.push('/adoption/agregarPerrito')}
+      >
+        <Ionicons
+          name="add-circle-outline"
+          size={20}
+          color="#fff"
+          style={{ marginRight: 6 }}
+        />
+        <Text style={styles.addButtonText}>Agregar perrito temporal</Text>
       </TouchableOpacity>
 
       {/* Filtros activos */}
@@ -241,7 +256,7 @@ const Index = () => {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f4f6f9' },
 
-  // 🔹 Estilo del nuevo botón
+  // 🔹 Estilo del botón de historial médico
   medicalButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -253,6 +268,23 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   medicalButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+
+  // 🔹 Estilo del nuevo botón temporal
+  addButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#4CAF50',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    alignSelf: 'center',
+    marginBottom: 15,
+  },
+  addButtonText: {
     color: '#fff',
     fontWeight: 'bold',
     fontSize: 14,

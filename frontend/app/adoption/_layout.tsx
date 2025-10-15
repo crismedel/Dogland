@@ -34,6 +34,16 @@ export default function AdopcionesLayout() {
           headerShown: false,
         }}
       />
+      <Stack.Screen
+        name="agregarPerrito"
+        options={{
+          title: 'Agregar Perrito',
+          headerStyle: { backgroundColor: '#4A90E2' },
+          headerTintColor: '#fff',
+          headerShown: false,
+        }}
+      />
+
     </Stack>
   );
 }
