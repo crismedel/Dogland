@@ -1,12 +1,18 @@
 // src/components/ReporteMarker.tsx
 import React from 'react';
 import { Marker, Callout } from 'react-native-maps';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import {
   obtenerColorMarcador,
   obtenerNombreEspecie,
   obtenerNombreEstadoSalud,
 } from '../../types/report';
+import {
+  fontWeightBold,
+  fontWeightSemiBold,
+  fontWeightMedium,
+  AppText,
+} from '@/src/components/AppText';
 
 export const ReporteMarker = ({ reporte, onSelect }: any) => {
   const color = obtenerColorMarcador(reporte.id_estado_salud);
@@ -22,26 +28,26 @@ export const ReporteMarker = ({ reporte, onSelect }: any) => {
     >
       <View style={styles.customMarker}>
         <View style={[styles.markerCircle, { backgroundColor: color }]}>
-          <Text style={styles.markerEmoji}>🐾</Text>
+          <AppText style={styles.markerEmoji}>🐾</AppText>
         </View>
         <View style={[styles.markerTriangle, { borderTopColor: color }]} />
       </View>
 
       <Callout tooltip>
         <View style={styles.calloutContainer}>
-          <Text style={styles.calloutTitle} numberOfLines={2}>
+          <AppText style={styles.calloutTitle} numberOfLines={2}>
             {reporte.descripcion}
-          </Text>
+          </AppText>
           <View style={styles.calloutDivider} />
-          <Text style={styles.calloutText}>
+          <AppText style={styles.calloutText}>
             🐶 {obtenerNombreEspecie(reporte.id_especie)}
-          </Text>
-          <Text style={styles.calloutText}>
+          </AppText>
+          <AppText style={styles.calloutText}>
             🏥 {obtenerNombreEstadoSalud(reporte.id_estado_salud)}
-          </Text>
-          <Text style={styles.calloutDate}>
+          </AppText>
+          <AppText style={styles.calloutDate}>
             📅 {new Date(reporte.fecha_creacion).toLocaleDateString('es-ES')}
-          </Text>
+          </AppText>
         </View>
       </Callout>
     </Marker>
@@ -77,7 +83,7 @@ const styles = StyleSheet.create({
     padding: 8,
     minWidth: 150,
   },
-  calloutTitle: { fontWeight: '700', marginBottom: 4 },
+  calloutTitle: { fontWeight: fontWeightSemiBold, marginBottom: 4 },
   calloutDivider: { height: 1, backgroundColor: '#ddd', marginBottom: 4 },
   calloutText: { fontSize: 13 },
   calloutDate: { fontSize: 12, color: '#888' },

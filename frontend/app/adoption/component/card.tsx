@@ -3,12 +3,17 @@ import {
   TouchableOpacity,
   Image,
   View,
-  Text,
   StyleSheet,
   Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
+import {
+  fontWeightBold,
+  fontWeightSemiBold,
+  fontWeightMedium,
+  AppText,
+} from '@/src/components/AppText';
 
 interface Animal {
   id: string;
@@ -86,7 +91,7 @@ const AnimalCard: React.FC<Props> = ({ animal }) => {
 
         {(animal.health || animal.estadoMedico) && (
           <View style={[styles.healthBadge, { backgroundColor: primaryColor }]}>
-            <Text style={styles.healthText}>
+            <AppText style={styles.healthText}>
               {animal.health
                 ? animal.health
                 : animal.estadoMedico === 1
@@ -96,18 +101,18 @@ const AnimalCard: React.FC<Props> = ({ animal }) => {
                 : animal.estadoMedico === 3
                 ? 'Recuperado'
                 : 'Sin datos'}
-            </Text>
+            </AppText>
           </View>
         )}
 
         <View style={styles.titleOnImage}>
-          <Text
+          <AppText
             numberOfLines={1}
             ellipsizeMode="tail"
             style={styles.nameOnImage}
           >
             {animal.name}
-          </Text>
+          </AppText>
         </View>
       </View>
 
@@ -115,39 +120,39 @@ const AnimalCard: React.FC<Props> = ({ animal }) => {
         {/* Fila de chips: Raza (truncada) + Edad (fijo) */}
         <View style={styles.rowChips}>
           <View style={styles.breedChip}>
-            <Text
+            <AppText
               numberOfLines={1}
               ellipsizeMode="tail"
               style={styles.breedChipText}
             >
               {animal.breed}
-            </Text>
+            </AppText>
           </View>
           <View style={styles.ageChip}>
-            <Text style={styles.ageChipText}>
+            <AppText style={styles.ageChipText}>
               {typeof animal.age === 'number'
                 ? `${animal.age} meses`
                 : animal.age}
-            </Text>
+            </AppText>
           </View>
         </View>
 
         {/* Línea secundaria: Tamaño • Especie (en una sola línea) */}
-        <Text numberOfLines={1} ellipsizeMode="tail" style={styles.metaLine}>
+        <AppText numberOfLines={1} ellipsizeMode="tail" style={styles.metaLine}>
           {animal.size ? `Tamaño: ${animal.size}` : ''}
           {animal.size && animal.species ? '  •  ' : ''}
           {animal.species ?? ''}
-        </Text>
+        </AppText>
 
         {/* Nota médica breve si existe */}
         {animal.descripcionMedica ? (
-          <Text
+          <AppText
             numberOfLines={2}
             ellipsizeMode="tail"
             style={styles.medicalNote}
           >
             {animal.descripcionMedica}
-          </Text>
+          </AppText>
         ) : null}
       </View>
     </TouchableOpacity>
@@ -199,7 +204,7 @@ const styles = StyleSheet.create({
   healthText: {
     color: '#fff',
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: fontWeightMedium,
     letterSpacing: 0.2,
   },
   titleOnImage: {
@@ -211,7 +216,7 @@ const styles = StyleSheet.create({
   nameOnImage: {
     color: '#fff',
     fontSize: 18,
-    fontWeight: '800',
+    fontWeight: fontWeightBold,
     textShadowColor: 'rgba(0,0,0,0.35)',
     textShadowRadius: 6,
   },
@@ -240,7 +245,7 @@ const styles = StyleSheet.create({
   breedChipText: {
     fontSize: 12,
     color: '#1565c0',
-    fontWeight: '600',
+    fontWeight: fontWeightMedium,
   },
 
   // La edad mantiene ancho mínimo estable y queda a la derecha
@@ -256,7 +261,7 @@ const styles = StyleSheet.create({
   ageChipText: {
     fontSize: 12,
     color: '#455a64',
-    fontWeight: '600',
+    fontWeight: fontWeightMedium,
   },
 
   // Meta en una sola línea con truncamiento

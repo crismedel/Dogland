@@ -7,14 +7,19 @@ import {
   Image,
   ScrollView,
   StyleSheet,
-  Text,
   TouchableOpacity,
-  View
+  View,
 } from 'react-native';
 import { fetchUserProfile } from '../../src/api/users';
 import CustomButton from '../../src/components/UI/CustomButton';
 import CustomHeader from '../../src/components/UI/CustomHeader';
 import { User } from '../../src/types/user';
+import {
+  fontWeightBold,
+  fontWeightSemiBold,
+  fontWeightMedium,
+  AppText,
+} from '@/src/components/AppText';
 
 const AVATAR = 'https://placehold.co/200x200/png?text=Avatar';
 
@@ -24,10 +29,10 @@ export default function ProfileScreen() {
   const { showInfo } = useNotification();
 
   useEffect(() => {
-  fetchUserProfile()
-    .then((userData) => setUser(userData))
-    .catch((err) => console.error('Error cargando usuario:', err))
-    .finally(() => setLoading(false));
+    fetchUserProfile()
+      .then((userData) => setUser(userData))
+      .catch((err) => console.error('Error cargando usuario:', err))
+      .finally(() => setLoading(false));
   }, []);
 
   const onEditProfile = () => console.log('Edit profile');
@@ -97,7 +102,7 @@ export default function ProfileScreen() {
   if (!user) {
     return (
       <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>No se pudo cargar el perfil</Text>
+        <AppText style={styles.errorText}>No se pudo cargar el perfil</AppText>
         <CustomButton
           title="Reintentar"
           onPress={() => {
@@ -134,12 +139,12 @@ export default function ProfileScreen() {
               style={styles.editBadge}
               accessibilityLabel="Editar foto de perfil"
             >
-              <Text style={styles.editBadgeText}>✎</Text>
+              <AppText style={styles.editBadgeText}>✎</AppText>
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.name}>{fullName}</Text>
-          <Text style={styles.username}>@{handle}</Text>
+          <AppText style={styles.name}>{fullName}</AppText>
+          <AppText style={styles.username}>@{handle}</AppText>
 
           <View
             style={[
@@ -147,9 +152,9 @@ export default function ProfileScreen() {
               { backgroundColor: user.activo ? '#16A34A' : '#DC2626' },
             ]}
           >
-            <Text style={styles.statusText}>
+            <AppText style={styles.statusText}>
               {user.activo ? '✓ Activo' : '✗ Inactivo'}
-            </Text>
+            </AppText>
           </View>
 
           {/* Acciones */}
@@ -175,35 +180,35 @@ export default function ProfileScreen() {
       {/* Stats */}
       <View style={styles.statsGrid}>
         <View style={styles.statCard}>
-          <Text style={styles.statValue}>{edad}</Text>
-          <Text style={styles.statLabel}>Años</Text>
+          <AppText style={styles.statValue}>{edad}</AppText>
+          <AppText style={styles.statLabel}>Años</AppText>
         </View>
         <View style={styles.statCard}>
-          <Text style={styles.statValue}>{user.nombre_rol}</Text>
-          <Text style={styles.statLabel}>Rol</Text>
+          <AppText style={styles.statValue}>{user.nombre_rol}</AppText>
+          <AppText style={styles.statLabel}>Rol</AppText>
         </View>
         <View style={styles.statCard}>
-          <Text style={styles.statValue}>{user.sexo}</Text>
-          <Text style={styles.statLabel}>Sexo</Text>
+          <AppText style={styles.statValue}>{user.sexo}</AppText>
+          <AppText style={styles.statLabel}>Sexo</AppText>
         </View>
       </View>
 
       {/* Información de Contacto */}
       <View style={styles.card}>
-        <Text style={styles.sectionTitle}>Información de Contacto</Text>
+        <AppText style={styles.sectionTitle}>Información de Contacto</AppText>
 
         <View style={{ marginBottom: 16 }}>
-          <Text style={styles.infoLabel}>Email</Text>
+          <AppText style={styles.infoLabel}>Email</AppText>
           <View style={styles.infoValueWrap}>
-            <Text numberOfLines={2} style={styles.infoValue}>
+            <AppText numberOfLines={2} style={styles.infoValue}>
               {user.email}
-            </Text>
+            </AppText>
             <TouchableOpacity
               onPress={() => showInfo('Copiado', user.email)}
               accessibilityLabel="Copiar Email"
               style={styles.copyPill}
             >
-              <Text style={styles.copyPillText}>Copiar</Text>
+              <AppText style={styles.copyPillText}>Copiar</AppText>
             </TouchableOpacity>
           </View>
         </View>
@@ -211,17 +216,17 @@ export default function ProfileScreen() {
         <View style={styles.divider} />
 
         <View style={{ marginBottom: 16 }}>
-          <Text style={styles.infoLabel}>Teléfono</Text>
+          <AppText style={styles.infoLabel}>Teléfono</AppText>
           <View style={styles.infoValueWrap}>
-            <Text numberOfLines={1} style={styles.infoValue}>
+            <AppText numberOfLines={1} style={styles.infoValue}>
               {formatPhone(user.telefono)}
-            </Text>
+            </AppText>
             <TouchableOpacity
               onPress={() => showInfo('Copiado', String(user.telefono))}
               accessibilityLabel="Copiar Teléfono"
               style={styles.copyPill}
             >
-              <Text style={styles.copyPillText}>Copiar</Text>
+              <AppText style={styles.copyPillText}>Copiar</AppText>
             </TouchableOpacity>
           </View>
         </View>
@@ -229,34 +234,34 @@ export default function ProfileScreen() {
         <View style={styles.divider} />
 
         <View>
-          <Text style={styles.infoLabel}>Ciudad</Text>
+          <AppText style={styles.infoLabel}>Ciudad</AppText>
           <View style={styles.infoValueWrap}>
-            <Text numberOfLines={1} style={styles.infoValue}>
+            <AppText numberOfLines={1} style={styles.infoValue}>
               {user.nombre_ciudad}
-            </Text>
+            </AppText>
           </View>
         </View>
       </View>
 
       {/* Información Adicional */}
       <View style={styles.card}>
-        <Text style={styles.sectionTitle}>Información Adicional</Text>
+        <AppText style={styles.sectionTitle}>Información Adicional</AppText>
 
         <View style={{ marginBottom: 16 }}>
-          <Text style={styles.infoLabel}>Fecha de nacimiento</Text>
+          <AppText style={styles.infoLabel}>Fecha de nacimiento</AppText>
           <View style={styles.infoValueWrap}>
-            <Text style={styles.infoValue}>
+            <AppText style={styles.infoValue}>
               {formatDate(user.fecha_nacimiento)}
-            </Text>
+            </AppText>
           </View>
         </View>
 
         <View style={styles.divider} />
 
         <View style={{ marginBottom: user.nombre_organizacion ? 16 : 0 }}>
-          <Text style={styles.infoLabel}>Miembro desde</Text>
+          <AppText style={styles.infoLabel}>Miembro desde</AppText>
           <View style={styles.infoValueWrap}>
-            <Text style={styles.infoValue}>{fechaCreacion}</Text>
+            <AppText style={styles.infoValue}>{fechaCreacion}</AppText>
           </View>
         </View>
 
@@ -264,11 +269,11 @@ export default function ProfileScreen() {
           <>
             <View style={styles.divider} />
             <View>
-              <Text style={styles.infoLabel}>Organización</Text>
+              <AppText style={styles.infoLabel}>Organización</AppText>
               <View style={styles.infoValueWrap}>
-                <Text numberOfLines={2} style={styles.infoValue}>
+                <AppText numberOfLines={2} style={styles.infoValue}>
                   {user.nombre_organizacion}
-                </Text>
+                </AppText>
               </View>
             </View>
           </>
@@ -320,12 +325,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 2,
   },
-  editBadgeText: { color: '#fff', fontWeight: '700', fontSize: 12 },
+  editBadgeText: {
+    color: '#fff',
+    fontWeight: fontWeightSemiBold,
+    fontSize: 12,
+  },
 
   name: {
     color: '#1F2937',
     fontSize: 20,
-    fontWeight: '800',
+    fontWeight: fontWeightBold,
     textAlign: 'center',
   },
   username: { color: '#6B7280', marginTop: 2, textAlign: 'center' },
@@ -336,7 +345,11 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     marginTop: 8,
   },
-  statusText: { color: '#FFF', fontSize: 12, fontWeight: '700' },
+  statusText: {
+    color: '#FFF',
+    fontSize: 12,
+    fontWeight: fontWeightSemiBold,
+  },
 
   statsGrid: { flexDirection: 'row', gap: 12, marginTop: 16 },
   statCard: {
@@ -351,7 +364,7 @@ const styles = StyleSheet.create({
   statValue: {
     color: '#CC5803',
     fontSize: 20,
-    fontWeight: '800',
+    fontWeight: fontWeightBold,
     textAlign: 'center',
   },
   statLabel: { color: '#6B7280', marginTop: 4, fontSize: 12 },
@@ -367,13 +380,13 @@ const styles = StyleSheet.create({
   sectionTitle: {
     color: '#CC5803',
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: fontWeightSemiBold,
     marginBottom: 16,
   },
 
   infoLabel: {
     color: '#6B7280',
-    fontWeight: '600',
+    fontWeight: fontWeightMedium,
     fontSize: 12,
     marginBottom: 4,
   },

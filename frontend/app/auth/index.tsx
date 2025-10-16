@@ -1,5 +1,4 @@
 import {
-  Text,
   View,
   ImageBackground,
   StyleSheet,
@@ -10,6 +9,12 @@ import {
 import { router } from 'expo-router';
 import CustomButton from '@/src/components/UI/CustomButton'; // Ajusta la ruta según tu estructura
 import { Colors } from '@/src/constants/colors';
+import {
+  fontWeightBold,
+  fontWeightSemiBold,
+  fontWeightMedium,
+  AppText,
+} from '@/src/components/AppText';
 
 const { width, height } = Dimensions.get('window');
 
@@ -39,13 +44,13 @@ export default function Index() {
 
           {/* Registration Prompt */}
           <View style={styles.registrationContainer}>
-            <Text
+            <AppText
               style={styles.registrationText}
               onPress={() => router.push('/auth/register')}
             >
               No tienes una cuenta?{' '}
-              <Text style={styles.registrationLink}>Regístrate</Text>
-            </Text>
+              <AppText style={styles.registrationLink}>Regístrate</AppText>
+            </AppText>
           </View>
         </View>
       </ImageBackground>
@@ -82,7 +87,7 @@ const styles = StyleSheet.create({
   },
   customButtonText: {
     fontSize: 20,
-    fontWeight: '800',
+    fontWeight: fontWeightBold,
   },
   registrationContainer: {
     paddingVertical: 8,
@@ -97,7 +102,7 @@ const styles = StyleSheet.create({
   },
   registrationLink: {
     color: Colors.primary,
-    fontWeight: '600',
+    fontWeight: fontWeightMedium,
     textDecorationLine: 'underline',
   },
 });

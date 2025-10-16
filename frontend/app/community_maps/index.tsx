@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
-  Text,
   TouchableOpacity,
   StyleSheet,
   Modal,
@@ -20,6 +19,12 @@ import { Colors } from '../../src/constants/colors';
 import MapsFilterModal from '../../src/components/community_maps/MapsFilterModal';
 import CustomHeader from '@/src/components/UI/CustomHeader';
 import FloatingSpeedDial from '@/src/components/UI/FloatingMenu';
+import {
+  fontWeightBold,
+  fontWeightSemiBold,
+  fontWeightMedium,
+  AppText,
+} from '@/src/components/AppText';
 
 interface Reporte {
   id_avistamiento: number;
@@ -234,15 +239,16 @@ const CommunityMapScreen = () => {
         if (newCount > currentCount) {
           showSuccess(
             '¡Alerta!',
-            `Se ha detectado ${newCount - currentCount} avistamiento de alta prioridad.`,
+            `Se ha detectado ${
+              newCount - currentCount
+            } avistamiento de alta prioridad.`,
           );
         }
-        
+
         // Actualizar el estado para la insignia y la referencia para el próximo chequeo
         setCriticalCountForBadge(newCount);
         previousCriticalCount.current = newCount;
         setCriticalReports(newReports);
-
       } catch (error) {
         console.error('Error fetching critical reports:', error);
       }
@@ -270,7 +276,6 @@ const CommunityMapScreen = () => {
   const shouldHideMap =
     currentLoadingState ||
     (hasSearchedWithFilters && reportsToRender.length === 0);
-
 
   const goToStatsScreen = () => {
     setMenuVisible(false); // Cerrar el menú flotante
@@ -344,7 +349,9 @@ const CommunityMapScreen = () => {
         )}
         {criticalCountForBadge > 0 && !showCriticalReports && (
           <View style={styles.criticalBadge}>
-            <Text style={styles.criticalBadgeText}>{criticalCountForBadge}</Text>
+            <AppText style={styles.criticalBadgeText}>
+              {criticalCountForBadge}
+            </AppText>
           </View>
         )}
       </TouchableOpacity>
@@ -352,11 +359,11 @@ const CommunityMapScreen = () => {
       {currentLoadingState && (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={Colors.primary} />
-          <Text style={styles.loadingText}>
+          <AppText style={styles.loadingText}>
             {showCriticalReports
               ? 'Buscando emergencias...'
               : 'Buscando avistamientos...'}
-          </Text>
+          </AppText>
         </View>
       )}
 
@@ -365,17 +372,19 @@ const CommunityMapScreen = () => {
         reportsToRender.length === 0 && (
           <View className="no-results" style={styles.noResultsContainer}>
             <Ionicons name="search-outline" size={64} color={Colors.gray} />
-            <Text style={styles.noResultsTitle}>
+            <AppText style={styles.noResultsTitle}>
               {showCriticalReports
                 ? '¡Excelente! No hay reportes críticos.'
                 : 'No se encontraron resultados'}
-            </Text>
+            </AppText>
             {!showCriticalReports && (
               <TouchableOpacity
                 style={styles.clearFilterButton}
                 onPress={handleClearFilters}
               >
-                <Text style={styles.clearFilterText}>Limpiar filtros</Text>
+                <AppText style={styles.clearFilterText}>
+                  Limpiar filtros
+                </AppText>
               </TouchableOpacity>
             )}
           </View>
@@ -554,7 +563,7 @@ const styles = StyleSheet.create({
   criticalBadgeText: {
     color: Colors.lightText || 'white',
     fontSize: 12,
-    fontWeight: 'bold',
+    fontWeight: fontWeightBold,
   },
 
   loadingContainer: {
@@ -583,7 +592,7 @@ const styles = StyleSheet.create({
   },
   noResultsTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: fontWeightBold,
     color: Colors.text,
     marginTop: 16,
     marginBottom: 8,
@@ -595,7 +604,11 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 8,
   },
-  clearFilterText: { color: Colors.lightText, fontWeight: '600', fontSize: 16 },
+  clearFilterText: {
+    color: Colors.lightText,
+    fontWeight: fontWeightMedium,
+    fontSize: 16,
+  },
 });
 
 export default CommunityMapScreen;

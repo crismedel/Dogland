@@ -5,7 +5,7 @@ import {
   Alert,
   TouchableOpacity,
   Image,
-  Text,
+  AppText,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import TarjetaSoli from './component/tarjetaSoli';

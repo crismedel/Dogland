@@ -1,11 +1,17 @@
 // app/settings.tsx
 import React from 'react';
-import { StyleSheet, View, Text } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { useNotification } from '@/src/components/notifications/NotificationContext';
 import { authStorage } from '@/src/utils/authStorage';
 import CustomHeader from '@/src/components/UI/CustomHeader';
 import CustomButton from '@/src/components/UI/CustomButton';
+import {
+  fontWeightBold,
+  fontWeightSemiBold,
+  fontWeightMedium,
+  AppText,
+} from '@/src/components/AppText';
 
 export default function SettingsScreen() {
   const { confirm, showSuccess } = useNotification();
@@ -39,7 +45,7 @@ export default function SettingsScreen() {
     <View style={styles.container}>
       <CustomHeader title="Configuración" />
       <View style={styles.card}>
-        <Text style={styles.sectionTitle}>Cuenta</Text>
+        <AppText style={styles.sectionTitle}>Cuenta</AppText>
         <CustomButton
           title="Cerrar sesión"
           onPress={handleLogout}
@@ -70,7 +76,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     color: '#CC5803',
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: fontWeightSemiBold,
     marginBottom: 12,
   },
 });

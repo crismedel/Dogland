@@ -1,7 +1,12 @@
 // app/adoption/component/tarjetasMedicas.tsx
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-
+import { View, StyleSheet } from 'react-native';
+import {
+  fontWeightBold,
+  fontWeightSemiBold,
+  fontWeightMedium,
+  AppText,
+} from '@/src/components/AppText';
 interface TarjetaMedicaProps {
   nombre?: string;
   condicion?: string; // formato antiguo
@@ -35,9 +40,11 @@ const TarjetaMedica: React.FC<TarjetaMedicaProps> = ({
 
   return (
     <View style={styles.card}>
-      {nombre ? <Text style={styles.title}>{nombre}</Text> : null}
-      <Text style={[styles.estado, { color: estado.color }]}>{estado.texto}</Text>
-      <Text style={styles.descripcion}>{detalle}</Text>
+      {nombre ? <AppText style={styles.title}>{nombre}</AppText> : null}
+      <AppText style={[styles.estado, { color: estado.color }]}>
+        {estado.texto}
+      </AppText>
+      <AppText style={styles.descripcion}>{detalle}</AppText>
     </View>
   );
 };
@@ -56,8 +63,17 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 3,
   },
-  title: { fontSize: 15, fontWeight: 'bold', color: '#333', marginBottom: 6 },
-  estado: { fontSize: 14, fontWeight: '700', marginBottom: 6 },
+  title: {
+    fontSize: 15,
+    fontWeight: fontWeightBold,
+    color: '#333',
+    marginBottom: 6,
+  },
+  estado: {
+    fontSize: 14,
+    fontWeight: fontWeightSemiBold,
+    marginBottom: 6,
+  },
   descripcion: { fontSize: 13, color: '#555' },
 });
 

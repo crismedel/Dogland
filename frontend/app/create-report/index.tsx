@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   View,
-  Text,
   TextInput,
   TouchableOpacity,
   StyleSheet,
@@ -24,6 +23,12 @@ import CustomHeader from '@/src/components/UI/CustomHeader';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import CustomButton from '@/src/components/UI/CustomButton';
+import {
+  fontWeightBold,
+  fontWeightSemiBold,
+  fontWeightMedium,
+  AppText,
+} from '@/src/components/AppText';
 
 const { width } = Dimensions.get('window');
 
@@ -63,7 +68,9 @@ const CreateReportScreen = () => {
     { label: 'Grave', value: 3 },
   ]);
 
-  const [estadoAvistamiento, setEstadoAvistamiento] = useState<number | null>(null);
+  const [estadoAvistamiento, setEstadoAvistamiento] = useState<number | null>(
+    null,
+  );
   const [openEstadoAvistamiento, setOpenEstadoAvistamiento] = useState(false);
   const [itemsEstadoAvistamiento, setItemsEstadoAvistamiento] = useState([
     { label: 'Salud Pública', value: 1 },
@@ -97,7 +104,9 @@ const CreateReportScreen = () => {
     setUbicacion(coordinate);
     Alert.alert(
       'Ubicación Seleccionada',
-      `Lat: ${coordinate.latitude.toFixed(4)}, Lon: ${coordinate.longitude.toFixed(4)}`,
+      `Lat: ${coordinate.latitude.toFixed(
+        4,
+      )}, Lon: ${coordinate.longitude.toFixed(4)}`,
     );
     setMostrarMapa(false);
   };
@@ -120,9 +129,10 @@ const CreateReportScreen = () => {
     }
 
     setLoading(true); // Se activa el estado de carga
-    
+
     // 2. Pre-procesamiento de la URL de la foto
-    const finalImageUrl = imageUrl && imageUrl.startsWith('http') ? imageUrl : null;
+    const finalImageUrl =
+      imageUrl && imageUrl.startsWith('http') ? imageUrl : null;
     if (imageUrl && !finalImageUrl) {
       showInfo(
         'Advertencia',
@@ -221,7 +231,7 @@ const CreateReportScreen = () => {
       >
         <View style={styles.formContainer}>
           <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Título del Reporte:</Text>
+            <AppText style={styles.inputLabel}>Título del Reporte:</AppText>
             <TextInput
               style={styles.textInput}
               placeholder="Ej: Perro herido en Av. Principal"
@@ -231,7 +241,9 @@ const CreateReportScreen = () => {
           </View>
 
           <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Descripción del Reporte:</Text>
+            <AppText style={styles.inputLabel}>
+              Descripción del Reporte:
+            </AppText>
             <TextInput
               style={[
                 styles.textInput,
@@ -244,8 +256,13 @@ const CreateReportScreen = () => {
             />
           </View>
 
-          <View style={[styles.inputContainer, Platform.OS === 'ios' && { zIndex: 5000 }]}>
-            <Text style={styles.inputLabel}>Especie del Animal:</Text>
+          <View
+            style={[
+              styles.inputContainer,
+              Platform.OS === 'ios' && { zIndex: 5000 },
+            ]}
+          >
+            <AppText style={styles.inputLabel}>Especie del Animal:</AppText>
             <DropDownPicker
               open={openEspecie}
               value={especie}
@@ -259,8 +276,15 @@ const CreateReportScreen = () => {
             />
           </View>
 
-          <View style={[styles.inputContainer, Platform.OS === 'ios' && { zIndex: 4000 }]}>
-            <Text style={styles.inputLabel}>Estado de Salud del Animal:</Text>
+          <View
+            style={[
+              styles.inputContainer,
+              Platform.OS === 'ios' && { zIndex: 4000 },
+            ]}
+          >
+            <AppText style={styles.inputLabel}>
+              Estado de Salud del Animal:
+            </AppText>
             <DropDownPicker
               open={openEstadoSalud}
               value={estadoSalud}
@@ -274,8 +298,15 @@ const CreateReportScreen = () => {
             />
           </View>
 
-          <View style={[styles.inputContainer, Platform.OS === 'ios' && { zIndex: 3000 }]}>
-            <Text style={styles.inputLabel}>Estado del Avistamiento:</Text>
+          <View
+            style={[
+              styles.inputContainer,
+              Platform.OS === 'ios' && { zIndex: 3000 },
+            ]}
+          >
+            <AppText style={styles.inputLabel}>
+              Estado del Avistamiento:
+            </AppText>
             <DropDownPicker
               open={openEstadoAvistamiento}
               value={estadoAvistamiento}
@@ -290,7 +321,9 @@ const CreateReportScreen = () => {
           </View>
 
           <View style={[styles.inputContainer, { zIndex: 2000 }]}>
-            <Text style={styles.inputLabel}>URL de la Foto (Opcional):</Text>
+            <AppText style={styles.inputLabel}>
+              URL de la Foto (Opcional):
+            </AppText>
             <TextInput
               style={styles.textInput}
               placeholder="Ej: https://tudominio.com/foto.jpg"
@@ -304,14 +337,16 @@ const CreateReportScreen = () => {
                 <Image
                   source={{ uri: imageUrl }}
                   style={styles.imagePreview}
-                  onError={() => console.log('Error al cargar la URL de previsualización')}
+                  onError={() =>
+                    console.log('Error al cargar la URL de previsualización')
+                  }
                 />
               </View>
             )}
           </View>
 
           <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Ubicación:</Text>
+            <AppText style={styles.inputLabel}>Ubicación:</AppText>
             <TouchableOpacity
               style={styles.textInput}
               onPress={() =>
@@ -319,18 +354,26 @@ const CreateReportScreen = () => {
                   'Selecciona una opción',
                   '¿Quieres seleccionar en el mapa o usar tu ubicación actual?',
                   [
-                    { text: 'Ver en Mapa', onPress: () => setMostrarMapa(true) },
-                    { text: 'Usar Ubicación Actual', onPress: obtenerUbicacionActual },
+                    {
+                      text: 'Ver en Mapa',
+                      onPress: () => setMostrarMapa(true),
+                    },
+                    {
+                      text: 'Usar Ubicación Actual',
+                      onPress: obtenerUbicacionActual,
+                    },
                     { text: 'Cancelar', style: 'cancel' },
                   ],
                 )
               }
             >
-              <Text style={{ color: ubicacion ? '#000' : '#888' }}>
+              <AppText style={{ color: ubicacion ? '#000' : '#888' }}>
                 {ubicacion
-                  ? `${ubicacion.latitude.toFixed(4)}, ${ubicacion.longitude.toFixed(4)}`
+                  ? `${ubicacion.latitude.toFixed(
+                      4,
+                    )}, ${ubicacion.longitude.toFixed(4)}`
                   : 'Seleccionar ubicación'}
-              </Text>
+              </AppText>
             </TouchableOpacity>
           </View>
 
@@ -413,7 +456,7 @@ const styles = StyleSheet.create({
   },
   inputLabel: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: fontWeightMedium,
     color: '#374151',
     marginBottom: 6,
   },

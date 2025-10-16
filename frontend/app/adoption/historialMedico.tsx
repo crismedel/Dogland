@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   TouchableOpacity,
   Image,
@@ -12,6 +11,12 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import TarjetaMedica from './component/terjetasMedicas'; // <<-- fíjate en el nombre exacto
+import {
+  fontWeightBold,
+  fontWeightSemiBold,
+  fontWeightMedium,
+  AppText,
+} from '@/src/components/AppText';
 // import { Colors } from '@/src/constants/colors'; // opcional: si lo usas, revisa que exista
 
 const HistorialMedico = () => {
@@ -73,7 +78,7 @@ const HistorialMedico = () => {
             style={styles.backIconHeader}
           />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Historial Médico</Text>
+        <AppText style={styles.headerTitle}>Historial Médico</AppText>
       </View>
 
       {/* Lista de tarjetas médicas */}
@@ -92,8 +97,13 @@ const HistorialMedico = () => {
       />
 
       {/* Botón amarillo Agregar historial */}
-      <TouchableOpacity style={styles.addButton} onPress={handleAgregarHistorial}>
-        <Text style={styles.addButtonText}>+ Agregar historial médico</Text>
+      <TouchableOpacity
+        style={styles.addButton}
+        onPress={handleAgregarHistorial}
+      >
+        <AppText style={styles.addButtonText}>
+          + Agregar historial médico
+        </AppText>
       </TouchableOpacity>
     </View>
   );
@@ -108,7 +118,12 @@ const styles = StyleSheet.create({
     padding: 12,
     marginTop: 20,
   },
-  headerTitle: { fontSize: 18, fontWeight: 'bold', color: '#fff', marginLeft: 16 },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: fontWeightBold,
+    color: '#fff',
+    marginLeft: 16,
+  },
   backButtonHeader: { padding: 6 },
   backIconHeader: { width: 24, height: 24, tintColor: '#fff' },
 
@@ -120,7 +135,11 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
   },
-  addButtonText: { color: '#333', fontSize: 16, fontWeight: 'bold' },
+  addButtonText: {
+    color: '#333',
+    fontSize: 16,
+    fontWeight: fontWeightBold,
+  },
 
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 });

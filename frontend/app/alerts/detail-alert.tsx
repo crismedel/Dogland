@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   ActivityIndicator,
   TouchableOpacity,
@@ -16,6 +15,12 @@ import { Colors } from '@/src/constants/colors';
 import CustomHeader from '@/src/components/UI/CustomHeader';
 import CustomButton from '@/src/components/UI/CustomButton';
 import { Ionicons } from '@expo/vector-icons';
+import {
+  fontWeightBold,
+  fontWeightSemiBold,
+  fontWeightMedium,
+  AppText,
+} from '@/src/components/AppText';
 
 const AlertDetailScreen = () => {
   // Hook para manejar la navegación
@@ -78,7 +83,7 @@ const AlertDetailScreen = () => {
         />
         <View style={styles.center}>
           <ActivityIndicator size="large" color={Colors.secondary} />
-          <Text style={styles.loadingText}>Cargando alerta...</Text>
+          <AppText style={styles.loadingText}>Cargando alerta...</AppText>
         </View>
       </View>
     );
@@ -100,9 +105,9 @@ const AlertDetailScreen = () => {
           }
         />
         <View style={styles.center}>
-          <Text style={styles.errorText}>
+          <AppText style={styles.errorText}>
             {error || 'Alerta no encontrada'}
-          </Text>
+          </AppText>
           <CustomButton
             title="Volver"
             onPress={() => router.back()}
@@ -146,47 +151,47 @@ const AlertDetailScreen = () => {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Encabezado con título y tipo de alerta */}
         <View style={styles.headerDetail}>
-          <Text style={styles.title}>{alert.titulo}</Text>
-          <Text style={styles.subtitle}>{alert.tipo}</Text>
+          <AppText style={styles.title}>{alert.titulo}</AppText>
+          <AppText style={styles.subtitle}>{alert.tipo}</AppText>
         </View>
 
         {/* Descripción de la alerta */}
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Descripción</Text>
-          <Text style={styles.description}>{alert.descripcion}</Text>
+          <AppText style={styles.sectionTitle}>Descripción</AppText>
+          <AppText style={styles.description}>{alert.descripcion}</AppText>
         </View>
 
         {/* Información adicional: nivel de riesgo, creador y fecha */}
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Información adicional</Text>
+          <AppText style={styles.sectionTitle}>Información adicional</AppText>
           <View style={styles.infoContainer}>
             <View style={styles.infoBox}>
-              <Text style={styles.infoLabel}>Nivel de Riesgo</Text>
-              <Text
+              <AppText style={styles.infoLabel}>Nivel de Riesgo</AppText>
+              <AppText
                 style={[
                   styles.infoValue,
                   { color: riskStyles[alert.nivel_riesgo].color },
                 ]}
               >
                 {alert.nivel_riesgo}
-              </Text>
+              </AppText>
             </View>
             <View style={styles.infoBox}>
-              <Text style={styles.infoLabel}>Creado por</Text>
-              <Text style={styles.infoValue}>{alert.creado_por}</Text>
+              <AppText style={styles.infoLabel}>Creado por</AppText>
+              <AppText style={styles.infoValue}>{alert.creado_por}</AppText>
             </View>
             <View style={styles.infoBox}>
-              <Text style={styles.infoLabel}>Fecha de creación</Text>
-              <Text style={styles.infoValue}>
+              <AppText style={styles.infoLabel}>Fecha de creación</AppText>
+              <AppText style={styles.infoValue}>
                 {new Date(alert.fecha_creacion).toLocaleDateString()}
-              </Text>
+              </AppText>
             </View>
           </View>
         </View>
 
         {/* Ubicación */}
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Ubicación</Text>
+          <AppText style={styles.sectionTitle}>Ubicación</AppText>
           {location ? (
             <View style={styles.mapCard}>
               <MapView
@@ -208,7 +213,7 @@ const AlertDetailScreen = () => {
                         { backgroundColor: markerColor },
                       ]}
                     >
-                      <Text style={styles.markerEmoji}>⚠️</Text>
+                      <AppText style={styles.markerEmoji}>⚠️</AppText>
                     </View>
                     {/* Triángulo apuntando hacia abajo */}
                     <View
@@ -222,34 +227,33 @@ const AlertDetailScreen = () => {
                   {/* Callout personalizado con información de la alerta */}
                   <Callout tooltip>
                     <View style={styles.calloutContainer}>
-                      <Text style={styles.calloutTitle} numberOfLines={2}>
+                      <AppText style={styles.calloutTitle} numberOfLines={2}>
                         {alert.titulo}
-                      </Text>
+                      </AppText>
                       <View style={styles.calloutDivider} />
-                      <Text style={styles.calloutText}>📍 {alert.tipo}</Text>
-                      <Text
-                        style={[
-                          styles.calloutText,
-                          { color: markerColor, fontWeight: '600' },
-                        ]}
+                      <AppText style={styles.calloutText}>
+                        📍 {alert.tipo}
+                      </AppText>
+                      <AppText
+                        style={[styles.calloutText, { color: markerColor }]}
                       >
                         🚨 {alert.nivel_riesgo}
-                      </Text>
-                      <Text style={styles.calloutDate}>
+                      </AppText>
+                      <AppText style={styles.calloutDate}>
                         📅{' '}
                         {new Date(alert.fecha_creacion).toLocaleDateString(
                           'es-ES',
                         )}
-                      </Text>
+                      </AppText>
                     </View>
                   </Callout>
                 </Marker>
               </MapView>
             </View>
           ) : (
-            <Text style={styles.noLocation}>
+            <AppText style={styles.noLocation}>
               {alert.direccion || 'Ubicación no disponible'}
-            </Text>
+            </AppText>
           )}
         </View>
 
@@ -274,11 +278,15 @@ const styles = StyleSheet.create({
   scrollContent: { padding: 20 },
   // TITULO + SUBTITULO
   headerDetail: { marginBottom: 20, marginTop: 20 },
-  title: { fontSize: 24, fontWeight: 'bold', color: '#222' },
+  title: {
+    fontSize: 24,
+    fontWeight: fontWeightBold,
+    color: '#222',
+  },
   subtitle: {
     fontSize: 16,
     color: Colors.secondary,
-    fontWeight: '600',
+    fontWeight: fontWeightMedium,
     backgroundColor: '#E3F2FD',
     paddingHorizontal: 12,
     paddingVertical: 4,
@@ -292,13 +300,20 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 18,
   },
-  sectionTitle: { fontWeight: '700', marginBottom: 12, fontSize: 16 },
+  sectionTitle: {
+    fontWeight: fontWeightSemiBold,
+    marginBottom: 12,
+    fontSize: 16,
+  },
   description: { fontSize: 15, color: '#444' },
   // INFO EXTRA
   infoContainer: { flexDirection: 'row', justifyContent: 'space-between' },
   infoBox: { flex: 1, alignItems: 'center', padding: 12 },
   infoLabel: { fontSize: 12, color: '#777' },
-  infoValue: { fontSize: 14, fontWeight: '700' },
+  infoValue: {
+    fontSize: 14,
+    fontWeight: fontWeightSemiBold,
+  },
   // MAPA
   mapCard: { borderRadius: 12, overflow: 'hidden' },
   map: { height: 250, width: '100%' },
@@ -354,7 +369,11 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-  calloutTitle: { fontWeight: '700', fontSize: 14, marginBottom: 6 },
+  calloutTitle: {
+    fontWeight: fontWeightSemiBold,
+    fontSize: 14,
+    marginBottom: 6,
+  },
   calloutDivider: { height: 1, backgroundColor: '#ddd', marginBottom: 6 },
   calloutText: { fontSize: 13, marginBottom: 3 },
   calloutDate: { fontSize: 12, color: '#888', marginTop: 4 },

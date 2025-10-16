@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   View,
-  Text,
   FlatList,
   StyleSheet,
   ActivityIndicator,
@@ -15,6 +14,12 @@ import AnimalCard from './component/card';
 import FiltroCan from './component/filtroCan';
 import CustomHeader from '@/src/components/UI/CustomHeader';
 import { Colors } from '@/src/constants/colors';
+import {
+  fontWeightBold,
+  fontWeightSemiBold,
+  fontWeightMedium,
+  AppText,
+} from '@/src/components/AppText';
 
 const { width } = Dimensions.get('window');
 const SPACING = 10;
@@ -203,7 +208,9 @@ const Index = () => {
             color="#fff"
             style={{ marginRight: 6 }}
           />
-          <Text style={styles.medicalButtonText}>Ver historiales médicos</Text>
+          <AppText style={styles.medicalButtonText}>
+            Ver historiales médicos
+          </AppText>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -216,7 +223,9 @@ const Index = () => {
             color="#fff"
             style={{ marginRight: 6 }}
           />
-          <Text style={styles.addButtonText}>Agregar perrito temporal</Text>
+          <AppText style={styles.addButtonText}>
+            Agregar perrito temporal
+          </AppText>
         </TouchableOpacity>
       </View>
 
@@ -224,11 +233,11 @@ const Index = () => {
         {/* Filtros activos */}
         {activeFilters.length > 0 && (
           <View style={styles.activeFiltersContainer}>
-            <Text style={styles.activeFiltersText}>
+            <AppText style={styles.activeFiltersText}>
               {activeFilters.join(' • ')}
-            </Text>
+            </AppText>
             <TouchableOpacity onPress={handleClearFilters}>
-              <Text style={styles.clearFiltersText}>Limpiar</Text>
+              <AppText style={styles.clearFiltersText}>Limpiar</AppText>
             </TouchableOpacity>
           </View>
         )}
@@ -256,10 +265,12 @@ const Index = () => {
         {filteredAnimals.length === 0 && (
           <View style={styles.noResults}>
             <Ionicons name="search-outline" size={50} color="#b0bec5" />
-            <Text style={styles.noResultsText}>No se encontraron animales</Text>
-            <Text style={styles.noResultsSubtext}>
+            <AppText style={styles.noResultsText}>
+              No se encontraron animales
+            </AppText>
+            <AppText style={styles.noResultsSubtext}>
               Intenta con otros filtros
-            </Text>
+            </AppText>
           </View>
         )}
       </View>
@@ -285,7 +296,7 @@ const styles = StyleSheet.create({
   },
   medicalButtonText: {
     color: '#fff',
-    fontWeight: 'bold',
+    fontWeight: fontWeightBold,
     fontSize: 12,
   },
 
@@ -302,7 +313,7 @@ const styles = StyleSheet.create({
   },
   addButtonText: {
     color: '#fff',
-    fontWeight: 'bold',
+    fontWeight: fontWeightBold,
     fontSize: 12,
   },
 
@@ -323,7 +334,11 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: 12,
   },
-  clearFiltersText: { fontSize: 13, color: '#f44336', fontWeight: '700' },
+  clearFiltersText: {
+    fontSize: 13,
+    color: '#f44336',
+    fontWeight: fontWeightSemiBold,
+  },
   listContent: {
     paddingHorizontal: 16,
     paddingBottom: 24,
@@ -341,7 +356,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#607d8b',
     marginTop: 10,
-    fontWeight: '700',
+    fontWeight: fontWeightSemiBold,
   },
   noResultsSubtext: { fontSize: 13, color: '#90a4ae', marginTop: 2 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },

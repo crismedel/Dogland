@@ -2,13 +2,18 @@
 import React, { useState } from 'react';
 import {
   View,
-  Text,
   TextInput,
   TouchableOpacity,
   ScrollView,
   StyleSheet,
   Alert,
 } from 'react-native';
+import {
+  fontWeightBold,
+  fontWeightSemiBold,
+  fontWeightMedium,
+  AppText,
+} from '@/src/components/AppText';
 
 const FormAgregarPerrito = () => {
   const [form, setForm] = useState({
@@ -37,11 +42,14 @@ const FormAgregarPerrito = () => {
         return;
       }
 
-      const response = await fetch('http://<TU_IP_O_DOMINIO>:3000/api/animals', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
-      });
+      const response = await fetch(
+        'http://<TU_IP_O_DOMINIO>:3000/api/animals',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(form),
+        },
+      );
 
       const data = await response.json();
 
@@ -73,7 +81,7 @@ const FormAgregarPerrito = () => {
   return (
     <ScrollView contentContainerStyle={styles.scroll}>
       <View style={styles.card}>
-        <Text style={styles.sectionTitle}>Información General</Text>
+        <AppText style={styles.sectionTitle}>Información General</AppText>
 
         <TextInput
           style={styles.input}
@@ -109,7 +117,7 @@ const FormAgregarPerrito = () => {
           onChangeText={(text) => handleChange('id_raza', text)}
         />
 
-        <Text style={styles.sectionTitle}>Estado de Salud</Text>
+        <AppText style={styles.sectionTitle}>Estado de Salud</AppText>
         <TextInput
           style={styles.input}
           placeholder="Estado de salud (ID o nombre)"
@@ -125,7 +133,7 @@ const FormAgregarPerrito = () => {
           }
         />
 
-        <Text style={styles.sectionTitle}>Adopción</Text>
+        <AppText style={styles.sectionTitle}>Adopción</AppText>
         <TextInput
           style={styles.input}
           placeholder="Descripción para adopción"
@@ -133,7 +141,7 @@ const FormAgregarPerrito = () => {
           onChangeText={(text) => handleChange('descripcion_adopcion', text)}
         />
 
-        <Text style={styles.sectionTitle}>Historial Médico</Text>
+        <AppText style={styles.sectionTitle}>Historial Médico</AppText>
         <TextInput
           style={styles.input}
           placeholder="Diagnóstico"
@@ -147,7 +155,7 @@ const FormAgregarPerrito = () => {
           onChangeText={(text) => handleChange('tratamiento', text)}
         />
 
-        <Text style={styles.sectionTitle}>Fotografía</Text>
+        <AppText style={styles.sectionTitle}>Fotografía</AppText>
         <TextInput
           style={styles.input}
           placeholder="URL de la imagen"
@@ -156,7 +164,7 @@ const FormAgregarPerrito = () => {
         />
 
         <TouchableOpacity style={styles.button} onPress={handleSubmit}>
-          <Text style={styles.buttonText}>Guardar Perrito</Text>
+          <AppText style={styles.buttonText}>Guardar Perrito</AppText>
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -173,7 +181,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: fontWeightBold,
     marginTop: 15,
     marginBottom: 8,
     color: '#333',
@@ -196,7 +204,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: '#fff',
-    fontWeight: 'bold',
+    fontWeight: fontWeightBold,
     fontSize: 16,
   },
 });

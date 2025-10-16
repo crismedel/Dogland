@@ -1,11 +1,5 @@
 import React from 'react';
-import {
-  View,
-  TouchableOpacity,
-  StyleSheet,
-  Platform,
-  Text,
-} from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { Link, usePathname } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import type { ComponentProps } from 'react';
@@ -16,6 +10,12 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '@/src/constants/colors';
+import {
+  fontWeightBold,
+  fontWeightSemiBold,
+  fontWeightMedium,
+  AppText,
+} from '@/src/components/AppText';
 
 type IoniconName = ComponentProps<typeof Ionicons>['name'];
 
@@ -146,13 +146,13 @@ export default function BottomNavBar() {
                     />
                   </View>
                   <View style={styles.labelBox}>
-                    <Text
+                    <AppText
                       style={[styles.label, isActive && styles.labelActive]}
                       numberOfLines={1}
                       adjustsFontSizeToFit
                     >
                       {item.label}
-                    </Text>
+                    </AppText>
                   </View>
                 </Animated.View>
               </TouchableOpacity>
@@ -344,6 +344,6 @@ const styles = StyleSheet.create({
   labelActive: {
     color: Colors.primary,
     opacity: 1,
-    fontWeight: '700',
+    fontWeight: fontWeightSemiBold,
   },
 });

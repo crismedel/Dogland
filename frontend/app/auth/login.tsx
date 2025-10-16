@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import {
-  Text,
   View,
   TouchableOpacity,
   StyleSheet,
@@ -17,6 +16,12 @@ import { router } from 'expo-router';
 import DynamicForm, { FormField } from '@/src/components/UI/DynamicForm';
 import { useNotification } from '@/src/components/notifications/NotificationContext';
 import { Colors } from '@/src/constants/colors';
+import {
+  fontWeightBold,
+  fontWeightSemiBold,
+  fontWeightMedium,
+  AppText,
+} from '@/src/components/AppText';
 
 const { width } = Dimensions.get('window');
 
@@ -139,8 +144,8 @@ const Index: React.FC = () => {
 
         {/* Title */}
         <View style={styles.titleContainer}>
-          <Text style={styles.welcomeTitle}>Bienvenido a</Text>
-          <Text style={styles.brandTitle}>Dogland</Text>
+          <AppText style={styles.welcomeTitle}>Bienvenido a</AppText>
+          <AppText style={styles.brandTitle}>Dogland</AppText>
         </View>
 
         {/* Dynamic Form */}
@@ -162,16 +167,16 @@ const Index: React.FC = () => {
           onPress={() => router.push('/auth/register')}
           activeOpacity={0.9}
         >
-          <Text style={styles.registerText}>Regístrate</Text>
+          <AppText style={styles.registerText}>Regístrate</AppText>
         </TouchableOpacity>
 
         {/* Forgot Password Link */}
-        <Text
+        <AppText
           style={styles.forgotPasswordText}
           onPress={() => router.push('/auth/forgot_password')}
         >
           ¿No recuerdas tu contraseña?
-        </Text>
+        </AppText>
       </View>
     </KeyboardAvoidingView>
   );
@@ -199,7 +204,7 @@ const styles = StyleSheet.create({
   },
   brandTitle: {
     fontSize: 36,
-    fontWeight: '800',
+    fontWeight: fontWeightBold,
     color: '#1F2937',
     textAlign: 'center',
     letterSpacing: 1,
@@ -253,7 +258,7 @@ const styles = StyleSheet.create({
   registerText: {
     color: Colors.primary,
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: fontWeightSemiBold,
     letterSpacing: 0.3,
     textAlign: 'center',
   },

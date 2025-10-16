@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import {
   View,
-  Text,
   Modal,
   ScrollView,
   TouchableOpacity,
@@ -10,6 +9,12 @@ import {
 import { Picker } from '@react-native-picker/picker';
 import { FilterOptions } from '../../types/alert';
 import { Colors } from '@/src/constants/colors';
+import {
+  fontWeightBold,
+  fontWeightSemiBold,
+  fontWeightMedium,
+  AppText,
+} from '@/src/components/AppText';
 
 interface FilterModalProps {
   visible: boolean;
@@ -46,10 +51,10 @@ const FilterModal: React.FC<FilterModalProps> = ({
     <Modal visible={visible} animationType="slide" transparent>
       <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
-          <Text style={styles.modalTitle}>Filtrar Alertas</Text>
+          <AppText style={styles.modalTitle}>Filtrar Alertas</AppText>
 
           <ScrollView>
-            <Text style={styles.filterLabel}>Tipo de Alerta:</Text>
+            <AppText style={styles.filterLabel}>Tipo de Alerta:</AppText>
             <Picker
               selectedValue={tempFilters.type}
               onValueChange={(value) =>
@@ -65,7 +70,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
               <Picker.Item label="Otro" value="Otro" />
             </Picker>
 
-            <Text style={styles.filterLabel}>Nivel de Riesgo:</Text>
+            <AppText style={styles.filterLabel}>Nivel de Riesgo:</AppText>
             <Picker
               selectedValue={tempFilters.riskLevel}
               onValueChange={(value) =>
@@ -79,7 +84,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
               <Picker.Item label="Alto" value="alto" />
             </Picker>
 
-            <Text style={styles.filterLabel}>Estado:</Text>
+            <AppText style={styles.filterLabel}>Estado:</AppText>
             <Picker
               selectedValue={tempFilters.status}
               onValueChange={(value) =>
@@ -92,7 +97,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
               <Picker.Item label="Todas" value="todas" />
             </Picker>
 
-            <Text style={styles.filterLabel}>Período:</Text>
+            <AppText style={styles.filterLabel}>Período:</AppText>
             <Picker
               selectedValue={tempFilters.timeRange}
               onValueChange={(value) =>
@@ -109,13 +114,13 @@ const FilterModal: React.FC<FilterModalProps> = ({
 
           <View style={styles.modalButtons}>
             <TouchableOpacity style={styles.resetButton} onPress={resetFilters}>
-              <Text style={styles.resetButtonText}>Limpiar</Text>
+              <AppText style={styles.resetButtonText}>Limpiar</AppText>
             </TouchableOpacity>
             <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
-              <Text style={styles.cancelButtonText}>Cancelar</Text>
+              <AppText style={styles.cancelButtonText}>Cancelar</AppText>
             </TouchableOpacity>
             <TouchableOpacity style={styles.applyButton} onPress={applyFilters}>
-              <Text style={styles.applyButtonText}>Aplicar</Text>
+              <AppText style={styles.applyButtonText}>Aplicar</AppText>
             </TouchableOpacity>
           </View>
         </View>
@@ -143,13 +148,13 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: fontWeightBold,
     marginBottom: 20,
     textAlign: 'center',
   },
   filterLabel: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: fontWeightMedium,
     marginTop: 12,
     marginBottom: 4,
     color: '#333',
@@ -171,7 +176,7 @@ const styles = StyleSheet.create({
   },
   resetButtonText: {
     color: '#fff',
-    fontWeight: '600',
+    fontWeight: fontWeightMedium,
   },
   cancelButton: {
     backgroundColor: Colors.danger,
@@ -181,7 +186,7 @@ const styles = StyleSheet.create({
   },
   cancelButtonText: {
     color: '#fff',
-    fontWeight: '600',
+    fontWeight: fontWeightMedium,
   },
   applyButton: {
     backgroundColor: '#28a745',
@@ -191,6 +196,6 @@ const styles = StyleSheet.create({
   },
   applyButtonText: {
     color: '#fff',
-    fontWeight: '600',
+    fontWeight: fontWeightMedium,
   },
 });

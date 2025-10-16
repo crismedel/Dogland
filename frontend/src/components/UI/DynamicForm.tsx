@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import {
   View,
-  Text,
   TextInput,
   StyleSheet,
   KeyboardTypeOptions,
@@ -14,6 +13,12 @@ import CustomButton from './CustomButton';
 import { Colors } from '@/src/constants/colors';
 import { Picker } from '@react-native-picker/picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import {
+  fontWeightBold,
+  fontWeightSemiBold,
+  fontWeightMedium,
+  AppText,
+} from '@/src/components/AppText';
 
 export interface FormField {
   name: string;
@@ -66,7 +71,7 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
         if (field.type === 'picker') {
           return (
             <View key={field.name} style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>{field.label}</Text>
+              <AppText style={styles.inputLabel}>{field.label}</AppText>
               <View
                 style={[styles.inputWrapper, isLoadingField && styles.disabled]}
               >
@@ -110,7 +115,7 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
         if (field.type === 'date') {
           return (
             <View key={field.name} style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>{field.label}</Text>
+              <AppText style={styles.inputLabel}>{field.label}</AppText>
               <TouchableOpacity
                 onPress={() => setShowDatePickerFor(field.name)}
               >
@@ -123,11 +128,11 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
                       style={{ marginRight: 8 }}
                     />
                   )}
-                  <Text style={styles.textInput}>
+                  <AppText style={styles.textInput}>
                     {values[field.name]
                       ? new Date(values[field.name]).toLocaleDateString('es-CL')
                       : field.placeholder}
-                  </Text>
+                  </AppText>
                 </View>
               </TouchableOpacity>
               {showDatePickerFor === field.name && (
@@ -153,7 +158,7 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
 
         return (
           <View key={field.name} style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>{field.label}</Text>
+            <AppText style={styles.inputLabel}>{field.label}</AppText>
             <View style={styles.inputWrapper}>
               {field.icon && (
                 <Ionicons
@@ -212,7 +217,7 @@ const styles = StyleSheet.create({
   },
   inputLabel: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: fontWeightMedium,
     color: '#374151',
     marginBottom: 8,
     marginLeft: 4,
@@ -250,7 +255,7 @@ const styles = StyleSheet.create({
   },
   customButtonText: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: fontWeightSemiBold,
     color: '#111827',
     textAlign: 'center',
   },

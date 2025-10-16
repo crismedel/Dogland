@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Text,
   View,
   TouchableOpacity,
   StyleSheet,
@@ -16,6 +15,12 @@ import apiClient from '@/src/api/client';
 import { useNotification } from '@/src/components/notifications/NotificationContext';
 import { Region, Ciudad } from '@/src/types/location';
 import { Colors } from '@/src/constants/colors';
+import {
+  fontWeightBold,
+  fontWeightSemiBold,
+  fontWeightMedium,
+  AppText,
+} from '@/src/components/AppText';
 
 const { width } = Dimensions.get('window');
 
@@ -289,7 +294,9 @@ export default function Register() {
 
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.formContainer}>
-          <Text style={styles.welcomeTitle}>Crea tu cuenta en Dogland</Text>
+          <AppText style={styles.welcomeTitle}>
+            Crea tu cuenta en Dogland
+          </AppText>
 
           <DynamicForm
             fields={formFields}
@@ -309,7 +316,7 @@ export default function Register() {
             onPress={() => router.push('/auth/login')}
             style={styles.loginLinkContainer}
           >
-            <Text style={styles.loginLinkText}>Ya Tengo una Cuenta</Text>
+            <AppText style={styles.loginLinkText}>Ya Tengo una Cuenta</AppText>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -340,7 +347,7 @@ const styles = StyleSheet.create({
   },
   welcomeTitle: {
     fontSize: 28,
-    fontWeight: '700',
+    fontWeight: fontWeightSemiBold,
     color: '#1F2937',
     textAlign: 'center',
     marginBottom: 30,
@@ -352,7 +359,7 @@ const styles = StyleSheet.create({
   loginLinkText: {
     color: Colors.background,
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: fontWeightMedium,
     textDecorationLine: 'underline',
   },
 });

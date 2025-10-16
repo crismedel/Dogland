@@ -1,5 +1,4 @@
 import {
-  Text,
   View,
   TextInput,
   TouchableOpacity,
@@ -11,6 +10,12 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { Colors } from '@/src/constants/colors';
+import {
+  fontWeightBold,
+  fontWeightSemiBold,
+  fontWeightMedium,
+  AppText,
+} from '@/src/components/AppText';
 
 const { width, height } = Dimensions.get('window');
 
@@ -34,11 +39,13 @@ export default function Index() {
       <View style={styles.container}>
         <View style={styles.formContainer}>
           {/* Welcome Title */}
-          <Text style={styles.welcomeTitle}>Recuperación de Contraseña</Text>
+          <AppText style={styles.welcomeTitle}>
+            Recuperación de Contraseña
+          </AppText>
 
           {/* Email Input */}
           <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Correo</Text>
+            <AppText style={styles.inputLabel}>Correo</AppText>
             <TextInput
               style={styles.textInput}
               placeholder="Ingresa tu correo"
@@ -50,17 +57,17 @@ export default function Index() {
 
           {/* Login Button */}
           <TouchableOpacity style={styles.forgotpswdButton} activeOpacity={0.8}>
-            <Text style={styles.forgotpswdButtonText}>Envia Código</Text>
+            <AppText style={styles.forgotpswdButtonText}>Envia Código</AppText>
           </TouchableOpacity>
 
           {/* Register Link */}
           <TouchableOpacity style={styles.registerContainer}>
-            <Text
+            <AppText
               style={styles.registerText}
               onPress={() => router.push('/auth/register')}
             >
               Regístrate
-            </Text>
+            </AppText>
           </TouchableOpacity>
         </View>
       </View>
@@ -82,7 +89,7 @@ const styles = StyleSheet.create({
   },
   welcomeTitle: {
     fontSize: 28,
-    fontWeight: '700',
+    fontWeight: fontWeightSemiBold,
     color: '#1F2937',
     textAlign: 'center',
     marginBottom: 40,
@@ -93,7 +100,7 @@ const styles = StyleSheet.create({
   },
   inputLabel: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: fontWeightMedium,
     color: '#374151',
     marginBottom: 8,
   },
@@ -125,7 +132,7 @@ const styles = StyleSheet.create({
   forgotpswdButtonText: {
     color: Colors.lightText,
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: fontWeightSemiBold,
     textAlign: 'center',
     letterSpacing: 0.5,
   },
@@ -144,7 +151,7 @@ const styles = StyleSheet.create({
   registerText: {
     color: Colors.background,
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: fontWeightMedium,
     textDecorationLine: 'underline',
   },
 });

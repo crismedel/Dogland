@@ -1,7 +1,6 @@
 import React, { useRef } from 'react';
 import {
   View,
-  Text,
   Image,
   StyleSheet,
   TouchableOpacity,
@@ -16,6 +15,12 @@ import CustomHeader from '@/src/components/UI/CustomHeader';
 import TarjetaMedica from './component/terjetasMedicas';
 import { Colors } from '@/src/constants/colors';
 import CustomButton from '@/src/components/UI/CustomButton';
+import {
+  fontWeightBold,
+  fontWeightSemiBold,
+  fontWeightMedium,
+  AppText,
+} from '@/src/components/AppText';
 
 const PerfilCan = () => {
   const {
@@ -105,7 +110,7 @@ const PerfilCan = () => {
                 { backgroundColor: estadoColor + 'dd' },
               ]}
             >
-              <Text style={styles.estadoText}>{estadoTexto}</Text>
+              <AppText style={styles.estadoText}>{estadoTexto}</AppText>
             </View>
 
             {/* Sombra interna inferior para profundidad */}
@@ -114,30 +119,30 @@ const PerfilCan = () => {
         </View>
 
         {/* Identidad */}
-        <Text numberOfLines={1} style={styles.name}>
+        <AppText numberOfLines={1} style={styles.name}>
           {String(name)}
-        </Text>
-        <Text numberOfLines={1} style={styles.subtle}>
+        </AppText>
+        <AppText numberOfLines={1} style={styles.subtle}>
           {String(breed)}
-        </Text>
-        <Text style={styles.subtle}>{age} meses</Text>
+        </AppText>
+        <AppText style={styles.subtle}>{age} meses</AppText>
 
         {/* Chips */}
         <View style={styles.pillsRow}>
           {species ? (
             <View style={styles.pill}>
               <Ionicons name="paw-outline" size={14} color="#1565c0" />
-              <Text numberOfLines={1} style={styles.pillText}>
+              <AppText numberOfLines={1} style={styles.pillText}>
                 {String(species)}
-              </Text>
+              </AppText>
             </View>
           ) : null}
           {size ? (
             <View style={styles.pillLight}>
               <Ionicons name="resize-outline" size={14} color={Colors.text} />
-              <Text numberOfLines={1} style={styles.pillTextDark}>
+              <AppText numberOfLines={1} style={styles.pillTextDark}>
                 {String(size)}
-              </Text>
+              </AppText>
             </View>
           ) : null}
         </View>
@@ -160,7 +165,7 @@ const PerfilCan = () => {
           ].map((txt, idx) => (
             <View key={idx} style={styles.bulletRow}>
               <View style={styles.bulletDot} />
-              <Text style={styles.bulletText}>{txt}</Text>
+              <AppText style={styles.bulletText}>{txt}</AppText>
             </View>
           ))}
         </NeumorphCard>
@@ -203,14 +208,14 @@ const Row = ({
   valueColor?: string;
 }) => (
   <View style={styles.row}>
-    <Text style={styles.rowLabel}>{label}</Text>
-    <Text
+    <AppText style={styles.rowLabel}>{label}</AppText>
+    <AppText
       numberOfLines={truncate ? 1 : undefined}
       ellipsizeMode={truncate ? 'tail' : undefined}
       style={[styles.rowValue, valueColor ? { color: valueColor } : null]}
     >
       {value}
-    </Text>
+    </AppText>
   </View>
 );
 
@@ -244,7 +249,7 @@ const NeumorphCard: React.FC<{ title: string; children: React.ReactNode }> = ({
         onPressOut={onPressOut}
       >
         <View style={styles.cardNeu}>
-          <Text style={styles.cardTitle}>{title}</Text>
+          <AppText style={styles.cardTitle}>{title}</AppText>
           {children}
         </View>
       </TouchableOpacity>
@@ -323,7 +328,7 @@ const styles = StyleSheet.create({
   estadoText: {
     color: '#fff',
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: fontWeightSemiBold,
     letterSpacing: 0.2,
   },
 
@@ -331,7 +336,7 @@ const styles = StyleSheet.create({
   name: {
     marginTop: 16,
     fontSize: 26,
-    fontWeight: '800',
+    fontWeight: fontWeightBold,
     color: Colors.text,
     textAlign: 'center',
   },
@@ -367,8 +372,16 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 14,
   },
-  pillText: { fontSize: 12, color: Colors.secondary, fontWeight: '700' },
-  pillTextDark: { fontSize: 12, color: '#546e7a', fontWeight: '700' },
+  pillText: {
+    fontSize: 12,
+    color: Colors.secondary,
+    fontWeight: fontWeightSemiBold,
+  },
+  pillTextDark: {
+    fontSize: 12,
+    color: '#546e7a',
+    fontWeight: fontWeightSemiBold,
+  },
 
   // Card estilo neumórfico (3D suave)
   neuWrapper: {
@@ -405,7 +418,7 @@ const styles = StyleSheet.create({
 
   cardTitle: {
     fontSize: 16,
-    fontWeight: '800',
+    fontWeight: fontWeightBold,
     color: Colors.secondary,
     marginBottom: 10,
     letterSpacing: 0.2,
@@ -421,7 +434,7 @@ const styles = StyleSheet.create({
   rowLabel: {
     fontSize: 13,
     color: '#607d8b',
-    fontWeight: '700',
+    fontWeight: fontWeightSemiBold,
     letterSpacing: 0.2,
     textTransform: 'uppercase',
   },

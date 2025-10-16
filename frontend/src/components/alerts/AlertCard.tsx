@@ -1,7 +1,6 @@
 import React from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   Alert as RNAlert,
   TouchableOpacity,
@@ -12,7 +11,12 @@ import { deleteAlert } from '../../api/alerts';
 import { useNotification } from '@/src/components/notifications/NotificationContext';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/src/constants/colors';
-
+import {
+  fontWeightBold,
+  fontWeightSemiBold,
+  fontWeightMedium,
+  AppText,
+} from '@/src/components/AppText';
 interface AlertCardProps {
   alert: Alert;
   onDeleteSuccess?: (id: number) => void;
@@ -79,7 +83,7 @@ const AlertCard: React.FC<AlertCardProps> = ({ alert, onDeleteSuccess }) => {
     >
       {/* Header con título y acciones */}
       <View style={styles.cardHeader}>
-        <Text style={styles.title}>{alert.titulo}</Text>
+        <AppText style={styles.title}>{alert.titulo}</AppText>
         <View style={styles.actions}>
           {alert.activa && (
             <TouchableOpacity onPress={handleEdit} style={styles.iconButton}>
@@ -95,7 +99,7 @@ const AlertCard: React.FC<AlertCardProps> = ({ alert, onDeleteSuccess }) => {
       {/* Badges de tipo y riesgo */}
       <View style={styles.badgeContainer}>
         <View style={[styles.typeBadge, badge]}>
-          <Text style={styles.badgeText}>{alert.tipo.toUpperCase()}</Text>
+          <AppText style={styles.badgeText}>{alert.tipo.toUpperCase()}</AppText>
         </View>
         <View
           style={[
@@ -103,39 +107,41 @@ const AlertCard: React.FC<AlertCardProps> = ({ alert, onDeleteSuccess }) => {
             { backgroundColor: riskStyle.backgroundColor },
           ]}
         >
-          <Text style={[styles.riskText, { color: riskStyle.color }]}>
+          <AppText style={[styles.riskText, { color: riskStyle.color }]}>
             {alert.nivel_riesgo.toUpperCase()}
-          </Text>
+          </AppText>
         </View>
       </View>
 
       {/* Descripción */}
-      <Text style={styles.description}>{alert.descripcion}</Text>
+      <AppText style={styles.description}>{alert.descripcion}</AppText>
 
       {/* Info */}
       <View style={styles.alertInfo}>
-        <Text style={styles.location}>
+        <AppText style={styles.location}>
           📍 {alert.direccion || 'No disponible'}
-        </Text>
-        <Text style={styles.reportCount}>📊 {alert.reportes} reportes</Text>
+        </AppText>
+        <AppText style={styles.reportCount}>
+          📊 {alert.reportes} reportes
+        </AppText>
       </View>
 
       {/* Footer */}
       <View style={styles.cardFooter}>
-        <Text style={styles.date}>
+        <AppText style={styles.date}>
           📅 {new Date(alert.fecha_creacion).toLocaleDateString()}
-        </Text>
+        </AppText>
         {alert.activa && daysUntilExpiration !== null ? (
-          <Text
+          <AppText
             style={[
               styles.expiration,
               daysUntilExpiration <= 3 && styles.expirationWarning,
             ]}
           >
             ⏰ Expira en {daysUntilExpiration} días
-          </Text>
+          </AppText>
         ) : (
-          <Text style={styles.archivedText}>📁 ARCHIVADA</Text>
+          <AppText style={styles.archivedText}>📁 ARCHIVADA</AppText>
         )}
       </View>
     </TouchableOpacity>
@@ -169,7 +175,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: fontWeightMedium,
     color: '#222',
     flex: 1,
     marginRight: 8,
@@ -195,7 +201,7 @@ const styles = StyleSheet.create({
   badgeText: {
     color: '#fff',
     fontSize: 10,
-    fontWeight: 'bold',
+    fontWeight: fontWeightBold,
   },
   riskBadge: {
     paddingHorizontal: 8,
@@ -206,7 +212,7 @@ const styles = StyleSheet.create({
   },
   riskText: {
     fontSize: 9,
-    fontWeight: 'bold',
+    fontWeight: fontWeightBold,
   },
   description: {
     fontSize: 14,
@@ -246,11 +252,11 @@ const styles = StyleSheet.create({
   },
   expirationWarning: {
     color: '#ff6b6b',
-    fontWeight: 'bold',
+    fontWeight: fontWeightBold,
   },
   archivedText: {
     fontSize: 11,
     color: '#999',
-    fontWeight: 'bold',
+    fontWeight: fontWeightBold,
   },
 });

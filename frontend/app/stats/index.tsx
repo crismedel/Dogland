@@ -1,10 +1,24 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Dimensions, TouchableOpacity, Image } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  ScrollView,
+  ActivityIndicator,
+  Dimensions,
+  TouchableOpacity,
+  Image,
+} from 'react-native';
 import { useRouter } from 'expo-router';
 import { BarChart, PieChart } from 'react-native-chart-kit';
 import apiClient from '../../src/api/client';
 import CustomHeader from '@/src/components/UI/CustomHeader';
 import { Colors } from '@/src/constants/colors';
+import {
+  fontWeightBold,
+  fontWeightSemiBold,
+  fontWeightMedium,
+  AppText,
+} from '@/src/components/AppText';
 
 const { width } = Dimensions.get('window');
 
@@ -43,7 +57,6 @@ const StatsScreen = () => {
       setSummary(summaryRes.data.data);
       setHealthStates(healthRes.data.data);
       setSpecies(speciesRes.data.data);
-
     } catch (error) {
       console.error('Error al obtener estadísticas:', error);
     } finally {
@@ -56,16 +69,27 @@ const StatsScreen = () => {
   }, [fetchStats]);
 
   const speciesChartData = {
-    labels: species.map(s => s.nombre),
-    datasets: [{
-      data: species.map(s => parseInt(s.total) || 0),
-      colors: species.map((_, i) => (opacity = 1) => `rgba(0, 100, 255, ${(i + 1) / species.length * opacity})`),
-    }]
+    labels: species.map((s) => s.nombre),
+    datasets: [
+      {
+        data: species.map((s) => parseInt(s.total) || 0),
+        colors: species.map(
+          (_, i) =>
+            (opacity = 1) =>
+              `rgba(0, 100, 255, ${((i + 1) / species.length) * opacity})`,
+        ),
+      },
+    ],
   };
 
   const healthStatesPieData = healthStates.map((item, index) => {
     const total = parseInt(item.total) || 0;
-    const color = index === 0 ? Colors.danger : index === 1 ? Colors.warning : Colors.accent;
+    const color =
+      index === 0
+        ? Colors.danger
+        : index === 1
+        ? Colors.warning
+        : Colors.accent;
     return {
       name: item.nombre,
       population: total,
@@ -79,7 +103,7 @@ const StatsScreen = () => {
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color={Colors.primary} />
-        <Text style={styles.loadingText}>Cargando estadísticas...</Text>
+        <AppText style={styles.loadingText}>Cargando estadísticas...</AppText>
       </View>
     );
   }
@@ -98,25 +122,30 @@ const StatsScreen = () => {
         }
       />
       <ScrollView contentContainerStyle={styles.scrollContent}>
-
-        <Text style={styles.sectionTitle}>Resumen General</Text>
+        <AppText style={styles.sectionTitle}>Resumen General</AppText>
         <View style={styles.summaryContainer}>
           <View style={styles.summaryCard}>
-            <Text style={styles.summaryValue}>{summary?.totalReports || 0}</Text>
-            <Text style={styles.summaryLabel}>Total de Reportes</Text>
+            <AppText style={styles.summaryValue}>
+              {summary?.totalReports || 0}
+            </AppText>
+            <AppText style={styles.summaryLabel}>Total de Reportes</AppText>
           </View>
           <View style={[styles.summaryCard, { borderColor: Colors.danger }]}>
-            <Text style={[styles.summaryValue, { color: Colors.danger }]}>{summary?.criticalReports || 0}</Text>
-            <Text style={styles.summaryLabel}>Reportes Críticos</Text>
+            <AppText style={[styles.summaryValue, { color: Colors.danger }]}>
+              {summary?.criticalReports || 0}
+            </AppText>
+            <AppText style={styles.summaryLabel}>Reportes Críticos</AppText>
           </View>
           {/* ✅ Se utiliza el valor de `activeReports` desde el objeto de resumen */}
           <View style={[styles.summaryCard, { borderColor: Colors.success }]}>
-            <Text style={[styles.summaryValue, { color: Colors.success }]}>{summary?.activeReports || 0}</Text>
-            <Text style={styles.summaryLabel}>Reportes Activos</Text>
+            <AppText style={[styles.summaryValue, { color: Colors.success }]}>
+              {summary?.activeReports || 0}
+            </AppText>
+            <AppText style={styles.summaryLabel}>Reportes Activos</AppText>
           </View>
         </View>
 
-        <Text style={styles.sectionTitle}>Avistamientos por Especie</Text>
+        <AppText style={styles.sectionTitle}>Avistamientos por Especie</AppText>
         <View style={styles.chartContainer}>
           {speciesChartData.labels.length > 0 ? (
             <BarChart
@@ -137,11 +166,15 @@ const StatsScreen = () => {
               style={styles.chart}
             />
           ) : (
-            <Text style={styles.noDataText}>No hay datos de especies para mostrar.</Text>
+            <AppText style={styles.noDataText}>
+              No hay datos de especies para mostrar.
+            </AppText>
           )}
         </View>
 
-        <Text style={styles.sectionTitle}>Avistamientos por Estado de Salud</Text>
+        <AppText style={styles.sectionTitle}>
+          Avistamientos por Estado de Salud
+        </AppText>
         <View style={styles.chartContainer}>
           {healthStatesPieData.length > 0 ? (
             <PieChart
@@ -161,10 +194,11 @@ const StatsScreen = () => {
               absolute
             />
           ) : (
-            <Text style={styles.noDataText}>No hay datos de estado de salud para mostrar.</Text>
+            <AppText style={styles.noDataText}>
+              No hay datos de estado de salud para mostrar.
+            </AppText>
           )}
         </View>
-
       </ScrollView>
     </View>
   );
@@ -177,7 +211,7 @@ const styles = StyleSheet.create({
   scrollContent: { padding: 20 },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: fontWeightBold,
     color: Colors.text,
     marginBottom: 15,
     marginTop: 20,
@@ -202,8 +236,17 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.accent,
   },
-  summaryValue: { fontSize: 32, fontWeight: 'bold', color: Colors.text },
-  summaryLabel: { fontSize: 14, color: Colors.gray, textAlign: 'center', marginTop: 5 },
+  summaryValue: {
+    fontSize: 32,
+    fontWeight: fontWeightBold,
+    color: Colors.text,
+  },
+  summaryLabel: {
+    fontSize: 14,
+    color: Colors.gray,
+    textAlign: 'center',
+    marginTop: 5,
+  },
   chartContainer: {
     backgroundColor: Colors.lightText,
     borderRadius: 16,

@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   FlatList,
   ActivityIndicator,
@@ -17,6 +16,12 @@ import {
   obtenerNombreEspecie,
   obtenerNombreEstadoSalud,
 } from '../../src/types/report';
+import {
+  fontWeightBold,
+  fontWeightSemiBold,
+  fontWeightMedium,
+  AppText,
+} from '@/src/components/AppText';
 
 interface Sighting {
   id_avistamiento: number;
@@ -84,7 +89,9 @@ const AvistamientosScreen = () => {
       if (newCriticalCount > currentCriticalCount) {
         showSuccess(
           '¡Alerta!',
-          `Hay ${newCriticalCount - currentCriticalCount} nuevos avistamientos críticos.`,
+          `Hay ${
+            newCriticalCount - currentCriticalCount
+          } nuevos avistamientos críticos.`,
         );
       }
     }, 30000);
@@ -112,22 +119,24 @@ const AvistamientosScreen = () => {
         onPress={() => handlePressSighting(item.id_avistamiento)}
         activeOpacity={0.8}
       >
-        <Text style={styles.cardTitle}>{item.descripcion}</Text>
+        <AppText style={styles.cardTitle}>{item.descripcion}</AppText>
         <View style={styles.infoRow}>
-          <Text style={styles.label}>Especie:</Text>
-          <Text style={styles.value}>
+          <AppText style={styles.label}>Especie:</AppText>
+          <AppText style={styles.value}>
             {obtenerNombreEspecie(item.id_especie) || 'Desconocida'}
-          </Text>
+          </AppText>
         </View>
         <View style={styles.infoRow}>
-          <Text style={styles.label}>Estado Salud:</Text>
-          <Text style={styles.value}>
+          <AppText style={styles.label}>Estado Salud:</AppText>
+          <AppText style={styles.value}>
             {obtenerNombreEstadoSalud(item.id_estado_salud) || 'Desconocido'}
-          </Text>
+          </AppText>
         </View>
         <View style={styles.infoRow}>
-          <Text style={styles.label}>Fecha:</Text>
-          <Text style={styles.value}>{formatDate(item.fecha_creacion)}</Text>
+          <AppText style={styles.label}>Fecha:</AppText>
+          <AppText style={styles.value}>
+            {formatDate(item.fecha_creacion)}
+          </AppText>
         </View>
       </TouchableOpacity>
     );
@@ -137,7 +146,7 @@ const AvistamientosScreen = () => {
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color={Colors.primary} />
-        <Text style={styles.loadingText}>Cargando avistamientos...</Text>
+        <AppText style={styles.loadingText}>Cargando avistamientos...</AppText>
       </View>
     );
   }
@@ -145,7 +154,8 @@ const AvistamientosScreen = () => {
   const combinedSightings = [
     ...criticalSightings,
     ...sightings.filter(
-      (s) => !criticalSightings.find((c) => c.id_avistamiento === s.id_avistamiento)
+      (s) =>
+        !criticalSightings.find((c) => c.id_avistamiento === s.id_avistamiento),
     ),
   ];
 
@@ -158,9 +168,9 @@ const AvistamientosScreen = () => {
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={() => (
           <View style={styles.centered}>
-            <Text style={styles.emptyText}>
+            <AppText style={styles.emptyText}>
               No hay avistamientos registrados.
-            </Text>
+            </AppText>
           </View>
         )}
         refreshControl={
@@ -214,12 +224,17 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: fontWeightMedium,
     color: '#1f2937',
     marginBottom: 10,
   },
   infoRow: { flexDirection: 'row', marginBottom: 5 },
-  label: { fontSize: 14, fontWeight: '500', color: '#4b5563', width: 120 },
+  label: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#4b5563',
+    width: 120,
+  },
   value: { fontSize: 14, color: '#374151', flexShrink: 1 },
   emptyText: { fontSize: 16, color: '#6b7280', textAlign: 'center' },
 });

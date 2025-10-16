@@ -9,12 +9,17 @@ import {
   Animated,
   Easing,
   View,
-  Text,
   TouchableOpacity,
   StyleSheet,
   Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  fontWeightBold,
+  fontWeightSemiBold,
+  fontWeightMedium,
+  AppText,
+} from '@/src/components/AppText';
 
 type ToastType = 'success' | 'error' | 'info' | 'warning';
 type ToastPosition = 'top' | 'bottom';
@@ -292,8 +297,10 @@ const Toast: React.FC<ToastInnerProps> = ({
         ]}
       >
         <View style={styles.toastContent}>
-          <Text style={styles.toastTitle}>{title}</Text>
-          {!!message && <Text style={styles.toastMessage}>{message}</Text>}
+          <AppText style={styles.toastTitle}>{title}</AppText>
+          {!!message && (
+            <AppText style={styles.toastMessage}>{message}</AppText>
+          )}
         </View>
 
         <View style={styles.toastActions}>
@@ -302,13 +309,13 @@ const Toast: React.FC<ToastInnerProps> = ({
               onPress={onActionPress}
               style={styles.toastActionBtn}
             >
-              <Text style={[styles.toastActionText, { color: typeColor }]}>
+              <AppText style={[styles.toastActionText, { color: typeColor }]}>
                 {actionLabel}
-              </Text>
+              </AppText>
             </TouchableOpacity>
           )}
           <TouchableOpacity onPress={onHide} style={styles.toastCloseBtn}>
-            <Text style={styles.toastCloseText}>✕</Text>
+            <AppText style={styles.toastCloseText}>✕</AppText>
           </TouchableOpacity>
         </View>
       </View>
@@ -346,14 +353,14 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
       accessibilityLabel="Cuadro de confirmación"
     >
       <View style={styles.dialogCard}>
-        <Text style={styles.dialogTitle}>{title}</Text>
-        {!!message && <Text style={styles.dialogMessage}>{message}</Text>}
+        <AppText style={styles.dialogTitle}>{title}</AppText>
+        {!!message && <AppText style={styles.dialogMessage}>{message}</AppText>}
         <View style={styles.dialogActions}>
           <TouchableOpacity
             onPress={onCancel}
             style={[styles.btn, styles.btnGhost]}
           >
-            <Text style={styles.btnGhostText}>{cancelLabel}</Text>
+            <AppText style={styles.btnGhostText}>{cancelLabel}</AppText>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={onConfirm}
@@ -362,7 +369,7 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
               destructive ? styles.btnDanger : styles.btnPrimary,
             ]}
           >
-            <Text style={styles.btnText}>{confirmLabel}</Text>
+            <AppText style={styles.btnText}>{confirmLabel}</AppText>
           </TouchableOpacity>
         </View>
       </View>
@@ -391,7 +398,11 @@ const styles = StyleSheet.create({
     }),
   },
   toastContent: { flex: 1 },
-  toastTitle: { color: colors.text, fontWeight: '700', fontSize: 15 },
+  toastTitle: {
+    color: colors.text,
+    fontWeight: fontWeightSemiBold,
+    fontSize: 15,
+  },
   toastMessage: { color: '#D1D5DB', marginTop: 2, fontSize: 13 },
   toastActions: { flexDirection: 'row', alignItems: 'center' },
   toastActionBtn: { paddingHorizontal: 8, paddingVertical: 6 },
@@ -417,7 +428,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
-  dialogTitle: { color: colors.text, fontWeight: '800', fontSize: 18 },
+  dialogTitle: {
+    color: colors.text,
+    fontWeight: fontWeightBold,
+    fontSize: 18,
+  },
   dialogMessage: { color: '#D1D5DB', marginTop: 8, fontSize: 14 },
   dialogActions: {
     marginTop: 16,
@@ -428,7 +443,10 @@ const styles = StyleSheet.create({
   btn: { paddingVertical: 10, paddingHorizontal: 14, borderRadius: 10 },
   btnPrimary: { backgroundColor: colors.info },
   btnDanger: { backgroundColor: colors.error },
-  btnText: { color: 'white', fontWeight: '700' },
+  btnText: {
+    color: 'white',
+    fontWeight: fontWeightSemiBold,
+  },
   btnGhost: { backgroundColor: 'transparent' },
   btnGhostText: { color: '#D1D5DB', fontWeight: '700' },
 });

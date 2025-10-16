@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
   View,
-  Text,
   TouchableOpacity,
   ScrollView,
   StyleSheet,
@@ -18,7 +17,13 @@ import { createAnimal } from '@/src/api/animals';
 import { createAdoption } from '@/src/api/adoptions';
 import { authStorage } from '../../src/utils/authStorage';
 import { jwtDecode } from 'jwt-decode';
-import FormSolicitud from './component/formSolucitud'; 
+import FormSolicitud from './component/formSolucitud';
+import {
+  fontWeightBold,
+  fontWeightSemiBold,
+  fontWeightMedium,
+  AppText,
+} from '@/src/components/AppText';
 
 const { width } = Dimensions.get('window');
 
@@ -111,12 +116,15 @@ export default function CreateAdoptionScreen() {
     >
       {/* 🔹 Botón volver */}
       <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-        <Image source={require('../../assets/images/volver.png')} style={{ width: 24, height: 24 }} />
+        <Image
+          source={require('../../assets/images/volver.png')}
+          style={{ width: 24, height: 24 }}
+        />
       </TouchableOpacity>
 
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.formContainer}>
-          <Text style={styles.welcomeTitle}>Crear nueva Adopción</Text>
+          <AppText style={styles.welcomeTitle}>Crear nueva Adopción</AppText>
 
           {/* 🔹 Nuevo componente formulario */}
           <FormSolicitud
@@ -137,14 +145,18 @@ export default function CreateAdoptionScreen() {
 const styles = StyleSheet.create({
   container: { padding: 20, backgroundColor: '#fff', flexGrow: 1 },
   backButton: { position: 'absolute', top: 60, left: 20, zIndex: 10 },
-  scrollContainer: { paddingTop: 100, paddingBottom: 40, alignItems: 'center', justifyContent: 'center' },
+  scrollContainer: {
+    paddingTop: 100,
+    paddingBottom: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   formContainer: { width: width * 0.9, maxWidth: 400 },
   welcomeTitle: {
     fontSize: 28,
-    fontWeight: '700',
+    fontWeight: fontWeightSemiBold,
     color: '#1F2937',
     textAlign: 'center',
     marginBottom: 30,
   },
 });
-

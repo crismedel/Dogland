@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
   View,
-  Text,
   FlatList,
   StyleSheet,
   ActivityIndicator,
@@ -21,6 +20,12 @@ import { Ionicons } from '@expo/vector-icons';
 import FloatingSpeedDial from '../../src/components/UI/FloatingMenu';
 import CustomHeader from '@/src/components/UI/CustomHeader';
 import { Colors } from '@/src/constants/colors';
+import {
+  fontWeightBold,
+  fontWeightSemiBold,
+  fontWeightMedium,
+  AppText,
+} from '@/src/components/AppText';
 
 const CommunityAlertsScreen = () => {
   const router = useRouter();
@@ -135,7 +140,7 @@ const CommunityAlertsScreen = () => {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color={Colors.primary} />
-        <Text style={styles.loadingText}>Cargando alertas...</Text>
+        <AppText style={styles.loadingText}>Cargando alertas...</AppText>
       </View>
     );
   }
@@ -177,12 +182,12 @@ const CommunityAlertsScreen = () => {
           filters.status !== 'activas' ||
           filters.timeRange !== 'todas') && (
           <View style={styles.activeFilters}>
-            <Text style={styles.activeFiltersText}>
+            <AppText style={styles.activeFiltersText}>
               Filtros: {filters.type !== 'todos' && `Tipo: ${filters.type} `}
               {filters.riskLevel !== 'todos' && `Riesgo: ${filters.riskLevel} `}
               {filters.status !== 'activas' && `Estado: ${filters.status} `}
               {filters.timeRange !== 'todas' && `Período: ${filters.timeRange}`}
-            </Text>
+            </AppText>
           </View>
         )}
 
@@ -194,13 +199,13 @@ const CommunityAlertsScreen = () => {
               size={56}
               color={Colors.primary}
             />
-            <Text style={styles.emptyTitle}>
+            <AppText style={styles.emptyTitle}>
               No se pudo cargar la información
-            </Text>
-            <Text style={styles.emptySubtitle}>{error}</Text>
+            </AppText>
+            <AppText style={styles.emptySubtitle}>{error}</AppText>
             <TouchableOpacity style={styles.retryBtn} onPress={onRefresh}>
               <Ionicons name="refresh" size={18} color="#fff" />
-              <Text style={styles.retryText}>Reintentar</Text>
+              <AppText style={styles.retryText}>Reintentar</AppText>
             </TouchableOpacity>
           </View>
         ) : filteredAlerts.length === 0 ? (
@@ -210,18 +215,20 @@ const CommunityAlertsScreen = () => {
               size={56}
               color={Colors.primary}
             />
-            <Text style={styles.emptyTitle}>No hay alertas para mostrar</Text>
-            <Text style={styles.emptySubtitle}>
+            <AppText style={styles.emptyTitle}>
+              No hay alertas para mostrar
+            </AppText>
+            <AppText style={styles.emptySubtitle}>
               {allAlerts.length === 0
                 ? 'Aún no hay alertas creadas.'
                 : 'Ajusta los filtros o crea una nueva alerta.'}
-            </Text>
+            </AppText>
             <TouchableOpacity
               style={styles.primaryBtn}
               onPress={() => router.push('/alerts/create-alert')}
             >
               <Ionicons name="add" size={18} color="#fff" />
-              <Text style={styles.primaryBtnText}>Crear alerta</Text>
+              <AppText style={styles.primaryBtnText}>Crear alerta</AppText>
             </TouchableOpacity>
           </View>
         ) : (
@@ -301,6 +308,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 16,
     paddingTop: 8, // evita choques visuales con el header
+    color: Colors.background,
   },
 
   // Botón del header sin fondo blanco
@@ -340,7 +348,7 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: fontWeightSemiBold,
     color: Colors.lightText,
     textAlign: 'center',
     marginTop: 8,
@@ -360,7 +368,10 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 10,
   },
-  retryText: { color: '#fff', fontWeight: '600' },
+  retryText: {
+    color: '#fff',
+    fontWeight: fontWeightMedium,
+  },
 
   primaryBtn: {
     flexDirection: 'row',
@@ -371,5 +382,8 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 10,
   },
-  primaryBtnText: { color: '#fff', fontWeight: '700' },
+  primaryBtnText: {
+    color: '#fff',
+    fontWeight: fontWeightSemiBold,
+  },
 });

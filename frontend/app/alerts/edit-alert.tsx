@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   View,
-  Text,
   TextInput,
-  Button,
   StyleSheet,
   ScrollView,
   Image,
@@ -17,6 +15,12 @@ import { fetchAlertById, updateAlert } from '../../src/api/alerts';
 import type { Alert as AlertTypeFromAPI } from '../../src/types/alert';
 import { useNotification } from '@/src/components/notifications/NotificationContext';
 import { Colors } from '@/src/constants/colors';
+import {
+  fontWeightBold,
+  fontWeightSemiBold,
+  fontWeightMedium,
+  AppText,
+} from '@/src/components/AppText';
 
 const MOCK_TIPOS_ALERTA = [
   { id: 1, nombre: 'Jauria' },
@@ -127,7 +131,7 @@ export default function EditAlertScreen() {
   if (loading) {
     return (
       <View style={styles.center}>
-        <Text>Cargando alerta...</Text>
+        <AppText>Cargando alerta...</AppText>
       </View>
     );
   }
@@ -149,7 +153,7 @@ export default function EditAlertScreen() {
         </TouchableOpacity>
 
         {/* Título centrado con contador de alertas */}
-        <Text style={styles.headerTitle}>Editar Alerta</Text>
+        <AppText style={styles.headerTitle}>Editar Alerta</AppText>
       </View>
 
       <ScrollView
@@ -158,15 +162,15 @@ export default function EditAlertScreen() {
       >
         {/* Datos básicos */}
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Datos básicos</Text>
-          <Text style={styles.label}>Título *</Text>
+          <AppText style={styles.sectionTitle}>Datos básicos</AppText>
+          <AppText style={styles.label}>Título *</AppText>
           <TextInput
             value={titulo}
             onChangeText={setTitulo}
             style={styles.input}
           />
 
-          <Text style={styles.label}>Descripción *</Text>
+          <AppText style={styles.label}>Descripción *</AppText>
           <TextInput
             value={descripcion}
             onChangeText={setDescripcion}
@@ -177,7 +181,7 @@ export default function EditAlertScreen() {
 
         {/* Ubicación */}
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Ubicación</Text>
+          <AppText style={styles.sectionTitle}>Ubicación</AppText>
           <TextInput
             value={direccion}
             onChangeText={setDireccion}
@@ -188,9 +192,11 @@ export default function EditAlertScreen() {
 
         {/* Configuración */}
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Configuración de la alerta</Text>
+          <AppText style={styles.sectionTitle}>
+            Configuración de la alerta
+          </AppText>
 
-          <Text style={styles.label}>Tipo de Alerta *</Text>
+          <AppText style={styles.label}>Tipo de Alerta *</AppText>
           <View style={styles.pickerWrapper}>
             <Picker
               selectedValue={tipoAlerta}
@@ -202,7 +208,7 @@ export default function EditAlertScreen() {
             </Picker>
           </View>
 
-          <Text style={styles.label}>Nivel de Riesgo *</Text>
+          <AppText style={styles.label}>Nivel de Riesgo *</AppText>
           <View style={styles.pickerWrapper}>
             <Picker
               selectedValue={nivelRiesgo}
@@ -214,16 +220,16 @@ export default function EditAlertScreen() {
             </Picker>
           </View>
 
-          <Text style={styles.label}>Fecha de Expiración</Text>
+          <AppText style={styles.label}>Fecha de Expiración</AppText>
           <TouchableOpacity
             style={styles.dateButton}
             onPress={() => setShowDate(true)}
           >
-            <Text style={styles.dateButtonText}>
+            <AppText style={styles.dateButtonText}>
               {fechaExpiracion
                 ? new Date(fechaExpiracion).toLocaleDateString()
                 : 'Seleccionar fecha'}
-            </Text>
+            </AppText>
           </TouchableOpacity>
 
           {showDate && (
@@ -239,14 +245,14 @@ export default function EditAlertScreen() {
           )}
 
           <View style={styles.switchRow}>
-            <Text style={styles.label}>¿Activa?</Text>
+            <AppText style={styles.label}>¿Activa?</AppText>
             <Switch value={activa} onValueChange={setActiva} />
           </View>
         </View>
 
         {/* Botón guardar */}
         <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-          <Text style={styles.saveButtonText}>💾 Guardar Cambios</Text>
+          <AppText style={styles.saveButtonText}>💾 Guardar Cambios</AppText>
         </TouchableOpacity>
       </ScrollView>
     </View>
@@ -280,7 +286,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: fontWeightBold,
     color: '#fff',
     flex: 1,
     textAlign: 'center',
@@ -309,14 +315,14 @@ const styles = StyleSheet.create({
 
   sectionTitle: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: fontWeightBold,
     marginBottom: 12,
     color: '#333',
   },
 
   // Form styles
   label: {
-    fontWeight: '600',
+    fontWeight: fontWeightMedium,
     marginTop: 10,
     marginBottom: 6,
     color: '#444',
@@ -382,7 +388,7 @@ const styles = StyleSheet.create({
 
   saveButtonText: {
     color: '#fff',
-    fontWeight: 'bold',
+    fontWeight: fontWeightBold,
     fontSize: 16,
   },
 

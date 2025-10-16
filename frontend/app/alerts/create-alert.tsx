@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import {
   View,
-  Text,
   TextInput,
   StyleSheet,
   ScrollView,
@@ -17,6 +16,12 @@ import { Colors } from '@/src/constants/colors';
 import CustomHeader from '@/src/components/UI/CustomHeader';
 import CustomButton from '@/src/components/UI/CustomButton';
 import { Ionicons } from '@expo/vector-icons';
+import {
+  fontWeightBold,
+  fontWeightSemiBold,
+  fontWeightMedium,
+  AppText,
+} from '@/src/components/AppText';
 
 type FormData = {
   titulo: string;
@@ -139,9 +144,9 @@ export default function CreateAlertScreen() {
       >
         {/* Datos básicos */}
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Información básica</Text>
+          <AppText style={styles.sectionTitle}>Información básica</AppText>
 
-          <Text style={styles.label}>Título de la Alerta *</Text>
+          <AppText style={styles.label}>Título de la Alerta *</AppText>
           <Controller
             control={control}
             name="titulo"
@@ -157,12 +162,14 @@ export default function CreateAlertScreen() {
                   value={value}
                   onChangeText={onChange}
                 />
-                {error && <Text style={styles.errorText}>{error.message}</Text>}
+                {error && (
+                  <AppText style={styles.errorText}>{error.message}</AppText>
+                )}
               </>
             )}
           />
 
-          <Text style={styles.label}>Descripción *</Text>
+          <AppText style={styles.label}>Descripción *</AppText>
           <Controller
             control={control}
             name="descripcion"
@@ -184,7 +191,9 @@ export default function CreateAlertScreen() {
                   value={value}
                   onChangeText={onChange}
                 />
-                {error && <Text style={styles.errorText}>{error.message}</Text>}
+                {error && (
+                  <AppText style={styles.errorText}>{error.message}</AppText>
+                )}
               </>
             )}
           />
@@ -192,9 +201,11 @@ export default function CreateAlertScreen() {
 
         {/* Configuración de la alerta */}
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Configuración de la alerta</Text>
+          <AppText style={styles.sectionTitle}>
+            Configuración de la alerta
+          </AppText>
 
-          <Text style={styles.label}>Tipo de Alerta *</Text>
+          <AppText style={styles.label}>Tipo de Alerta *</AppText>
           <Controller
             control={control}
             name="tipoAlerta"
@@ -225,12 +236,14 @@ export default function CreateAlertScreen() {
                     ))}
                   </Picker>
                 </View>
-                {error && <Text style={styles.errorText}>{error.message}</Text>}
+                {error && (
+                  <AppText style={styles.errorText}>{error.message}</AppText>
+                )}
               </>
             )}
           />
 
-          <Text style={styles.label}>Nivel de Riesgo *</Text>
+          <AppText style={styles.label}>Nivel de Riesgo *</AppText>
           <Controller
             control={control}
             name="nivelRiesgo"
@@ -261,14 +274,16 @@ export default function CreateAlertScreen() {
                     ))}
                   </Picker>
                 </View>
-                {error && <Text style={styles.errorText}>{error.message}</Text>}
+                {error && (
+                  <AppText style={styles.errorText}>{error.message}</AppText>
+                )}
               </>
             )}
           />
 
-          <Text style={styles.label}>
+          <AppText style={styles.label}>
             Fecha y Hora de Expiración (Opcional)
-          </Text>
+          </AppText>
           <Controller
             control={control}
             name="fechaExpiracion"
@@ -278,11 +293,11 @@ export default function CreateAlertScreen() {
                   onPress={showDatePicker}
                   style={styles.dateButton}
                 >
-                  <Text style={styles.dateButtonText}>
+                  <AppText style={styles.dateButtonText}>
                     {value
                       ? value.toLocaleString()
                       : 'Toca para seleccionar fecha y hora'}
-                  </Text>
+                  </AppText>
                 </TouchableOpacity>
               </>
             )}
@@ -291,23 +306,23 @@ export default function CreateAlertScreen() {
 
         {/* Ubicación */}
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Ubicación</Text>
+          <AppText style={styles.sectionTitle}>Ubicación</AppText>
 
           <TouchableOpacity
             style={styles.locationButton}
             onPress={() => alert('Funcionalidad de ubicación deshabilitada')}
           >
-            <Text style={styles.locationButtonText}>
+            <AppText style={styles.locationButtonText}>
               Obtener mi ubicación actual
-            </Text>
+            </AppText>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.clearLocationButton}
             onPress={() => alert('Funcionalidad de ubicación deshabilitada')}
           >
-            <Text style={styles.clearLocationButtonText}>
+            <AppText style={styles.clearLocationButtonText}>
               Limpiar ubicación
-            </Text>
+            </AppText>
           </TouchableOpacity>
         </View>
 
@@ -355,14 +370,14 @@ const styles = StyleSheet.create({
 
   sectionTitle: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: fontWeightBold,
     marginBottom: 12,
     color: '#333',
   },
 
   // Form styles
   label: {
-    fontWeight: '600',
+    fontWeight: fontWeightMedium,
     marginTop: 10,
     marginBottom: 6,
     color: '#444',
@@ -421,7 +436,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 10,
   },
-  locationButtonText: { fontSize: 14, color: '#1976d2', fontWeight: '500' },
+  locationButtonText: {
+    fontSize: 14,
+    color: '#1976d2',
+    fontWeight: '500',
+  },
 
   clearLocationButton: {
     alignSelf: 'flex-end',
@@ -448,7 +467,11 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-  submitButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
+  submitButtonText: {
+    color: '#fff',
+    fontWeight: fontWeightBold,
+    fontSize: 16,
+  },
 
   errorText: {
     color: Colors.danger,

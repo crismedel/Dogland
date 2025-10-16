@@ -2,7 +2,6 @@
 import React from 'react';
 import {
   View,
-  Text,
   TextInput,
   TouchableOpacity,
   StyleSheet,
@@ -10,6 +9,12 @@ import {
   ScrollView,
   Image,
 } from 'react-native';
+import {
+  fontWeightBold,
+  fontWeightSemiBold,
+  fontWeightMedium,
+  AppText,
+} from '@/src/components/AppText';
 
 interface TarjetaSoliProps {
   formData: any;
@@ -31,7 +36,9 @@ const TarjetaSoli: React.FC<TarjetaSoliProps> = ({
       {/* Información del Animal */}
       {formData.nombreAnimal ? (
         <View style={styles.animalSection}>
-          <Text style={styles.sectionTitle}>Perrito en busca de un hogar</Text>
+          <AppText style={styles.sectionTitle}>
+            Perrito en busca de un hogar
+          </AppText>
 
           <View style={styles.animalInfo}>
             {imageUrl ? (
@@ -39,9 +46,11 @@ const TarjetaSoli: React.FC<TarjetaSoliProps> = ({
             ) : null}
 
             <View style={styles.animalDetails}>
-              <Text style={styles.animalName}>{formData.nombreAnimal}</Text>
-              <Text style={styles.animalBreed}>{formData.breed}</Text>
-              <Text style={styles.animalAge}>{formData.age} meses</Text>
+              <AppText style={styles.animalName}>
+                {formData.nombreAnimal}
+              </AppText>
+              <AppText style={styles.animalBreed}>{formData.breed}</AppText>
+              <AppText style={styles.animalAge}>{formData.age} meses</AppText>
             </View>
           </View>
         </View>
@@ -49,20 +58,22 @@ const TarjetaSoli: React.FC<TarjetaSoliProps> = ({
 
       {/* Información Personal */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Información Personal</Text>
+        <AppText style={styles.sectionTitle}>Información Personal</AppText>
 
         <TextInput
           style={styles.input}
           placeholder="Nombre "
           value={formData.nombreSolicitante}
-          onChangeText={text => handleInputChange('nombreSolicitante', text)}
+          onChangeText={(text) => handleInputChange('nombreSolicitante', text)}
         />
 
         <TextInput
           style={styles.input}
           placeholder="Apellido "
           value={formData.apellidoSolicitante}
-          onChangeText={text => handleInputChange('apellidoSolicitante', text)}
+          onChangeText={(text) =>
+            handleInputChange('apellidoSolicitante', text)
+          }
         />
 
         <TextInput
@@ -70,7 +81,7 @@ const TarjetaSoli: React.FC<TarjetaSoliProps> = ({
           placeholder="Email "
           keyboardType="email-address"
           value={formData.email}
-          onChangeText={text => handleInputChange('email', text)}
+          onChangeText={(text) => handleInputChange('email', text)}
         />
 
         <TextInput
@@ -78,32 +89,32 @@ const TarjetaSoli: React.FC<TarjetaSoliProps> = ({
           placeholder="Teléfono "
           keyboardType="phone-pad"
           value={formData.telefono}
-          onChangeText={text => handleInputChange('telefono', text)}
+          onChangeText={(text) => handleInputChange('telefono', text)}
         />
       </View>
 
       {/* Dirección */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>¿Dónde vives?</Text>
+        <AppText style={styles.sectionTitle}>¿Dónde vives?</AppText>
 
         <TextInput
           style={styles.input}
           placeholder="Dirección completa "
           value={formData.direccion}
-          onChangeText={text => handleInputChange('direccion', text)}
+          onChangeText={(text) => handleInputChange('direccion', text)}
         />
 
         <TextInput
           style={styles.input}
           placeholder="Ciudad "
           value={formData.ciudad}
-          onChangeText={text => handleInputChange('ciudad', text)}
+          onChangeText={(text) => handleInputChange('ciudad', text)}
         />
       </View>
 
       {/* Sobre la adopción */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>¿Por qué quieres adoptar?</Text>
+        <AppText style={styles.sectionTitle}>¿Por qué quieres adoptar?</AppText>
 
         <TextInput
           style={[styles.input, styles.textArea]}
@@ -111,33 +122,33 @@ const TarjetaSoli: React.FC<TarjetaSoliProps> = ({
           multiline
           numberOfLines={4}
           value={formData.motivoAdopcion}
-          onChangeText={text => handleInputChange('motivoAdopcion', text)}
+          onChangeText={(text) => handleInputChange('motivoAdopcion', text)}
         />
       </View>
 
       {/* Condiciones de vivienda */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Condiciones de Vivienda</Text>
+        <AppText style={styles.sectionTitle}>Condiciones de Vivienda</AppText>
 
         <TextInput
           style={styles.input}
           placeholder="¿Es vivienda propia o alquilada?"
           value={formData.viviendaPropia}
-          onChangeText={text => handleInputChange('viviendaPropia', text)}
+          onChangeText={(text) => handleInputChange('viviendaPropia', text)}
         />
 
         <TextInput
           style={styles.input}
           placeholder="¿Tienes espacio exterior?"
           value={formData.espacioExterior}
-          onChangeText={text => handleInputChange('espacioExterior', text)}
+          onChangeText={(text) => handleInputChange('espacioExterior', text)}
         />
 
         <TextInput
           style={styles.input}
           placeholder="¿Tienes otras mascotas?"
           value={formData.otrasMascotas}
-          onChangeText={text => handleInputChange('otrasMascotas', text)}
+          onChangeText={(text) => handleInputChange('otrasMascotas', text)}
         />
       </View>
 
@@ -150,11 +161,11 @@ const TarjetaSoli: React.FC<TarjetaSoliProps> = ({
         {loading ? (
           <ActivityIndicator color="#fff" />
         ) : (
-          <Text style={styles.submitButtonText}>Enviar Solicitud</Text>
+          <AppText style={styles.submitButtonText}>Enviar Solicitud</AppText>
         )}
       </TouchableOpacity>
 
-      <Text style={styles.note}>* Campos obligatorios</Text>
+      <AppText style={styles.note}>* Campos obligatorios</AppText>
     </ScrollView>
   );
 };
@@ -171,7 +182,11 @@ const styles = StyleSheet.create({
   animalInfo: { flexDirection: 'row', alignItems: 'center' },
   animalImage: { width: 60, height: 60, borderRadius: 30, marginRight: 15 },
   animalDetails: { flex: 1 },
-  animalName: { fontSize: 18, fontWeight: 'bold', color: '#333' },
+  animalName: {
+    fontSize: 18,
+    fontWeight: fontWeightBold,
+    color: '#333',
+  },
   animalBreed: { fontSize: 14, color: '#666' },
   animalAge: { fontSize: 12, color: '#999' },
   section: {
@@ -181,7 +196,12 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     elevation: 2,
   },
-  sectionTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 10, color: '#4A90E2' },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: fontWeightBold,
+    marginBottom: 10,
+    color: '#4A90E2',
+  },
   input: {
     borderWidth: 1,
     borderColor: '#ddd',
@@ -192,9 +212,19 @@ const styles = StyleSheet.create({
     backgroundColor: '#f9f9f9',
   },
   textArea: { height: 100, textAlignVertical: 'top' },
-  submitButton: { backgroundColor: '#4A90E2', padding: 15, borderRadius: 10, alignItems: 'center', marginVertical: 20 },
+  submitButton: {
+    backgroundColor: '#4A90E2',
+    padding: 15,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginVertical: 20,
+  },
   submitButtonDisabled: { backgroundColor: '#a0c0e0' },
-  submitButtonText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
+  submitButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: fontWeightBold,
+  },
   note: { textAlign: 'center', color: '#666', fontSize: 12, marginBottom: 20 },
 });
 
