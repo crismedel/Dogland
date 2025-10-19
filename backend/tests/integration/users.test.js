@@ -4,8 +4,8 @@ import pool from '../../db/db.js';
 
 describe('Endpoints de manejo de Usuarios protegidos con JWT', () => {
 
-  let validToken;
-  let invalidToken;
+  let jwtAdmin, jwtNormal;
+  let validToken, invalidToken;
   let createdUserId;
 
   const newUserTemplate = {
@@ -21,22 +21,61 @@ describe('Endpoints de manejo de Usuarios protegidos con JWT', () => {
     id_rol: 2,
   };
 
-  const updateUserTemplate = {
-    nombre_usuario: 'Test',
-    apellido_paterno: 'Test',
-    apellido_materno: 'Test',
-    id_sexo: 1,
-    fecha_nacimiento: '2001-01-01',
-    telefono: '912345678',
-    password_hash: 'password123',
-    id_ciudad: 546,
-    id_organizacion: null,
-    id_rol: 2,
+  const updateUserTemplate = { ...newUserTemplate };
+
+  // Helper para login
+  const login = async (email) => {
+    const res = await request(app)
+      .post('/api/auth/login')
+      .send({ email, password: '123456' });
+    return res.body.token;
   };
 
-  beforeAll(() => {
-    validToken = global.jwtAdmin;
-    invalidToken = validToken ? validToken.slice(0, -1) + 'x' : 'invalidtoken';
+  // Crear admin y usuario normal solo para esta suite
+  beforeAll(async () => {
+    // Limpiar usuarios usados en esta suite
+    await pool.query("DELETE FROM usuario WHERE email IN ($1, $2)", ['admin@test.com', 'normal@test.com']);
+
+    // Crear admin
+    await request(app)
+      .post('/api/auth/register')
+      .send({
+        nombre_usuario: 'Admin',
+        apellido_paterno: 'Test',
+        apellido_materno: 'User',
+        id_sexo: 1,
+        fecha_nacimiento: '2000-01-01',
+        telefono: '912345678',
+        email: 'admin@test.com',
+        password_hash: '123456',
+        id_ciudad: 546,
+      });
+    await pool.query("UPDATE usuario SET id_rol = 1 WHERE email = 'admin@test.com'");
+
+    // Crear usuario normal
+    await request(app)
+      .post('/api/auth/register')
+      .send({
+        nombre_usuario: 'Normal',
+        apellido_paterno: 'Test',
+        apellido_materno: 'User',
+        id_sexo: 1,
+        fecha_nacimiento: '2000-01-01',
+        telefono: '912345679',
+        email: 'normal@test.com',
+        password_hash: '123456',
+        id_ciudad: 546,
+      });
+
+    // Generar JWTs
+    jwtAdmin = await login('admin@test.com');
+    jwtNormal = await login('normal@test.com');
+
+    global.jwtAdmin = jwtAdmin;
+    global.jwtNormal = jwtNormal;
+
+    validToken = jwtAdmin;
+    invalidToken = validToken.slice(0, -1) + 'x';
   });
 
   beforeEach(() => {
@@ -44,6 +83,12 @@ describe('Endpoints de manejo de Usuarios protegidos con JWT', () => {
 
   afterEach(() => {
   });
+
+  // Limpiar usuarios creados por la suite
+  afterAll(async () => {
+    await pool.query("DELETE FROM usuario WHERE email IN ($1, $2, $3)", ['admin@test.com', 'normal@test.com', 'createuser@test.com']);
+  });
+
 
   // -------------------- GET /api/users --------------------
   describe('GET /api/users', () => {
