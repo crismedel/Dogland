@@ -118,19 +118,79 @@ export const createAlert = async (req, res, next) => {
       ],
     );
 
-    // Enviar notificación si nivel de riesgo es alto (ejemplo: id_nivel_riesgo === 3)
-    if (id_nivel_riesgo === 3) {
-      const usersRes = await pool.query('SELECT id_usuario FROM usuario');
+    const alerta = result.rows[0];
+
+    // Obtener información adicional para notificaciones
+    const alertaInfo = await pool.query(
+      `SELECT ta.tipo_alerta, nr.nivel_riesgo, u.id_ciudad
+       FROM alerta a
+       JOIN tipo_alerta ta ON a.id_tipo_alerta = ta.id_tipo_alerta
+       JOIN nivel_riesgo nr ON a.id_nivel_riesgo = nr.id_nivel_riesgo
+       JOIN usuario u ON a.id_usuario = u.id_usuario
+       WHERE a.id_alerta = $1`,
+      [alerta.id_alerta],
+    );
+
+    const { tipo_alerta, nivel_riesgo, id_ciudad } = alertaInfo.rows[0];
+
+    // 🔔 ENVIAR NOTIFICACIONES SEGÚN NIVEL DE RIESGO
+    try {
+      let usersQuery;
+      let usersParams;
+
+      // Nivel de riesgo alto (3 o más): notificar a todos
+      if (id_nivel_riesgo >= 3) {
+        usersQuery = `
+          SELECT id_usuario 
+          FROM usuario 
+          WHERE activo = true 
+          AND push_token IS NOT NULL
+        `;
+        usersParams = [];
+      } else {
+        // Nivel bajo/medio: solo usuarios de la misma ciudad
+        usersQuery = `
+          SELECT id_usuario 
+          FROM usuario 
+          WHERE id_ciudad = $1 
+          AND activo = true 
+          AND push_token IS NOT NULL
+        `;
+        usersParams = [id_ciudad];
+      }
+
+      const usersRes = await pool.query(usersQuery, usersParams);
       const userIds = usersRes.rows.map((row) => row.id_usuario);
 
-      await sendPushNotificationToUsers(
-        `Nueva alerta importante: ${titulo}`,
-        userIds,
-      );
+      if (userIds.length > 0) {
+        await sendPushNotificationToUsers(
+          `🚨 ${tipo_alerta}: ${titulo}`,
+          descripcion,
+          userIds,
+          {
+            type: 'alerta',
+            id: alerta.id_alerta,
+            nivel_riesgo: nivel_riesgo,
+            tipo_alerta: tipo_alerta,
+            ubicacion: direccion || '',
+            latitude: latitude,
+            longitude: longitude,
+          },
+        );
+
+        console.log(
+          `✅ Notificación de alerta enviada a ${userIds.length} usuarios`,
+        );
+      }
+    } catch (notifError) {
+      console.error('⚠️ Error al enviar notificación de alerta:', notifError);
     }
 
-    // Responde con la alerta creada y código 201
-    res.status(201).json({ success: true, data: result.rows[0] });
+    res.status(201).json({
+      success: true,
+      data: alerta,
+      notificacionesEnviadas: true,
+    });
   } catch (error) {
     next(error);
   }

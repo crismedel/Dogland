@@ -23,7 +23,7 @@ import healthRouter from './routes/health-states.js';
 import medicalHistoryRouter from './routes/medicalHistory.js';
 import statRoutes from './routes/stats.js';
 import infoCompAnimales from './routes/infoCompAnimales.js'; //info de animales completa (en teoria)
-
+import notificationsRoutes from './routes/notifications.js';
 
 const app = express();
 
@@ -40,7 +40,7 @@ app.get('/', (req, res) => {
   res.send('Servidor funcionando correctamente');
 });
 
-app.use('/api/stats', statRoutes);//estadisticas de avistamientos
+app.use('/api/stats', statRoutes); //estadisticas de avistamientos
 app.use('/api/auth', authRouter);
 app.use('/api', sightingsRouter);
 app.use('/api', alertsRouter);
@@ -55,7 +55,7 @@ app.use('/api', racesRouter);
 app.use('/api', healthRouter);
 app.use('/api', medicalHistoryRouter);
 app.use('/api', infoCompAnimales);
-
+app.use('/api/notifications', notificationsRoutes);
 
 // Middleware de manejo de errores general
 app.use(errorHandler);
