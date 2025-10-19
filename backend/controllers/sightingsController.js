@@ -1,5 +1,7 @@
 import pool from '../db/db.js';
 import { sendPushNotificationToUsers } from '../middlewares/pushNotifications.js';
+import { auditCreate, auditUpdate, auditDelete } from '../services/auditService.js';
+import { getOldValuesForAudit, sanitizeForAudit } from '../utils/audit.js';
 
 // --- FUNCIONES DE LECTURA (GET) ---
 
@@ -193,10 +195,11 @@ export const createSighting = async (req, res) => {
         `,
       [avistamiento.id_avistamiento],
     );
+        
+    // Auditar creacion
+    await auditCreate(req, 'avistamiento', avistamiento.id_avistamiento, fullSighting);
 
     const fullSighting = finalResult.rows[0];
-
-    res.status(201).json({ success: true, data: fullSighting });
 
     // 🔔 4. ENVIAR NOTIFICACIONES PUSH A ORGANIZACIONES CERCANAS
     try {
@@ -272,6 +275,13 @@ export const updateSighting = async (req, res) => {
       url, // URL de la foto
     } = req.body;
 
+    // Obtener valores antiguos ANTES de actualizar
+    const oldSighting = await getOldValuesForAudit('avistamiento', 'id_avistamiento', id);
+    
+    if (!oldSighting) {
+        return res.status(404).json({ success: false, message: 'Avistamiento no encontrado' });
+    }
+        
     // 1. Actualizar el avistamiento principal
     const result = await pool.query(
       `
@@ -357,8 +367,11 @@ export const updateSighting = async (req, res) => {
         `,
       [id],
     );
-
+        
     const fullSighting = finalResult.rows[0];
+
+    // Auditar actualización (sin campos sensibles si los hubiera)
+    await auditUpdate(req, 'avistamiento', oldSighting);
 
     res.status(200).json({ success: true, data: fullSighting });
   } catch (error) {
@@ -386,11 +399,15 @@ export const deleteSighting = async (req, res) => {
       [id],
     );
 
-    if (result.rows.length === 0) {
+    const oldSighting = await getOldValuesForAudit('avistamiento', 'id_avistamiento', id);
+
+    if (!oldSighting) {
       return res
         .status(404)
         .json({ success: false, message: 'Avistamiento no encontrado' });
     }
+
+    await auditDelete(req, 'avistamiento', oldSighting);
 
     res.status(200).json({
       success: true,

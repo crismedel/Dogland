@@ -1,5 +1,7 @@
 import pool from '../db/db.js';
 import { sendPushNotificationToUsers } from '../middlewares/pushNotifications.js';
+import { auditCreate, auditUpdate, auditDelete } from '../services/auditService.js';
+import { getOldValuesForAudit, sanitizeForAudit } from '../utils/audit.js';
 
 // Todas las solicitudes de adopción
 export const getAdoptions = async (req, res, next) => {
@@ -132,10 +134,14 @@ export const createAdoptionRequest = async (req, res, next) => {
       );
     }
 
+    const newRequest = result.rows[0];
+
+    // Auditar creacion
+    await auditCreate(req, 'solicitud_adopcion', newRequest.id_solicitud_adopcion, newRequest);
+
     res.status(201).json({
       success: true,
-      data: result.rows[0],
-      notificacionEnviada: true,
+      data: newRequest
     });
   } catch (error) {
     next(error);
@@ -174,6 +180,13 @@ export const updateAdoptionRequest = async (req, res, next) => {
       nombre_animal,
       id_adopcion,
     } = solicitudInfo.rows[0];
+
+    // Obtener valores antiguos antes de actualizar
+    const oldRequest = await getOldValuesForAudit('solicitud_adopcion', 'id_solicitud_adopcion', req.params.id);
+
+    if (!oldRequest) {
+      return res.status(404).json({ success: false, error: 'Solicitud no encontrada' });
+    }
 
     const result = await pool.query(
       `
@@ -248,6 +261,8 @@ export const updateAdoptionRequest = async (req, res, next) => {
         );
       }
     }
+    // Auditar actualizacion
+    await auditUpdate(req, 'solicitud_adopcion', oldRequest);
 
     res.json({
       success: true,
@@ -262,6 +277,13 @@ export const updateAdoptionRequest = async (req, res, next) => {
 // Eliminar solicitud
 export const deleteAdoptionRequest = async (req, res, next) => {
   try {
+    // Obtener datos antes de eliminar
+    const oldRequest = await getOldValuesForAudit('solicitud_adopcion', 'id_solicitud_adopcion', req.params.id);
+
+    if (!oldRequest) {
+      return res.status(404).json({ success: false, error: 'Solicitud no encontrada' });
+    }
+
     const result = await pool.query(
       'DELETE FROM solicitud_adopcion WHERE id_solicitud_adopcion = $1 RETURNING *',
       [req.params.id],
@@ -272,6 +294,8 @@ export const deleteAdoptionRequest = async (req, res, next) => {
         .status(404)
         .json({ success: false, error: 'Solicitud no encontrada' });
     }
+    // Auditar eliminacion
+    await auditDelete(req, 'solicitud_adopcion', oldRequest);
 
     res.json({ success: true, message: 'Solicitud eliminada correctamente' });
   } catch (error) {
@@ -382,6 +406,10 @@ export const createAdoptionPost = async (req, res, next) => {
         );
       }
     }
+
+    const newAdoption = result.rows[0];
+    // Auditar creacion
+    await auditCreate(req, 'adopcion', newAdoption.id_adopcion, newAdoption);
 
     res.status(201).json({
       success: true,

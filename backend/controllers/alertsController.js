@@ -1,5 +1,7 @@
 import pool from '../db/db.js';
 import { sendPushNotificationToUsers } from '../middlewares/pushNotifications.js';
+import { auditCreate, auditUpdate, auditDelete } from '../services/auditService.js';
+import { getOldValuesForAudit, sanitizeForAudit } from '../utils/audit.js';
 
 // Obtiene todas las alertas activas, con latitud, longitud y dirección
 export const getAlerts = async (req, res, next) => {
@@ -79,7 +81,7 @@ export const createAlert = async (req, res, next) => {
     } = req.body;
 
     // Obtener el id desde el token
-    const id_usuario = req.user.id;
+    const id_usuario = req.user.id_usuario;
 
     // Verifica que los campos obligatorios estén presentes
     if (
@@ -135,38 +137,42 @@ export const createAlert = async (req, res, next) => {
 
     // 🔔 ENVIAR NOTIFICACIONES SEGÚN NIVEL DE RIESGO
     try {
-      let usersQuery;
-      let usersParams;
+      let tokensQuery;
+      let tokensParams;
 
       // Nivel de riesgo alto (3 o más): notificar a todos
       if (id_nivel_riesgo >= 3) {
-        usersQuery = `
-          SELECT id_usuario 
-          FROM usuario 
-          WHERE activo = true 
-          AND push_token IS NOT NULL
+        tokensQuery = `
+          SELECT d.token, d.plataforma, d.id_usuario
+          FROM dispositivo d
+          INNER JOIN usuario u ON d.id_usuario = u.id_usuario
+          WHERE u.activo = true 
+          AND d.activo = true
+          AND d.token IS NOT NULL
         `;
-        usersParams = [];
+        tokensParams = [];
       } else {
         // Nivel bajo/medio: solo usuarios de la misma ciudad
-        usersQuery = `
-          SELECT id_usuario 
-          FROM usuario 
-          WHERE id_ciudad = $1 
-          AND activo = true 
-          AND push_token IS NOT NULL
+        tokensQuery = `
+          SELECT d.token, d.plataforma, d.id_usuario
+          FROM dispositivo d
+          INNER JOIN usuario u ON d.id_usuario = u.id_usuario
+          WHERE u.id_ciudad = $1 
+          AND u.activo = true 
+          AND d.activo = true
+          AND d.token IS NOT NULL
         `;
-        usersParams = [id_ciudad];
+        tokensParams = [id_ciudad];
       }
 
-      const usersRes = await pool.query(usersQuery, usersParams);
-      const userIds = usersRes.rows.map((row) => row.id_usuario);
+      const tokensRes = await pool.query(tokensQuery, tokensParams);
+      const tokens = tokensRes.rows.map((row) => row.token);
 
-      if (userIds.length > 0) {
+      if (tokens.length > 0) {
         await sendPushNotificationToUsers(
           `🚨 ${tipo_alerta}: ${titulo}`,
           descripcion,
-          userIds,
+          tokens,
           {
             type: 'alerta',
             id: alerta.id_alerta,
@@ -177,9 +183,8 @@ export const createAlert = async (req, res, next) => {
             longitude: longitude,
           },
         );
-
         console.log(
-          `✅ Notificación de alerta enviada a ${userIds.length} usuarios`,
+          `✅ Notificación de alerta enviada a ${tokens.length} dispositivos`,
         );
       }
     } catch (notifError) {
@@ -210,6 +215,15 @@ export const updateAlert = async (req, res, next) => {
       fecha_expiracion,
       activa,
     } = req.body;
+
+    // Obtener valores antiguos ANTES de actualizar
+    const oldAlert = await getOldValuesForAudit('alerta', 'id_alerta', req.params.id);
+
+    if (!oldAlert) {
+      return res
+        .status(404)
+        .json({ success: false, error: 'Alerta no encontrada' });
+    }
 
     let ubicacion = null;
     if (latitude != null && longitude != null) {
@@ -244,12 +258,8 @@ export const updateAlert = async (req, res, next) => {
       ],
     );
 
-    // Si no se encuentra la alerta para actualizar, responde con error 404
-    if (result.rowCount === 0) {
-      return res
-        .status(404)
-        .json({ success: false, error: 'Alerta no encontrada' });
-    }
+    // Auditar actualizacion
+    await auditUpdate(req, 'alerta', oldAlert);
 
     // Devuelve la alerta actualizada
     res.json({ success: true, data: result.rows[0] });
@@ -261,17 +271,22 @@ export const updateAlert = async (req, res, next) => {
 // Elimina una alerta por su ID
 export const deleteAlert = async (req, res, next) => {
   try {
+    // Obtener datos antes de eliminar
+    const oldAlert = await getOldValuesForAudit('alerta', 'id_alerta', req.params.id);
+
+    if (!oldAlert) {
+      return res
+        .status(404)
+        .json({ success: false, error: 'Alerta no encontrada' });
+    }
+
     const result = await pool.query(
       'DELETE FROM alerta WHERE id_alerta = $1 RETURNING *',
       [req.params.id],
     );
 
-    // Si no se encuentra la alerta para eliminar, responde con error 404
-    if (result.rowCount === 0) {
-      return res
-        .status(404)
-        .json({ success: false, error: 'Alerta no encontrada' });
-    }
+    // Auditar eliminacion
+    await auditDelete(req, 'alerta', oldAlert);
 
     // Confirma la eliminación exitosa
     res.json({ success: true, message: 'Alerta eliminada correctamente' });

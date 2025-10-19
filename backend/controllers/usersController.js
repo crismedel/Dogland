@@ -1,5 +1,6 @@
 import pool from '../db/db.js';
 import { auditCreate, auditUpdate, auditDelete } from '../services/auditService.js';
+import { getOldValuesForAudit, sanitizeForAudit } from '../utils/audit.js';
 
 export const listAllUsers = async (req, res, next) => {
   try {
@@ -119,8 +120,8 @@ export const createUser = async (req, res, next) => {
     
     const newUser = result.rows[0];
     
-    // Filtrar password antes de auditar
-    const { password_hash: _, ...newUserSafe } = newUser;
+    // Sanitizar antes de auditar
+    const newUserSafe = sanitizeForAudit('usuario', newUser);
     await auditCreate(req, 'usuario', newUser.id_usuario, newUserSafe);
     
     res.status(201).json({
@@ -147,21 +148,16 @@ export const updateUser = async (req, res, next) => {
       activo,
     } = req.validatedBody;
     
-    // Obtener valores antiguos
-    const oldUserResult = await pool.query(
-      'SELECT * FROM usuario WHERE id_usuario = $1',
-      [id]
-    );
-    
-    if (oldUserResult.rowCount === 0) {
+    // Usar helper para auditar
+    const oldUser = await getOldValuesForAudit('usuario', 'id_usuario', id);
+
+    if (!oldUser) {
       return res.status(404).json({
         success: false,
         error: 'Usuario no encontrado'
       });
     }
-    
-    const oldUser = oldUserResult.rows[0];
-    
+
     // Validacion de ciudad
     if (id_ciudad) {
       const cityExistsResult = await pool.query(
@@ -208,8 +204,8 @@ export const updateUser = async (req, res, next) => {
     
     const updatedUser = result.rows[0];
     
-    // Auditar sin password
-    const { password_hash, ...oldUserSafe } = oldUser;
+    // Usar helper para sanitizar
+    const oldUserSafe = sanitizeForAudit('usuario', oldUser);
     await auditUpdate(req, 'usuario', oldUserSafe);
     
     res.json({
@@ -231,13 +227,10 @@ export const deleteUser = async (req, res, next) => {
     try {
       await client.query('BEGIN');
       
-      // Obtener datos antes de eliminar
-      const oldUserResult = await client.query(
-        'SELECT * FROM usuario WHERE id_usuario = $1',
-        [id]
-      );
+      // Usar helper para auditar
+      const oldUser = await getOldValuesForAudit('usuario', 'id_usuario', id);
       
-      if (oldUserResult.rowCount === 0) {
+      if (!oldUser) {
         await client.query('ROLLBACK');
         return res.status(404).json({ 
           success: false, 
@@ -245,16 +238,14 @@ export const deleteUser = async (req, res, next) => {
         });
       }
       
-      const oldUser = oldUserResult.rows[0];
-      
       // Eliminar
       const result = await client.query(
         'DELETE FROM usuario WHERE id_usuario = $1 RETURNING id_usuario, email',
         [id]
       );
       
-      // Auditar eliminacion
-      const { password_hash, ...oldUserSafe } = oldUser;
+      // Usar helper para sanitizar
+      const oldUserSafe = sanitizeForAudit('usuario', oldUser);
       await auditDelete(req, 'usuario', oldUserSafe);
       
       await client.query('COMMIT');
@@ -282,20 +273,15 @@ export const deactivateUser = async (req, res, next) => {
   try {
     client = await pool.connect();
     
-    // Obtener valores antiguos
-    const oldUserResult = await client.query(
-      'SELECT * FROM usuario WHERE id_usuario = $1',
-      [id]
-    );
+    // Usar helper para auditar
+    const oldUser = await getOldValuesForAudit('usuario', 'id_usuario', id);
     
-    if (oldUserResult.rowCount === 0) {
+    if (!oldUser) {
       return res.status(404).json({ 
         success: false, 
         error: 'Usuario no encontrado' 
       });
     }
-    
-    const oldUser = oldUserResult.rows[0];
     
     const result = await client.query(
       `UPDATE usuario
@@ -305,8 +291,8 @@ export const deactivateUser = async (req, res, next) => {
       [id]
     );
     
-    // Auditar como DELETE
-    const { password_hash, ...oldUserSafe } = oldUser;
+    // Usar helper para sanitizar
+    const oldUserSafe = sanitizeForAudit('usuario', oldUser);
     await auditDelete(req, 'usuario', oldUserSafe);
     
     res.json({
@@ -328,20 +314,15 @@ export const activateUser = async (req, res, next) => {
   try {
     client = await pool.connect();
     
-    // Obtener valores antiguos
-    const oldUserResult = await client.query(
-      'SELECT * FROM usuario WHERE id_usuario = $1',
-      [id]
-    );
+    // Usar helper para auditar
+    const oldUser = await getOldValuesForAudit('usuario', 'id_usuario', id);
     
-    if (oldUserResult.rowCount === 0) {
+    if (!oldUser) {
       return res.status(404).json({
         success: false,
         error: 'Usuario no encontrado'
       });
     }
-    
-    const oldUser = oldUserResult.rows[0];
     
     const result = await client.query(
       `UPDATE usuario
@@ -352,7 +333,6 @@ export const activateUser = async (req, res, next) => {
     );
     
     // Auditar reactivacion como CREATE
-    const { password_hash, ...oldUserSafe } = oldUser;
     const newValues = { activo: true, deleted_at: null };
     await auditCreate(req, 'usuario', id, newValues);
     
