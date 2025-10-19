@@ -1,5 +1,4 @@
 import express from 'express';
-import pool from '../db/db.js';
 import {
   getAlerts,
   getAlertById,
@@ -7,7 +6,7 @@ import {
   updateAlert,
   deleteAlert,
 } from '../controllers/alertsController.js';
-
+import { authenticateToken } from '../middlewares/auth.js';
 import { sendPushNotificationToUsers } from '../middlewares/pushNotifications.js';
 import { validateAlert } from '../middlewares/validationAlert.js';
 import { checkPermissions } from '../middlewares/permissions.js';
@@ -22,6 +21,7 @@ router.get('/alerts/:id', getAlertById);
 // Ruta para crear una nueva alerta, con validación y control de permisos
 router.post(
   '/alerts',
+  authenticateToken,
   validateAlert, // Valida los datos de la alerta
   checkPermissions('create_alert'), // Verifica permisos para crear alertas
   createAlert, // Controlador que crea la alerta
@@ -30,6 +30,7 @@ router.post(
 // Ruta para actualizar una alerta existente, con validación y control de permisos
 router.put(
   '/alerts/:id',
+  authenticateToken,
   validateAlert, // Valida los datos de la alerta
   checkPermissions('update_alert'), // Verifica permisos para actualizar alertas
   updateAlert, // Controlador que actualiza la alerta
@@ -38,6 +39,7 @@ router.put(
 // Ruta para eliminar una alerta, con control de permisos
 router.delete(
   '/alerts/:id',
+  authenticateToken,
   checkPermissions('delete_alert'), // Verifica permisos para eliminar alertas
   deleteAlert, // Controlador que elimina la alerta
 );
