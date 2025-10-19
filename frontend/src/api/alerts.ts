@@ -1,5 +1,50 @@
 import apiClient from './client';
+import { authStorage } from '../utils/authStorage';
 import { Alert } from '../types/alert';
+
+// Define la interfaz para una alerta activa.
+// Ajusta esto según la estructura real de tus alertas en el backend.
+export interface ActiveAlert {
+  id_alerta: number;
+  titulo: string;
+  descripcion: string;
+  latitud: number;
+  longitud: number;
+  estado: 'activa' | 'resuelta'; // O los estados que manejes
+  // Agrega cualquier otro campo relevante de tu alerta
+}
+
+/**
+ * Obtiene todas las alertas activas del usuario autenticado.
+ * Requiere un token JWT válido.
+ * @returns Una promesa que resuelve con un array de ActiveAlert.
+ */
+export const fetchActiveAlerts = async (): Promise<ActiveAlert[]> => {
+  const token = await authStorage.getToken();
+
+  if (!token) {
+    console.warn(
+      'No hay token de autenticación disponible para fetchActiveAlerts.',
+    );
+    return [];
+  }
+
+  try {
+    const response = await apiClient.get<{
+      success: boolean;
+      alertas: ActiveAlert[];
+    }>(
+      '/alerts/active', // Asegúrate de que este sea el endpoint correcto en tu backend
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      },
+    );
+    return response.data.alertas;
+  } catch (error) {
+    console.error('Error al obtener alertas activas:', error);
+    throw error;
+  }
+};
 
 // Obtener todas las alertas
 export async function fetchAlerts(): Promise<Alert[]> {

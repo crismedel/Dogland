@@ -7,7 +7,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   Image,
-  Alert,
 } from 'react-native';
 import apiClient from '@/src/api/client';
 import { authStorage } from '@/src/utils/authStorage';
@@ -19,13 +18,16 @@ import { Colors } from '@/src/constants/colors';
 import {
   fontWeightBold,
   fontWeightSemiBold,
-  fontWeightMedium,
   AppText,
 } from '@/src/components/AppText';
 
+// 👇 Importaciones nuevas para push notifications
+import { getExpoPushTokenAsync } from '@/src/utils/expoNotifications';
+import { registerPushToken } from '@/src/api/notifications';
+
 const { width } = Dimensions.get('window');
 
-// 👇 Configuración de campos para LOGIN
+// Configuración de campos para LOGIN
 const loginFields: FormField[] = [
   {
     name: 'email',
@@ -61,7 +63,7 @@ const Index: React.FC = () => {
     setFormValues((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Adaptar handleLogin para que use el estado 'formValues'
+  // Adaptar handleLogin para registro del token push
   const handleLogin = async () => {
     const { email, password } = formValues; // Se obtienen los valores del estado
 
@@ -87,19 +89,34 @@ const Index: React.FC = () => {
       const { token } = response.data;
 
       if (token) {
+        console.log('🔑 Token de autenticación:', token);
         // Guardar el token de forma segura
         await authStorage.saveToken(token);
         showSuccess('Éxito', 'Has iniciado sesión correctamente.');
+
+        // 2️⃣ Obtener token push de Expo y registrarlo
+        const projectId = 'ad2be738-0a24-4c5a-a9b8-5dd205e5374c'; // reemplaza por tu projectId de Expo
+        const expoToken = await getExpoPushTokenAsync(projectId);
+
+        if (expoToken) {
+          await registerPushToken(expoToken);
+          console.log('✅ Push token registrado:', expoToken);
+        } else {
+          console.log('⚠️ No se pudo obtener token Expo Push');
+        }
+
         // Usar router.replace para navegar al home
         router.replace('/home');
       } else {
         throw new Error(
-          response.data.message || 'No se recibió el token de autenticación.',
+          response.data.message ||
+            'No se recibió el token de autenticación del servidor.',
         );
       }
     } catch (error) {
       // Manejo de errores de API
-      let errorMessage = 'Ocurrió un error inesperado.';
+      let errorMessage =
+        'Ocurrió un error inesperado durante el inicio de sesión.';
       if (isAxiosError(error)) {
         // Si es un error de Axios
         if (error.response) {

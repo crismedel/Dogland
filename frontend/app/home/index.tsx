@@ -10,20 +10,24 @@ import {
   ScrollView,
   Pressable,
   ActivityIndicator,
+  Modal,
+  TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import CustomButton from '../../src/components/UI/CustomButton';
 import { Colors } from '@/src/constants/colors';
-import { fetchUserProfile } from '@/src/api/users'; // <-- importa tu función
-import { authStorage } from '@/src/utils/authStorage'; // para logout en caso 401 opcional
+import { fetchUserProfile } from '@/src/api/users';
+import { authStorage } from '@/src/utils/authStorage';
 import {
   fontWeightBold,
   fontWeightSemiBold,
   fontWeightMedium,
   AppText,
 } from '@/src/components/AppText';
+import { NotificationBanner } from '@/src/components/NotificationBanner';
+import { fetchActiveAlerts, ActiveAlert } from '@/src/api/alerts'; //  Importa la función y la interfaz
 
 const { width } = Dimensions.get('window');
 const BADGE_SIZE = 42;
@@ -32,24 +36,35 @@ export default function Index() {
   const [userName, setUserName] = React.useState<string>('');
   const [loading, setLoading] = React.useState<boolean>(true);
   const [error, setError] = React.useState<string | null>(null);
+  const [activeAlerts, setActiveAlerts] = React.useState<ActiveAlert[]>([]); //  Estado para alertas activas
+  const [showPopup, setShowPopup] = React.useState<boolean>(false); //  control del modal
+  const [popupMessage, setPopupMessage] = React.useState<string>(''); //  Mensaje dinámico para el popup
 
-  // Cargar perfil al montar
+  // Cargar perfil y alertas al montar
   React.useEffect(() => {
     let isMounted = true;
     (async () => {
       try {
         const user = await fetchUserProfile();
         if (!isMounted) return;
-
-        // Ajusta según tu backend. Con /users/me recibes:
-        // { id_usuario, nombre_usuario, ... , nombre_rol, ... }
-        const name = user?.nombre_usuario || user?.nombre_usuario || '';
+        const name = user?.nombre_usuario || '';
         setUserName(name);
+
+        //  Cargar alertas activas
+        const alerts = await fetchActiveAlerts();
+        if (isMounted) {
+          setActiveAlerts(alerts);
+          if (alerts.length > 0) {
+            // Si hay alertas, prepara el popup con la primera o un resumen
+            setPopupMessage(
+              `¡Tienes ${alerts.length} alerta(s) activa(s)! La más reciente: ${alerts[0].titulo}`,
+            );
+            setShowPopup(true);
+          }
+        }
       } catch (err: any) {
         if (!isMounted) return;
-        // Manejo de errores básicos
         if (err?.response?.status === 401) {
-          // Token inválido/expirado → limpiar y mandar a login
           await authStorage.removeToken?.();
           router.replace('/auth');
           return;
@@ -57,7 +72,7 @@ export default function Index() {
         setError(
           err?.response?.data?.error ??
             err?.message ??
-            'No se pudo cargar el perfil',
+            'No se pudo cargar el perfil o las alertas',
         );
       } finally {
         if (isMounted) setLoading(false);
@@ -131,7 +146,36 @@ export default function Index() {
         style={StyleSheet.absoluteFillObject}
       />
 
-      {/* Badge con inicial del usuario real */}
+      {/* Modal Pop-up de alerta */}
+      <Modal visible={showPopup} transparent animationType="fade">
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalBox}>
+            <AppText style={styles.modalTitle}>🚨 Alerta importante</AppText>
+            <AppText style={styles.modalBody}>{popupMessage}</AppText>
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: '#d9534f' }]}
+                onPress={() => setShowPopup(false)}
+              >
+                <AppText style={styles.modalButtonText}>Cerrar</AppText>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: '#0275d8' }]}
+                onPress={() => {
+                  setShowPopup(false);
+                  router.push('/alerts');
+                }}
+              >
+                <AppText style={styles.modalButtonText}>Ver alertas</AppText>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Badge de perfil */}
       <View style={styles.topBar}>
         <Pressable
           onPress={() => router.push('/profile')}
@@ -149,6 +193,15 @@ export default function Index() {
         <AppText style={styles.welcomeText}>
           Bienvenido/a {userName || 'Usuario'}
         </AppText>
+
+        {/* 🆕 NotificationBanner se muestra si hay alertas activas */}
+        {activeAlerts.length > 0 && (
+          <NotificationBanner
+            title="🐾 Alertas activas"
+            message={`Tienes ${activeAlerts.length} alerta(s) activa(s). La más reciente: ${activeAlerts[0].titulo}`}
+            color="#f0ad4e"
+          />
+        )}
 
         {/* Bloque 1 (imagen derecha) */}
         <View style={styles.cardRight}>
@@ -254,10 +307,9 @@ export default function Index() {
   );
 }
 
+/* ---- ESTILOS ---- */
 const styles = StyleSheet.create({
   container: { flex: 1 },
-
-  // Top bar con badge de perfil
   topBar: { position: 'absolute', top: 50, left: 20, zIndex: 10 },
   profileBadge: {
     width: BADGE_SIZE,
@@ -282,7 +334,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: fontWeightBold,
     fontSize: 18,
-    letterSpacing: 0.5,
   },
   content: { paddingTop: 120, paddingBottom: 40, gap: 30 },
   welcomeText: {
@@ -294,6 +345,45 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0,0,0,0.15)',
     textShadowOffset: { width: 1, height: 2 },
     textShadowRadius: 3,
+  },
+
+  // estilos del pop-up
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalBox: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 24,
+    width: '85%',
+    alignItems: 'center',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    color: '#d9534f',
+  },
+  modalBody: {
+    fontSize: 16,
+    color: '#2c3e50',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  modalButtons: { flexDirection: 'row', gap: 12 },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  modalButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 15,
   },
 
   /** ---- CARDS ---- */
