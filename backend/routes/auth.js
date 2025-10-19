@@ -23,7 +23,22 @@ router.post('/register', async (req, res) => {
         if (!nombre_usuario || !apellido_paterno || !apellido_materno || !id_sexo || !fecha_nacimiento || !id_ciudad || !email || !password_hash) {
             return res.status(400).json({ success: false, error: 'Faltan campos obligatorios' });
         }
-        
+
+        // eliminar este regex al usar validadores como joi o zod
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            return res.status(400).json({ success: false, error: 'Email inválido' });
+        }
+
+        // Verificar si la ciudad existe
+        const cityExists = await pool.query(
+          'SELECT id_ciudad FROM ciudad WHERE id_ciudad = $1',
+          [id_ciudad]);
+
+        if (cityExists.rows.length === 0) {
+            return res.status(400).json({ success: false, error: 'La ciudad no existe' });
+        }
+
         // Verificar si el usuario ya existe
         const existingUser = await findUserByEmail(email);
         if (existingUser) {
@@ -65,7 +80,7 @@ router.post('/login', async (req, res) => {
         const { email, password } = req.body;
         const user = await findUserByEmail(email);
 
-        if (!user) {
+        if (!user || !password) {
             return res.status(401).json({ success: false, error: 'Credenciales inválidas' });
         }
 
@@ -79,7 +94,7 @@ router.post('/login', async (req, res) => {
         const userRole = rolResult.rows[0].nombre_rol;
         // Payload que contendra el JWT generado
         const payload = {
-          id: user.id_usuario,
+          id_usuario: user.id_usuario,
           role: userRole,
           email: user.email
         };
@@ -118,6 +133,10 @@ router.get('/verify', authenticateToken, (req, res) => {
 // POST /api/auth/forgot-password - Solicitar recuperación de contraseña
 router.post('/forgot-password', async (req, res) => {
     const { email } = req.body;
+
+    if (!email) {
+        return res.status(400).json({ success: false, error: 'El email es requerido' });
+    }
 
     try {
         const user = await findUserByEmail(email);
