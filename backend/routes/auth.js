@@ -94,7 +94,7 @@ router.post('/login', async (req, res) => {
         const userRole = rolResult.rows[0].nombre_rol;
         // Payload que contendra el JWT generado
         const payload = {
-          id_usuario: user.id_usuario,
+          id: user.id_usuario,
           role: userRole,
           email: user.email
         };

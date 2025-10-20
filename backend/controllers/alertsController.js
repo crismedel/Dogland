@@ -81,7 +81,7 @@ export const createAlert = async (req, res, next) => {
     } = req.body;
 
     // Obtener el id desde el token
-    const id_usuario = req.user.id_usuario;
+    const id_usuario = req.user.id;
 
     // Verifica que los campos obligatorios estén presentes
     if (
