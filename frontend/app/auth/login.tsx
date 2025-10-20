@@ -20,6 +20,7 @@ import {
   fontWeightSemiBold,
   AppText,
 } from '@/src/components/AppText';
+import Constants from 'expo-constants';
 
 // 👇 Importaciones para push notifications
 import { getExpoPushTokenAsync } from '@/src/utils/expoNotifications';
@@ -65,17 +66,29 @@ const Index: React.FC = () => {
 
   const registerPushTokenSafely = async () => {
     try {
-      const projectId = 'ad2be738-0a24-4c5a-a9b8-5dd205e5374c';
+      // 🧠 Detecta automáticamente el projectId desde app.json / app.config.js
+      const projectId =
+        Constants?.expoConfig?.extra?.eas?.projectId ||
+        Constants?.easConfig?.projectId;
+
+      if (!projectId) {
+        console.warn(
+          '⚠️ No se encontró projectId en la configuración de Expo.',
+        );
+        return;
+      }
+
+      // 📲 Obtiene el token de notificaciones usando tu helper
       const expoToken = await getExpoPushTokenAsync(projectId);
 
+      // 📨 Si existe token, lo registra en backend
       if (expoToken) {
         await registerPushToken(expoToken);
-        console.log('✅ Push token registrado:', expoToken);
+        console.log('✅ Push token registrado correctamente:', expoToken);
       } else {
-        console.log('⚠️ No se pudo obtener token Expo Push');
+        console.warn('⚠️ No se pudo obtener el token Expo Push.');
       }
     } catch (error) {
-      // ✅ No rompe el login si falla el registro del token
       console.warn('⚠️ Error al registrar push token:', error);
     }
   };
