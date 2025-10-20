@@ -2,10 +2,10 @@ import pool from '../db/db.js';
 import { auditCreate, auditUpdate, auditDelete } from '../services/auditService.js';
 import { getOldValuesForAudit } from '../utils/audit.js';
 
-// GET /animals/:id/medicalHistory - Obtener historial medico de un animal
+// GET /medicalHistory/:animalId - Obtener historial medico de un animal
 export const getAnimalMedicalHistory = async (req, res, next) => {
   try {
-    const { id } = req.params;
+    const animalId = req.params.animalId;
 
     const query = `
       SELECT * FROM historial_medico
@@ -13,7 +13,7 @@ export const getAnimalMedicalHistory = async (req, res, next) => {
       ORDER BY fecha_evento DESC
     `;
 
-    const result = await pool.query(query, [id]);
+    const result = await pool.query(query, [animalId]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({
@@ -31,18 +31,18 @@ export const getAnimalMedicalHistory = async (req, res, next) => {
   }
 };
 
-// POST /animals/:id/medicalHistory - Crear nuevo evento medico
+// POST /medicalHistory/:animalId - Crear nuevo evento medico
 export const createMedicalHistory = async (req, res, next) => {
   const client = await pool.connect();
   
   try {
-    const { id } = req.params;
+    const animalId = req.params.animalId;
     const { fecha_evento, tipo_evento, diagnostico, detalles, nombre_veterinario } = req.body;
 
     // Validar que el animal existe
     const animalCheck = await client.query(
       'SELECT id_animal FROM animal WHERE id_animal = $1',
-      [id]
+      [animalId]
     );
 
     if (animalCheck.rows.length === 0) {
@@ -61,7 +61,7 @@ export const createMedicalHistory = async (req, res, next) => {
     `;
 
     const result = await client.query(query, [
-      id,
+      animalId,
       fecha_evento,
       tipo_evento,
       diagnostico || null,
@@ -71,15 +71,16 @@ export const createMedicalHistory = async (req, res, next) => {
 
     const newRecord = result.rows[0];
 
+    // TODO: corregir auditoria para corregir error: Cannot read properties of undefined (reading 'id')
     // Auditar Creacion
-    await auditCreate(req, 'historial_medico', newRecord.id_historial_medico, {
-      id_animal: newRecord.id_animal,
-      fecha_evento: newRecord.fecha_evento,
-      tipo_evento: newRecord.tipo_evento,
-      diagnostico: newRecord.diagnostico,
-      detalles: newRecord.detalles,
-      nombre_veterinario: newRecord.nombre_veterinario
-    });
+    //await auditCreate(req, 'historial_medico', newRecord.id_historial_medico, {
+    //  id_animal: newRecord.id_animal,
+    //  fecha_evento: newRecord.fecha_evento,
+    //  tipo_evento: newRecord.tipo_evento,
+    //  diagnostico: newRecord.diagnostico,
+    //  detalles: newRecord.detalles,
+    //  nombre_veterinario: newRecord.nombre_veterinario
+    //});
 
     await client.query('COMMIT');
 
@@ -96,17 +97,17 @@ export const createMedicalHistory = async (req, res, next) => {
   }
 };
 
-// GET /animals/:id/medicalHistory/:historyId - Obtener detalle de un evento medico
+// GET /medicalHistory/:animalId/:historyId - Obtener detalle de un evento medico
 export const getMedicalHistoryDetail = async (req, res, next) => {
   try {
-    const { id, historyId } = req.params;
+    const { animalId, historyId } = req.params;
 
     const query = `
       SELECT * FROM historial_medico
       WHERE id_historial_medico = $1 AND id_animal = $2
     `;
 
-    const result = await pool.query(query, [historyId, id]);
+    const result = await pool.query(query, [historyId, animalId]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({
@@ -124,12 +125,12 @@ export const getMedicalHistoryDetail = async (req, res, next) => {
   }
 };
 
-// PUT /animals/:id/medicalHistory/:historyId - Actualizar evento medico
+// PUT /medicalHistory/:animalId/:historyId - Actualizar evento medico
 export const updateMedicalHistory = async (req, res, next) => {
   const client = await pool.connect();
   
   try {
-    const { id, historyId } = req.params;
+    const { animalId, historyId } = req.params;
     const { fecha_evento, tipo_evento, diagnostico, detalles, nombre_veterinario } = req.body;
 
     // Verificar que el evento pertenece al animal
@@ -137,7 +138,7 @@ export const updateMedicalHistory = async (req, res, next) => {
       SELECT id_historial_medico FROM historial_medico
       WHERE id_historial_medico = $1 AND id_animal = $2
     `;
-    const checkResult = await client.query(checkQuery, [historyId, id]);
+    const checkResult = await client.query(checkQuery, [historyId, animalId]);
 
     if (checkResult.rows.length === 0) {
       return res.status(404).json({
@@ -169,19 +170,20 @@ export const updateMedicalHistory = async (req, res, next) => {
       detalles,
       nombre_veterinario,
       historyId,
-      id
+      animalId
     ]);
 
     const updatedRecord = result.rows[0];
 
+    // TODO: corregir auditoria para corregir error: cannot read properties of undefined (reading 'id')
     // Auditar Actualizacion
-    await auditUpdate(req, 'historial_medico', historyId, oldValues, {
-      fecha_evento: updatedRecord.fecha_evento,
-      tipo_evento: updatedRecord.tipo_evento,
-      diagnostico: updatedRecord.diagnostico,
-      detalles: updatedRecord.detalles,
-      nombre_veterinario: updatedRecord.nombre_veterinario
-    });
+    //await auditUpdate(req, 'historial_medico', historyId, oldValues, {
+    //  fecha_evento: updatedRecord.fecha_evento,
+    //  tipo_evento: updatedRecord.tipo_evento,
+    //  diagnostico: updatedRecord.diagnostico,
+    //  detalles: updatedRecord.detalles,
+    //  nombre_veterinario: updatedRecord.nombre_veterinario
+    //});
 
     await client.query('COMMIT');
 
@@ -198,18 +200,18 @@ export const updateMedicalHistory = async (req, res, next) => {
   }
 };
 
-// DELETE /animals/:id/medicalHistory/:historyId - Eliminar evento medico
+// DELETE /medicalHistory/:animalId/:historyId - Eliminar evento medico
 export const deleteMedicalHistory = async (req, res, next) => {
   const client = await pool.connect();
 
   try {
-    const { id, historyId } = req.params;
+    const { animalId, historyId } = req.params;
     
     // Obtener valores antes de auditar
     const oldValues = await getOldValuesForAudit('historial_medico', 'id_historial_medico', historyId);
 
     // Verificar que pertenece al animal correcto
-    if (!oldValues || oldValues.id_animal !== parseInt(id)) {
+    if (!oldValues || oldValues.id_animal !== parseInt(animalId)) {
       return res.status(404).json({
         success: false,
         message: 'Evento médico no encontrado'
@@ -224,10 +226,11 @@ export const deleteMedicalHistory = async (req, res, next) => {
       RETURNING *
     `;
 
-    const result = await client.query(query, [historyId, id]);
+    const result = await client.query(query, [historyId, animalId]);
 
+    // TODO: corregir auditoria para corregir error: cannot read properties of undefined (reading 'id')
     // Auditar Eliminacion
-    await auditDelete(req, 'historial_medico', historyId, oldValues);
+    //await auditDelete(req, 'historial_medico', historyId, oldValues);
 
     await client.query('COMMIT');
 
@@ -244,6 +247,7 @@ export const deleteMedicalHistory = async (req, res, next) => {
   }
 };
 
+// GET /medicalHistory - Obtener todos los historiales medicos con filtros opcionales
 export const getAllMedicalHistory = async (req, res, next) => {
   try {
     const { animalId, tipo_evento, fecha_desde, fecha_hasta } = req.query;

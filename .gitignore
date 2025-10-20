@@ -141,3 +141,5 @@ vite.config.ts.timestamp-*
 # Expo files
 .expo/
 expo-env.d.ts
+
+README.md
