@@ -22,12 +22,10 @@ import { fetchUserProfile } from '@/src/api/users';
 import { authStorage } from '@/src/utils/authStorage';
 import {
   fontWeightBold,
-  fontWeightSemiBold,
   fontWeightMedium,
   AppText,
 } from '@/src/components/AppText';
 import { NotificationBanner } from '@/src/components/NotificationBanner';
-import { fetchActiveAlerts, ActiveAlert } from '@/src/api/alerts'; //  Importa la función y la interfaz
 
 const { width } = Dimensions.get('window');
 const BADGE_SIZE = 42;
@@ -36,52 +34,36 @@ export default function Index() {
   const [userName, setUserName] = React.useState<string>('');
   const [loading, setLoading] = React.useState<boolean>(true);
   const [error, setError] = React.useState<string | null>(null);
-  const [activeAlerts, setActiveAlerts] = React.useState<ActiveAlert[]>([]); //  Estado para alertas activas
-  const [showPopup, setShowPopup] = React.useState<boolean>(false); //  control del modal
-  const [popupMessage, setPopupMessage] = React.useState<string>(''); //  Mensaje dinámico para el popup
+  const [showPopup, setShowPopup] = React.useState<boolean>(false);
+  const [popupMessage, setPopupMessage] = React.useState<string>('');
 
-  // Cargar perfil y alertas al montar
-  React.useEffect(() => {
-    let isMounted = true;
-    (async () => {
-      try {
-        const user = await fetchUserProfile();
-        if (!isMounted) return;
-        const name = user?.nombre_usuario || '';
-        setUserName(name);
+  // ✅ cargar únicamente el perfil
+  const loadData = React.useCallback(async () => {
+    setLoading(true);
+    setError(null);
 
-        //  Cargar alertas activas
-        const alerts = await fetchActiveAlerts();
-        if (isMounted) {
-          setActiveAlerts(alerts);
-          if (alerts.length > 0) {
-            // Si hay alertas, prepara el popup con la primera o un resumen
-            setPopupMessage(
-              `¡Tienes ${alerts.length} alerta(s) activa(s)! La más reciente: ${alerts[0].titulo}`,
-            );
-            setShowPopup(true);
-          }
-        }
-      } catch (err: any) {
-        if (!isMounted) return;
-        if (err?.response?.status === 401) {
-          await authStorage.removeToken?.();
-          router.replace('/auth');
-          return;
-        }
-        setError(
-          err?.response?.data?.error ??
-            err?.message ??
-            'No se pudo cargar el perfil o las alertas',
-        );
-      } finally {
-        if (isMounted) setLoading(false);
+    try {
+      const user = await fetchUserProfile();
+      const name = user?.nombre_usuario || '';
+      setUserName(name);
+
+      setShowPopup(false);
+    } catch (err: any) {
+      if (err?.response?.status === 401) {
+        await authStorage.removeToken?.();
+        router.replace('/auth');
+        return;
       }
-    })();
-    return () => {
-      isMounted = false;
-    };
+
+      setError('No se pudo cargar tu perfil. Por favor, intenta de nuevo.');
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  React.useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const userInitial = React.useMemo(
     () => (userName?.trim()?.[0] || 'U').toUpperCase(),
@@ -97,7 +79,6 @@ export default function Index() {
     Linking.openURL(urls[platform]);
   };
 
-  // Loading/errores arriba del layout
   if (loading) {
     return (
       <View
@@ -127,11 +108,7 @@ export default function Index() {
         >
           {error}
         </AppText>
-        <CustomButton
-          title="Reintentar"
-          onPress={() => router.replace('/auth')}
-          variant="primary"
-        />
+        <CustomButton title="Reintentar" onPress={loadData} variant="primary" />
       </View>
     );
   }
@@ -145,35 +122,6 @@ export default function Index() {
         colors={['#F2E2C4', '#F2E2C4']}
         style={StyleSheet.absoluteFillObject}
       />
-
-      {/* Modal Pop-up de alerta */}
-      <Modal visible={showPopup} transparent animationType="fade">
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalBox}>
-            <AppText style={styles.modalTitle}>🚨 Alerta importante</AppText>
-            <AppText style={styles.modalBody}>{popupMessage}</AppText>
-
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.modalButton, { backgroundColor: '#d9534f' }]}
-                onPress={() => setShowPopup(false)}
-              >
-                <AppText style={styles.modalButtonText}>Cerrar</AppText>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.modalButton, { backgroundColor: '#0275d8' }]}
-                onPress={() => {
-                  setShowPopup(false);
-                  router.push('/alerts');
-                }}
-              >
-                <AppText style={styles.modalButtonText}>Ver alertas</AppText>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
 
       {/* Badge de perfil */}
       <View style={styles.topBar}>
@@ -194,16 +142,7 @@ export default function Index() {
           Bienvenido/a {userName || 'Usuario'}
         </AppText>
 
-        {/* 🆕 NotificationBanner se muestra si hay alertas activas */}
-        {activeAlerts.length > 0 && (
-          <NotificationBanner
-            title="🐾 Alertas activas"
-            message={`Tienes ${activeAlerts.length} alerta(s) activa(s). La más reciente: ${activeAlerts[0].titulo}`}
-            color="#f0ad4e"
-          />
-        )}
-
-        {/* Bloque 1 (imagen derecha) */}
+        {/* Bloque 1 */}
         <View style={styles.cardRight}>
           <View style={styles.textBlock}>
             <AppText style={styles.questionText}>
@@ -222,7 +161,7 @@ export default function Index() {
           />
         </View>
 
-        {/* Bloque 2 (imagen izquierda) */}
+        {/* Bloque 2 */}
         <View style={styles.cardLeft}>
           <Image
             source={{ uri: 'https://placedog.net/300/300?id=8' }}
@@ -241,7 +180,7 @@ export default function Index() {
           </View>
         </View>
 
-        {/* Bloque 3 (imagen derecha) */}
+        {/* Bloque 3 */}
         <View style={styles.cardRight}>
           <View style={styles.textBlock}>
             <AppText style={styles.questionText}>Mapa Comunitario</AppText>
@@ -258,7 +197,7 @@ export default function Index() {
           />
         </View>
 
-        {/* Bloque 4 (imagen izquierda) */}
+        {/* Bloque 4 */}
         <View style={styles.cardLeft}>
           <Image
             source={{ uri: 'https://placedog.net/300/300?id=20' }}
@@ -308,6 +247,7 @@ export default function Index() {
 }
 
 /* ---- ESTILOS ---- */
+
 const styles = StyleSheet.create({
   container: { flex: 1 },
   topBar: { position: 'absolute', top: 50, left: 20, zIndex: 10 },
@@ -346,47 +286,6 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 1, height: 2 },
     textShadowRadius: 3,
   },
-
-  // estilos del pop-up
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalBox: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 24,
-    width: '85%',
-    alignItems: 'center',
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    color: '#d9534f',
-  },
-  modalBody: {
-    fontSize: 16,
-    color: '#2c3e50',
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  modalButtons: { flexDirection: 'row', gap: 12 },
-  modalButton: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  modalButtonText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 15,
-  },
-
-  /** ---- CARDS ---- */
   cardRight: {
     flexDirection: 'row',
     alignItems: 'center',

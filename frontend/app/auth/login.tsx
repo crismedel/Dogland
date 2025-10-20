@@ -21,7 +21,7 @@ import {
   AppText,
 } from '@/src/components/AppText';
 
-// 👇 Importaciones nuevas para push notifications
+// 👇 Importaciones para push notifications
 import { getExpoPushTokenAsync } from '@/src/utils/expoNotifications';
 import { registerPushToken } from '@/src/api/notifications';
 
@@ -63,9 +63,26 @@ const Index: React.FC = () => {
     setFormValues((prev) => ({ ...prev, [name]: value }));
   };
 
+  const registerPushTokenSafely = async () => {
+    try {
+      const projectId = 'ad2be738-0a24-4c5a-a9b8-5dd205e5374c';
+      const expoToken = await getExpoPushTokenAsync(projectId);
+
+      if (expoToken) {
+        await registerPushToken(expoToken);
+        console.log('✅ Push token registrado:', expoToken);
+      } else {
+        console.log('⚠️ No se pudo obtener token Expo Push');
+      }
+    } catch (error) {
+      // ✅ No rompe el login si falla el registro del token
+      console.warn('⚠️ Error al registrar push token:', error);
+    }
+  };
+
   // Adaptar handleLogin para registro del token push
   const handleLogin = async () => {
-    const { email, password } = formValues; // Se obtienen los valores del estado
+    const { email, password } = formValues;
 
     if (!email || !password) {
       showWarning('Atención', 'Por favor, completa todos los campos.');
@@ -86,55 +103,43 @@ const Index: React.FC = () => {
         password,
       });
 
+      console.log('🧾 Datos completos de login response:', response.data);
       const { token } = response.data;
 
-      if (token) {
-        console.log('🔑 Token de autenticación:', token);
-        // Guardar el token de forma segura
-        await authStorage.saveToken(token);
-        showSuccess('Éxito', 'Has iniciado sesión correctamente.');
+      if (!token) throw new Error('El servidor no envió un token válido.');
 
-        // 2️⃣ Obtener token push de Expo y registrarlo
-        const projectId = 'ad2be738-0a24-4c5a-a9b8-5dd205e5374c'; // reemplaza por tu projectId de Expo
-        const expoToken = await getExpoPushTokenAsync(projectId);
+      console.log('✅ Login exitoso, token recibido. token:', token);
 
-        if (expoToken) {
-          await registerPushToken(expoToken);
-          console.log('✅ Push token registrado:', expoToken);
-        } else {
-          console.log('⚠️ No se pudo obtener token Expo Push');
-        }
+      // Guardar token antes de navegar
+      await authStorage.saveToken(token);
 
-        // Usar router.replace para navegar al home
-        router.replace('/home');
-      } else {
-        throw new Error(
-          response.data.message ||
-            'No se recibió el token de autenticación del servidor.',
-        );
-      }
+      // Mostrar feedback y continuar
+      showSuccess('Éxito', 'Has iniciado sesión correctamente.');
+
+      // Registrar el push token de forma segura (en segundo plano)
+      registerPushTokenSafely();
+
+      // Redirigir al home
+      router.replace('/home');
     } catch (error) {
-      // Manejo de errores de API
       let errorMessage =
         'Ocurrió un error inesperado durante el inicio de sesión.';
+
       if (isAxiosError(error)) {
-        // Si es un error de Axios
         if (error.response) {
-          // Error del servidor
           errorMessage =
             error.response.data?.message ||
             'Credenciales inválidas. Por favor, verifica tus datos.';
         } else if (error.request) {
-          // La peticion se hizo pero no hubo respuesta
           errorMessage =
             'No se pudo conectar con el servidor. Revisa tu conexión a internet.';
         }
       } else if (error instanceof Error) {
         errorMessage = error.message;
       }
+
       showError('Error de inicio de sesión', errorMessage);
     } finally {
-      // Se ejecuta siempre
       setLoading(false);
     }
   };
