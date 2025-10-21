@@ -279,7 +279,12 @@ const CommunityMapScreen = () => {
 
   const goToStatsScreen = () => {
     setMenuVisible(false); // Cerrar el menú flotante
-    router.push('../stats'); // Asume que la ruta al componente es '/stats'
+    router.push('/stats'); // Asume que la ruta al componente es '/stats'
+  };
+
+  const goToMySightingsScreen = () => {
+    setMenuVisible(false); // Cerrar el menú flotante
+    router.push('/my-sightings'); // Asume que la ruta al componente es '/my-sightings'
   };
 
   return (
@@ -426,6 +431,18 @@ const CommunityMapScreen = () => {
         visible={menuVisible}
         onToggle={() => setMenuVisible((v) => !v)}
         actions={[
+          {
+            key: 'Mis Avistamientos',
+            label: 'Mis Avistamientos',
+            onPress: goToMySightingsScreen,
+            icon: (
+              <Ionicons
+                name="person-circle-outline"
+                size={22}
+                color={Colors.secondary}
+              />
+            ),
+          },
           // Botón para ir a Estadísticas
           {
             key: 'Estadísticas',
