@@ -71,16 +71,15 @@ export const createMedicalHistory = async (req, res, next) => {
 
     const newRecord = result.rows[0];
 
-    // TODO: corregir auditoria para corregir error: Cannot read properties of undefined (reading 'id')
     // Auditar Creacion
-    //await auditCreate(req, 'historial_medico', newRecord.id_historial_medico, {
-    //  id_animal: newRecord.id_animal,
-    //  fecha_evento: newRecord.fecha_evento,
-    //  tipo_evento: newRecord.tipo_evento,
-    //  diagnostico: newRecord.diagnostico,
-    //  detalles: newRecord.detalles,
-    //  nombre_veterinario: newRecord.nombre_veterinario
-    //});
+    await auditCreate(req, 'historial_medico', newRecord.id_historial_medico, {
+      id_animal: newRecord.id_animal,
+      fecha_evento: newRecord.fecha_evento,
+      tipo_evento: newRecord.tipo_evento,
+      diagnostico: newRecord.diagnostico,
+      detalles: newRecord.detalles,
+      nombre_veterinario: newRecord.nombre_veterinario
+    });
 
     await client.query('COMMIT');
 
@@ -175,15 +174,14 @@ export const updateMedicalHistory = async (req, res, next) => {
 
     const updatedRecord = result.rows[0];
 
-    // TODO: corregir auditoria para corregir error: cannot read properties of undefined (reading 'id')
     // Auditar Actualizacion
-    //await auditUpdate(req, 'historial_medico', historyId, oldValues, {
-    //  fecha_evento: updatedRecord.fecha_evento,
-    //  tipo_evento: updatedRecord.tipo_evento,
-    //  diagnostico: updatedRecord.diagnostico,
-    //  detalles: updatedRecord.detalles,
-    //  nombre_veterinario: updatedRecord.nombre_veterinario
-    //});
+    await auditUpdate(req, 'historial_medico', historyId, oldValues, {
+      fecha_evento: updatedRecord.fecha_evento,
+      tipo_evento: updatedRecord.tipo_evento,
+      diagnostico: updatedRecord.diagnostico,
+      detalles: updatedRecord.detalles,
+      nombre_veterinario: updatedRecord.nombre_veterinario
+    });
 
     await client.query('COMMIT');
 
@@ -228,9 +226,8 @@ export const deleteMedicalHistory = async (req, res, next) => {
 
     const result = await client.query(query, [historyId, animalId]);
 
-    // TODO: corregir auditoria para corregir error: cannot read properties of undefined (reading 'id')
     // Auditar Eliminacion
-    //await auditDelete(req, 'historial_medico', historyId, oldValues);
+    await auditDelete(req, 'historial_medico', historyId, oldValues);
 
     await client.query('COMMIT');
 
