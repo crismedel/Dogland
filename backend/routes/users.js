@@ -1,42 +1,56 @@
 import express from 'express';
 import { authenticateToken, authorizeRol } from '../middlewares/auth.js';
 import { validateSchema } from '../middlewares/validateSchema.js';
-import { validateParams } from '../middlewares/validateParams.js';
 import {
   createUserSchema,
   updateUserSchema,
-  paramsSchema,
+  getUserByIdSchema,
+  deleteUserSchema,
+  getAllUsersSchema,
   savePushTokenSchema
 } from '../schemas/user.js';
 import * as usersController from '../controllers/usersController.js';
 
 const router = express.Router();
 
-// GET /api/users - Listar todos los usuarios
+/** 
+ * GET /api/users - Listar todos los usuarios
+ * Requiere autenticacion y rol de Admin
+ */
 router.get(
   '/users',
   authenticateToken,
   authorizeRol(['Admin']),
+  validateSchema(getAllUsersSchema),
   usersController.listAllUsers
 );
 
-// GET /api/users/profile - Obtener datos del usuario logeado
+/** 
+ * GET /api/users/profile - Obtener datos del usuario logeado
+ * Requiere autenticacion
+ */
 router.get(
   '/users/profile',
   authenticateToken,
   usersController.getUserProfile
 );
 
-// GET /api/users/:id - Obtener usuario por ID
+/** 
+ * GET /api/users/:id - Obtener usuario por ID
+ * Requiere autenticacion y rol de Admin
+ */
 router.get(
   '/users/:id',
   authenticateToken,
   authorizeRol(['Admin']),
-  validateParams(paramsSchema),
+  validateSchema(getUserByIdSchema),
   usersController.getUserById
 );
 
-// POST /api/users - Crear usuario
+/** 
+ * POST /api/users - Crear usuario
+ * Requiere autenticacion y rol de Admin
+ */
 router.post(
   '/users',
   authenticateToken,
@@ -45,44 +59,58 @@ router.post(
   usersController.createUser
 );
 
-// PUT /api/users/:id - Actualizar usuario
+/** 
+ * PUT /api/users/:id - Actualizar usuario
+ * Requiere autenticacion y rol de Admin
+ */
 router.put(
   '/users/:id',
   authenticateToken,
   authorizeRol(['Admin']),
   validateSchema(updateUserSchema),
-  validateParams(paramsSchema),
   usersController.updateUser
 );
 
-// DELETE /api/users/:id - Borrar usuario
+/** 
+ * DELETE /api/users/:id - Borrar usuario
+ * Requiere autenticacion y rol de Admin
+ */
 router.delete(
   '/users/:id',
   authenticateToken,
   authorizeRol(['Admin']),
-  validateParams(paramsSchema),
+  validateSchema(deleteUserSchema),
   usersController.deleteUser
 );
 
-// PATCH /api/users/:id/deactivate - Desactivar usuario
+/** 
+ * PATCH /api/users/:id/deactivate - Desactivar usuario
+ * Requiere autenticacion y rol de Admin
+ */
 router.patch(
   '/users/:id/deactivate',
   authenticateToken,
   authorizeRol(['Admin']),
-  validateParams(paramsSchema),
+  validateSchema(getUserByIdSchema),
   usersController.deactivateUser
 );
 
-// PATCH /api/users/:id/activate - Activar usuario
+/** 
+ * PATCH /api/users/:id/activate - Activar usuario
+ * Requiere autenticacion y rol de Admin
+ */
 router.patch(
   '/users/:id/activate',
   authenticateToken,
   authorizeRol(['Admin']),
-  validateParams(paramsSchema),
+  validateSchema(getUserByIdSchema),
   usersController.activateUser
 );
 
-// POST /api/users/savePushToken - Guardar token push
+/** 
+ * POST /api/users/:id/push-token - Guardar token push
+ * Requiere autenticacion
+ */
 router.post(
   '/users/savePushToken',
   authenticateToken,

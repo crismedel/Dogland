@@ -53,7 +53,7 @@ export const getUserProfile = async (req, res, next) => {
 
 export const getUserById = async (req, res, next) => {
   try {
-    const { id } = req.validatedParams;
+    const { id } = req.params;
     const result = await pool.query(
       `
       SELECT u.id_usuario, u.nombre_usuario, u.apellido_paterno, u.apellido_materno,
@@ -94,7 +94,7 @@ export const createUser = async (req, res, next) => {
       id_ciudad,
       id_organizacion,
       id_rol,
-    } = req.validatedBody;
+    } = req.body;
     
     const result = await pool.query(
       `
@@ -135,7 +135,7 @@ export const createUser = async (req, res, next) => {
 
 export const updateUser = async (req, res, next) => {
   try {
-    const { id } = req.validatedParams;
+    const { id } = req.params;
     const {
       nombre_usuario,
       apellido_paterno,
@@ -146,7 +146,7 @@ export const updateUser = async (req, res, next) => {
       id_organizacion,
       id_rol,
       activo,
-    } = req.validatedBody;
+    } = req.body;
     
     // Usar helper para auditar
     const oldUser = await getOldValuesForAudit('usuario', 'id_usuario', id);
@@ -218,7 +218,7 @@ export const updateUser = async (req, res, next) => {
 };
 
 export const deleteUser = async (req, res, next) => {
-  const { id } = req.validatedParams;
+  const { id } = req.params;
   let client;
   
   try {
@@ -267,7 +267,7 @@ export const deleteUser = async (req, res, next) => {
 };
 
 export const deactivateUser = async (req, res, next) => {
-  const { id } = req.validatedParams;
+  const { id } = req.params;
   let client;
   
   try {
@@ -308,7 +308,7 @@ export const deactivateUser = async (req, res, next) => {
 };
 
 export const activateUser = async (req, res, next) => {
-  const { id } = req.validatedParams;
+  const { id } = req.params;
   let client;
   
   try {
@@ -349,7 +349,7 @@ export const activateUser = async (req, res, next) => {
 };
 
 export const savePushToken = async (req, res, next) => {
-  const { token, plataforma } = req.validatedBody;
+  const { token, plataforma } = req.body;
   const id = req.user.id;
   
   try {
