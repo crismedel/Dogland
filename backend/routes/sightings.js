@@ -1,16 +1,19 @@
 import express from 'express';
-import { getSightings, getSightingById, createSighting, updateSighting, deleteSighting, getSightingsByLocation, filterSightings, getEspecies, getEstadosSalud } from '../controllers/sightingsController.js';
+import { getSightings, getSightingById, createSighting, updateSighting, deleteSighting, getSightingsByLocation, filterSightings, getEspecies, getEstadosSalud, getMySightings } from '../controllers/sightingsController.js';
 import { authenticateToken} from '../middlewares/auth.js'; // Importa el middleware de autenticación
 
 const router = express.Router();
 
 // --- Rutas de lectura (GET) - De más específicas a más generales ---
-
 // Rutas con nombres específicos (no son dinámicas)
 router.get('/sightings/location', getSightingsByLocation);
 router.get('/sightings/filter', filterSightings);
 router.get('/especies', getEspecies); 
 router.get('/estados-salud', getEstadosSalud);
+
+
+// Esta debe ir antes de /sightings/:id para evitar conflictos,
+// pero como el endpoint es /sightings/me, la ponemos aquí.
 
 // Rutas con IDs dinámicos
 router.get('/sightings/:id', getSightingById);
@@ -18,10 +21,9 @@ router.get('/sightings/:id', getSightingById);
 // Rutas generales
 router.get('/sightings', getSightings);
 
-
+router.get('/sightings/me', authenticateToken, getMySightings);
 // --- Rutas de escritura protegidas por autenticación ---
-
-// Añade el middleware `authMiddleware` para proteger estas rutas
+// Añade el middleware `authenticateToken` para proteger estas rutas
 router.post('/sightings', authenticateToken, createSighting);
 router.put('/sightings/:id', authenticateToken, updateSighting);
 router.delete('/sightings/:id', authenticateToken, deleteSighting);
