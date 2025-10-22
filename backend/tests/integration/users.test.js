@@ -16,7 +16,7 @@ describe('Endpoints de manejo de Usuarios protegidos con JWT', () => {
     fecha_nacimiento: '2001-01-01',
     telefono: '912345678',
     password_hash: 'password123',
-    id_ciudad: 546,
+    id_ciudad: 200,
     id_organizacion: null,
     id_rol: 2,
   };
@@ -48,7 +48,7 @@ describe('Endpoints de manejo de Usuarios protegidos con JWT', () => {
         telefono: '912345678',
         email: 'admin@test.com',
         password_hash: '123456',
-        id_ciudad: 546,
+        id_ciudad: 200,
       });
     await pool.query("UPDATE usuario SET id_rol = 1 WHERE email = 'admin@test.com'");
 
@@ -64,7 +64,7 @@ describe('Endpoints de manejo de Usuarios protegidos con JWT', () => {
         telefono: '912345679',
         email: 'normal@test.com',
         password_hash: '123456',
-        id_ciudad: 546,
+        id_ciudad: 200,
       });
 
     // Generar JWTs

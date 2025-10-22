@@ -11,7 +11,7 @@ describe('Endpoints de manejo de Organizaciones', () => {
     telefono_organizacion: '+56912345678',
     email_organizacion: 'org@test.com',
     direccion: 'Calle Test 123',
-    id_ciudad: 546
+    id_ciudad: 200
   };
 
   const updateOrgTemplate = {
@@ -292,7 +292,7 @@ describe('Endpoints de manejo de Organizaciones', () => {
         .send({
           nombre_organizacion: 'Org Con Usuarios',
           email_organizacion: 'orgconusuarios@test.com',
-          id_ciudad: 546
+          id_ciudad: 200
         });
 
       const orgId = orgRes.body.data.id_organizacion;

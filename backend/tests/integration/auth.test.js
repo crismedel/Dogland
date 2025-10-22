@@ -18,7 +18,7 @@ describe('Endpoints de Autenticación', () => {
     telefono: '987654321',
     email: 'authtest@test.com',
     password_hash: 'testpass123',
-    id_ciudad: 546,
+    id_ciudad: 200,
   };
 
   // Funcion helper para limpiar datos del usuario de prueba

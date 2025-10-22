@@ -7,8 +7,11 @@ const envFile =
   process.env.NODE_ENV === 'production' ? '.env.production' :
   '.env';
 
-// Cargar variables de entorno
-dotenv.config({ path: path.resolve(process.cwd(), envFile) });
+// Cargar variables de entorno (override: true)
+dotenv.config({
+  path: path.resolve(process.cwd(), envFile),
+  override: process.env.NODE_ENV === 'test'
+});
 
 // Exportar las variables importantes de manera centralizada
 export const NODE_ENV = process.env.NODE_ENV || 'development';

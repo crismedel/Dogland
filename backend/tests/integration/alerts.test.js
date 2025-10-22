@@ -20,7 +20,7 @@ describe('Endpoints de Alertas', () => {
     telefono: '912345678',
     email: 'alerttest@test.com',
     password_hash: '123456',
-    id_ciudad: 546,
+    id_ciudad: 200,
   };
 
   beforeAll(async () => {
