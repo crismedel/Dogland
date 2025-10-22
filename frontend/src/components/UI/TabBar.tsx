@@ -169,8 +169,7 @@ const styles = StyleSheet.create({
 
   // En styles.container
   container: {
-    backgroundColor:
-      Platform.OS === 'ios' ? 'rgba(242, 226, 196, 0.96)' : Colors.background,
+    backgroundColor: Platform.OS === 'ios' ? '#D8C8A8' : '#D8C8A8',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -201,7 +200,7 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    height: 18,
+    height: TAB_HEIGHT,
     backgroundColor: 'rgba(255, 255, 255, 0.10)', // un pelín más suave
   },
 
@@ -266,7 +265,7 @@ const styles = StyleSheet.create({
   pillShadowBottom: {
     position: 'absolute',
     bottom: 0,
-    left: 6,
+    left: 8,
     right: 6,
     height: 10,
     borderBottomLeftRadius: 12,
@@ -329,20 +328,19 @@ const styles = StyleSheet.create({
   },
 
   labelBox: {
-    height: 16,
+    height: 18,
     justifyContent: 'center',
   },
   label: {
     fontSize: 12,
     color: Colors.secondary,
-    opacity: 0.85,
     textAlign: 'center',
     marginTop: 2,
     fontWeight: Platform.OS === 'android' ? '500' : '400',
     letterSpacing: 0.2,
   },
   labelActive: {
-    color: Colors.primary,
+    color: Colors.lightText,
     opacity: 1,
     fontWeight: fontWeightSemiBold,
   },

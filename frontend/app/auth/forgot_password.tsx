@@ -1,6 +1,6 @@
+import React, { useState } from 'react';
 import {
   View,
-  TextInput,
   TouchableOpacity,
   StyleSheet,
   Dimensions,
@@ -11,20 +11,50 @@ import {
 import { router } from 'expo-router';
 import { Colors } from '@/src/constants/colors';
 import {
-  fontWeightBold,
   fontWeightSemiBold,
   fontWeightMedium,
   AppText,
 } from '@/src/components/AppText';
+import DynamicForm, { FormField } from '@/src/components/UI/DynamicForm';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
 export default function Index() {
+  // 🔹 Estado para manejar los valores del formulario
+  const [formValues, setFormValues] = useState({
+    email: '',
+  });
+
+  // 🔹 Definición de los campos del formulario
+  const fields: FormField[] = [
+    {
+      name: 'email',
+      label: 'Correo',
+      placeholder: 'Ingresa tu correo',
+      keyboardType: 'email-address',
+      autoCapitalize: 'none',
+      icon: 'mail-outline',
+      type: 'email',
+    },
+  ];
+
+  // 🔹 Manejador de cambio de valor
+  const handleValueChange = (name: string, value: any) => {
+    setFormValues((prev) => ({ ...prev, [name]: value }));
+  };
+
+  // 🔹 Acción al enviar formulario
+  const handleSubmit = () => {
+    console.log('📩 Enviando código a:', formValues.email);
+    // Aquí puedes agregar la lógica real de envío (API, validación, etc.)
+  };
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
+      {/* Botón volver */}
       <TouchableOpacity
         style={{ position: 'absolute', top: 50, left: 20, zIndex: 1 }}
         activeOpacity={0.8}
@@ -38,36 +68,27 @@ export default function Index() {
 
       <View style={styles.container}>
         <View style={styles.formContainer}>
-          {/* Welcome Title */}
+          {/* Título */}
           <AppText style={styles.welcomeTitle}>
             Recuperación de Contraseña
           </AppText>
 
-          {/* Email Input */}
-          <View style={styles.inputContainer}>
-            <AppText style={styles.inputLabel}>Correo</AppText>
-            <TextInput
-              style={styles.textInput}
-              placeholder="Ingresa tu correo"
-              placeholderTextColor="#9CA3AF"
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-          </View>
+          {/* 🔹 Formulario dinámico */}
+          <DynamicForm
+            fields={fields}
+            onSubmit={handleSubmit}
+            buttonText="Enviar Código"
+            buttonIcon="send"
+            values={formValues}
+            onValueChange={handleValueChange}
+          />
 
-          {/* Login Button */}
-          <TouchableOpacity style={styles.forgotpswdButton} activeOpacity={0.8}>
-            <AppText style={styles.forgotpswdButtonText}>Envia Código</AppText>
-          </TouchableOpacity>
-
-          {/* Register Link */}
-          <TouchableOpacity style={styles.registerContainer}>
-            <AppText
-              style={styles.registerText}
-              onPress={() => router.push('/auth/register')}
-            >
-              Regístrate
-            </AppText>
+          {/* 🔹 Enlace a registro */}
+          <TouchableOpacity
+            style={styles.registerContainer}
+            onPress={() => router.push('/auth/register')}
+          >
+            <AppText style={styles.registerText}>Regístrate</AppText>
           </TouchableOpacity>
         </View>
       </View>
@@ -95,61 +116,12 @@ const styles = StyleSheet.create({
     marginBottom: 40,
     letterSpacing: 0.5,
   },
-  inputContainer: {
-    marginBottom: 20,
-  },
-  inputLabel: {
-    fontSize: 16,
-    fontWeight: fontWeightMedium,
-    color: '#374151',
-    marginBottom: 8,
-  },
-  textInput: {
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    borderRadius: 12,
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    fontSize: 16,
-    color: '#1F2937',
-    backgroundColor: '#F9FAFB',
-  },
-  forgotpswdButton: {
-    backgroundColor: Colors.background,
-    paddingVertical: 18,
-    borderRadius: 12,
-    marginTop: 20,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  forgotpswdButtonText: {
-    color: Colors.lightText,
-    fontSize: 18,
-    fontWeight: fontWeightSemiBold,
-    textAlign: 'center',
-    letterSpacing: 0.5,
-  },
-  forgotPasswordContainer: {
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  forgotPasswordText: {
-    color: '#6B7280',
-    fontSize: 14,
-    textDecorationLine: 'underline',
-  },
   registerContainer: {
     alignItems: 'center',
+    marginTop: 20,
   },
   registerText: {
-    color: Colors.background,
+    color: Colors.primary,
     fontSize: 16,
     fontWeight: fontWeightMedium,
     textDecorationLine: 'underline',

@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   Image,
 } from 'react-native';
+import * as Location from 'expo-location';
+import { useNotification } from '@/src/components/notifications/NotificationContext';
 import { useRouter } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
@@ -18,7 +20,6 @@ import CustomButton from '@/src/components/UI/CustomButton';
 import { Ionicons } from '@expo/vector-icons';
 import {
   fontWeightBold,
-  fontWeightSemiBold,
   fontWeightMedium,
   AppText,
 } from '@/src/components/AppText';
@@ -47,6 +48,7 @@ const MOCK_NIVELES_RIESGO = [
 ];
 
 export default function CreateAlertScreen() {
+  const { showError } = useNotification();
   const router = useRouter();
   const {
     control,
@@ -65,6 +67,10 @@ export default function CreateAlertScreen() {
   });
 
   const [pickerVisible, setPickerVisible] = useState(false);
+  const [location, setLocation] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
 
   const showDatePicker = () => setPickerVisible(true);
   const hideDatePicker = () => setPickerVisible(false);
@@ -75,6 +81,39 @@ export default function CreateAlertScreen() {
       shouldValidate: true,
     });
     hideDatePicker();
+  };
+
+  // Función para obtener ubicación actual
+  const obtenerUbicacionActual = async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        showError(
+          'Permiso denegado',
+          'No se pudo obtener permiso para acceder a la ubicación.',
+        );
+        return;
+      }
+      const loc = await Location.getCurrentPositionAsync({});
+      setLocation({
+        latitude: loc.coords.latitude,
+        longitude: loc.coords.longitude,
+      });
+      showError(
+        'Ubicación obtenida',
+        `Latitud: ${loc.coords.latitude.toFixed(
+          4,
+        )}, Longitud: ${loc.coords.longitude.toFixed(4)}`,
+      );
+    } catch (error) {
+      showError('Error', 'No se pudo obtener la ubicación.');
+      console.error('Error al obtener ubicación:', error);
+    }
+  };
+
+  // Función para limpiar ubicación
+  const limpiarUbicacion = () => {
+    setLocation(null);
   };
 
   const onSubmit = async (data: FormData) => {
@@ -91,9 +130,8 @@ export default function CreateAlertScreen() {
       fecha_expiracion: data.fechaExpiracion
         ? data.fechaExpiracion.toISOString()
         : null,
-      id_usuario: 1, // TODO: reemplazar por ID real del usuario autenticado
-      latitude: null, // TODO: integrar ubicación real
-      longitude: null,
+      latitude: location ? location.latitude : null,
+      longitude: location ? location.longitude : null,
       direccion: '',
     };
 
@@ -102,6 +140,7 @@ export default function CreateAlertScreen() {
       console.log('CreateAlertScreen: Alerta creada con éxito:', newAlert);
       alert('Alerta creada con éxito!');
       reset(); // limpia formulario
+      limpiarUbicacion();
       // router.back(); // o navegar a la lista de alertas
     } catch (error: any) {
       console.error('CreateAlertScreen: Error al crear alerta:', error);
@@ -290,7 +329,7 @@ export default function CreateAlertScreen() {
             render={({ field: { value } }) => (
               <>
                 <TouchableOpacity
-                  onPress={showDatePicker}
+                  onPress={() => setPickerVisible(true)}
                   style={styles.dateButton}
                 >
                   <AppText style={styles.dateButtonText}>
@@ -310,7 +349,7 @@ export default function CreateAlertScreen() {
 
           <TouchableOpacity
             style={styles.locationButton}
-            onPress={() => alert('Funcionalidad de ubicación deshabilitada')}
+            onPress={obtenerUbicacionActual}
           >
             <AppText style={styles.locationButtonText}>
               Obtener mi ubicación actual
@@ -318,12 +357,21 @@ export default function CreateAlertScreen() {
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.clearLocationButton}
-            onPress={() => alert('Funcionalidad de ubicación deshabilitada')}
+            onPress={limpiarUbicacion}
           >
             <AppText style={styles.clearLocationButtonText}>
               Limpiar ubicación
             </AppText>
           </TouchableOpacity>
+
+          {location && (
+            <View style={{ marginTop: 10 }}>
+              <AppText>
+                Latitud: {location.latitude.toFixed(6)}, Longitud:{' '}
+                {location.longitude.toFixed(6)}
+              </AppText>
+            </View>
+          )}
         </View>
 
         {/* Botón principal con CustomButton */}

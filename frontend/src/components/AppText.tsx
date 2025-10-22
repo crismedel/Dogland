@@ -13,7 +13,7 @@ export const fontWeightMedium = '600';
 
 export function AppText({ style, children, ...props }: AppTextProps) {
   return (
-    <Text style={[{ fontFamily: fonts.nunito }, style]} {...props}>
+    <Text style={[{ fontFamily: fonts.montserrat }, style]} {...props}>
       {children}
     </Text>
   );

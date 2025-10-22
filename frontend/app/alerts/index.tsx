@@ -148,7 +148,7 @@ const CommunityAlertsScreen = () => {
   // UI
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1 }}
+      style={{ flex: 1, backgroundColor: Colors.background }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       {/* Header sin “cuadrado blanco”. Forzamos transparente aquí por si el componente trae fondo por defecto. */}
@@ -308,7 +308,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 16,
     paddingTop: 8, // evita choques visuales con el header
-    color: Colors.background,
+    backgroundColor: Colors.background,
   },
 
   // Botón del header sin fondo blanco

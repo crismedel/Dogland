@@ -357,7 +357,7 @@ const styles = StyleSheet.create({
     marginTop: 15,
   },
   loginLinkText: {
-    color: Colors.background,
+    color: Colors.primary,
     fontSize: 16,
     fontWeight: fontWeightMedium,
     textDecorationLine: 'underline',

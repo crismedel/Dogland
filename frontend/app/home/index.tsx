@@ -14,7 +14,6 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import CustomButton from '../../src/components/UI/CustomButton';
 import { Colors } from '@/src/constants/colors';
@@ -118,9 +117,9 @@ export default function Index() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      <LinearGradient
-        colors={['#F2E2C4', '#F2E2C4']}
-        style={StyleSheet.absoluteFillObject}
+      <Image
+        source={require('../../assets/images/huellas.png')}
+        style={styles.imageWrapper}
       />
 
       {/* Badge de perfil */}
@@ -249,7 +248,17 @@ export default function Index() {
 /* ---- ESTILOS ---- */
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: { flex: 1, backgroundColor: Colors.background },
+  imageWrapper: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    opacity: 0.5,
+    width: '100%',
+    height: '100%',
+    resizeMode: 'repeat',
+  },
   topBar: { position: 'absolute', top: 50, left: 20, zIndex: 10 },
   profileBadge: {
     width: BADGE_SIZE,
@@ -292,7 +301,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginHorizontal: 16,
     padding: 16,
-    backgroundColor: 'rgba(255,255,255,0.5)',
+    backgroundColor: '#f4ecde',
     borderTopRightRadius: 70,
     borderBottomRightRadius: 70,
     borderTopLeftRadius: 20,
@@ -313,7 +322,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginHorizontal: 16,
     padding: 16,
-    backgroundColor: 'rgba(255,255,255,0.5)',
+    backgroundColor: '#f4ecde',
     borderTopLeftRadius: 70,
     borderBottomLeftRadius: 70,
     borderTopRightRadius: 20,
@@ -330,7 +339,7 @@ const styles = StyleSheet.create({
   },
   textBlock: { flex: 1, alignItems: 'center', marginHorizontal: 10 },
   questionText: {
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: fontWeightMedium,
     marginBottom: 12,
     color: '#000',
