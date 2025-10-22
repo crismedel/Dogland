@@ -3,7 +3,7 @@ import React from 'react';
 import { View, TouchableOpacity, Image, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import CustomHeader from '@/src/components/UI/CustomHeader';
-import Formulario from './component/formAgregarPerrito'; // 👈 Importamos el nuevo componente
+import FormAgregarPerrito from './component/formAgregarPerrito';
 
 const AgregarPerrito = () => {
   const router = useRouter();
@@ -23,7 +23,7 @@ const AgregarPerrito = () => {
       />
 
       {/* 👇 Aquí simplemente renderizamos el componente del formulario */}
-      <Formulario /> 
+      <FormAgregarPerrito /> 
     </View>
   );
 };
