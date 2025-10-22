@@ -24,6 +24,7 @@ import medicalHistoryRouter from './routes/medicalHistory.js';
 import statRoutes from './routes/stats.js';
 import infoCompAnimales from './routes/infoCompAnimales.js'; //info de animales completa (en teoria)
 import notificationsRoutes from './routes/notifications.js';
+import envioAnimalesRoutes from './routes/envioAnimales.js';
 
 const app = express();
 
@@ -56,6 +57,7 @@ app.use('/api', healthRouter);
 app.use('/api', medicalHistoryRouter);
 app.use('/api', infoCompAnimales);
 app.use('/api/notifications', notificationsRoutes);
+app.use('/api', envioAnimalesRoutes);
 
 // Middleware de manejo de errores general
 app.use(errorHandler);
