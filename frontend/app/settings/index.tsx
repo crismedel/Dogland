@@ -3,7 +3,7 @@ import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { useNotification } from '@/src/components/notifications/NotificationContext';
-import { authStorage } from '@/src/utils/authStorage';
+import { useAuth } from '@/src/contexts/AuthContext';
 import CustomHeader from '@/src/components/UI/CustomHeader';
 import CustomButton from '@/src/components/UI/CustomButton';
 import {
@@ -15,6 +15,7 @@ import {
 
 export default function SettingsScreen() {
   const { confirm, showSuccess } = useNotification();
+  const { logout } = useAuth();
 
   const handleLogout = () => {
     confirm({
@@ -25,8 +26,8 @@ export default function SettingsScreen() {
       destructive: true,
       onConfirm: async () => {
         try {
-          // Eliminar el token usando tu utilidad
-          await authStorage.removeToken();
+          // Usar el logout del AuthContext para limpiar todo
+          await logout();
 
           showSuccess('Sesión cerrada', 'Has cerrado sesión correctamente.');
 

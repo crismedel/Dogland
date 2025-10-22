@@ -15,8 +15,7 @@ import { useNotification } from '@/src/components/notifications/NotificationCont
 import { Raza, Especie, EstadoSalud } from '@/src/types/animals';
 import { createAnimal } from '@/src/api/animals';
 import { createAdoption } from '@/src/api/adoptions';
-import { authStorage } from '../../src/utils/authStorage';
-import { jwtDecode } from 'jwt-decode';
+import { useAuth } from '@/src/contexts/AuthContext';
 import FormSolicitud from './component/formSolucitud';
 import {
   fontWeightBold,
@@ -33,6 +32,7 @@ export default function CreateAdoptionScreen() {
   const [estadoSalud, setEstadoSalud] = useState<EstadoSalud[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { showError, showSuccess } = useNotification();
+  const { user } = useAuth();
 
   const [formValues, setFormValues] = useState({
     nombre_animal: '',
@@ -67,12 +67,8 @@ export default function CreateAdoptionScreen() {
   };
 
   // 🔹 Obtener ID del usuario autenticado
-  const getTokenID = async () => {
-    const token = await authStorage.getToken();
-    if (token) {
-      const decoded: any = jwtDecode(token);
-      return decoded.id;
-    }
+  const getTokenID = () => {
+    return user?.id;
   };
 
   // 🔹 Crear animal + adopción
@@ -80,6 +76,12 @@ export default function CreateAdoptionScreen() {
     const { nombre_animal, edad_animal, id_estado_salud, id_raza } = formValues;
     if (!nombre_animal || !edad_animal || !id_estado_salud || !id_raza) {
       showError('Completa todos los campos antes de continuar.');
+      return;
+    }
+
+    const userId = getTokenID();
+    if (!userId) {
+      showError('No se pudo obtener el ID de usuario. Por favor, inicia sesión nuevamente.');
       return;
     }
 
@@ -95,7 +97,6 @@ export default function CreateAdoptionScreen() {
 
       const responseAnimal = await createAnimal(newAnimal);
       const createdAnimalId = responseAnimal.data.id_animal;
-      const userId = await getTokenID();
 
       const newAdoption = { id_animal: createdAnimalId, id_usuario: userId };
       await createAdoption(newAdoption);

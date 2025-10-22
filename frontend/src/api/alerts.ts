@@ -1,5 +1,4 @@
 import apiClient from './client';
-import { authStorage } from '../utils/authStorage';
 import { Alert } from '../types/alert';
 
 // Define la interfaz para una alerta activa.

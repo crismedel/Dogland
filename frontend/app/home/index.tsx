@@ -18,7 +18,7 @@ import { router } from 'expo-router';
 import CustomButton from '../../src/components/UI/CustomButton';
 import { Colors } from '@/src/constants/colors';
 import { fetchUserProfile } from '@/src/api/users';
-import { authStorage } from '@/src/utils/authStorage';
+import { useAuth } from '@/src/contexts/AuthContext';
 import {
   fontWeightBold,
   fontWeightMedium,
@@ -35,6 +35,7 @@ export default function Index() {
   const [error, setError] = React.useState<string | null>(null);
   const [showPopup, setShowPopup] = React.useState<boolean>(false);
   const [popupMessage, setPopupMessage] = React.useState<string>('');
+  const { logout } = useAuth();
 
   // ✅ cargar únicamente el perfil
   const loadData = React.useCallback(async () => {
@@ -49,7 +50,7 @@ export default function Index() {
       setShowPopup(false);
     } catch (err: any) {
       if (err?.response?.status === 401) {
-        await authStorage.removeToken?.();
+        await logout();
         router.replace('/auth');
         return;
       }
@@ -58,7 +59,7 @@ export default function Index() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [logout]);
 
   React.useEffect(() => {
     loadData();

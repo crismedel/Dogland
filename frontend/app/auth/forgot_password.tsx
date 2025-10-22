@@ -1,25 +1,31 @@
+import apiClient from '@/src/api/client';
+import {
+  AppText,
+  fontWeightMedium,
+  fontWeightSemiBold,
+} from '@/src/components/AppText';
+import { useNotification } from '@/src/components/notifications/NotificationContext';
+import DynamicForm, { FormField } from '@/src/components/UI/DynamicForm';
+import { Colors } from '@/src/constants/colors';
+import { isAxiosError } from 'axios';
+import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
-  View,
-  TouchableOpacity,
-  StyleSheet,
   Dimensions,
+  Image,
   KeyboardAvoidingView,
   Platform,
-  Image,
+  StyleSheet,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { router } from 'expo-router';
-import { Colors } from '@/src/constants/colors';
-import {
-  fontWeightSemiBold,
-  fontWeightMedium,
-  AppText,
-} from '@/src/components/AppText';
-import DynamicForm, { FormField } from '@/src/components/UI/DynamicForm';
 
 const { width } = Dimensions.get('window');
 
 export default function Index() {
+  const [loading, setLoading] = useState(false);
+  const { showError, showSuccess, showWarning } = useNotification();
+
   // 🔹 Estado para manejar los valores del formulario
   const [formValues, setFormValues] = useState({
     email: '',
@@ -44,9 +50,50 @@ export default function Index() {
   };
 
   // 🔹 Acción al enviar formulario
-  const handleSubmit = () => {
-    console.log('📩 Enviando código a:', formValues.email);
-    // Aquí puedes agregar la lógica real de envío (API, validación, etc.)
+  const handleSubmit = async () => {
+    const { email } = formValues;
+
+    if (!email) {
+      showWarning('Atención', 'Por favor, ingresa tu correo electrónico.');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      await apiClient.post('/auth/forgot-password', { email });
+
+      showSuccess(
+        'Correo enviado',
+        'Si el correo existe, recibirás las instrucciones para restablecer tu contraseña.'
+      );
+
+      // Limpiar el formulario
+      setFormValues({ email: '' });
+
+      
+      // Redirigir a la pantalla de RESET PASSWORD (modo manual) después de 2 segundos
+      setTimeout(() => {
+        router.push('/auth/reset-password');
+      }, 2000);
+
+    } catch (error) {
+      let errorMessage = 'Ocurrió un error al enviar el correo.';
+
+      if (isAxiosError(error)) {
+        if (error.response) {
+          errorMessage = error.response.data?.error || error.response.data?.message || errorMessage;
+        } else if (error.request) {
+          errorMessage = 'No se pudo conectar con el servidor. Revisa tu conexión a internet.';
+        }
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+
+      showError('Error', errorMessage);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -81,6 +128,7 @@ export default function Index() {
             buttonIcon="send"
             values={formValues}
             onValueChange={handleValueChange}
+            loading={loading}
           />
 
           {/* 🔹 Enlace a registro */}

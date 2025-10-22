@@ -9,7 +9,7 @@ import {
   Image,
 } from 'react-native';
 import apiClient from '@/src/api/client';
-import { authStorage } from '@/src/utils/authStorage';
+import { useAuth } from '@/src/contexts/AuthContext';
 import { isAxiosError } from 'axios';
 import { router } from 'expo-router';
 import DynamicForm, { FormField } from '@/src/components/UI/DynamicForm';
@@ -54,6 +54,7 @@ const loginFields: FormField[] = [
 const Index: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const { showError, showSuccess, showWarning } = useNotification();
+  const { login } = useAuth();
 
   const [formValues, setFormValues] = useState({
     email: '',
@@ -123,8 +124,8 @@ const Index: React.FC = () => {
 
       console.log('✅ Login exitoso, token recibido. token:', token);
 
-      // Guardar token antes de navegar
-      await authStorage.saveToken(token);
+      // Guardar token en AuthContext (esto también lo guarda en SecureStore)
+      await login(token);
 
       // Mostrar feedback y continuar
       showSuccess('Éxito', 'Has iniciado sesión correctamente.');

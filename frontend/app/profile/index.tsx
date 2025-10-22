@@ -20,6 +20,7 @@ import {
   fontWeightMedium,
   AppText,
 } from '@/src/components/AppText';
+import { useAuth } from '@/src/contexts/AuthContext';
 
 const AVATAR = 'https://placehold.co/200x200/png?text=Avatar';
 
@@ -27,13 +28,25 @@ export default function ProfileScreen() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const { showInfo } = useNotification();
+  const { isAuthenticated } = useAuth();
 
   useEffect(() => {
+    // Si no está autenticado, no intentar cargar el perfil
+    if (!isAuthenticated) {
+      setLoading(false);
+      router.replace('/auth');
+      return;
+    }
+
     fetchUserProfile()
       .then((userData) => setUser(userData))
-      .catch((err) => console.error('Error cargando usuario:', err))
+      .catch((err) => {
+        console.error('Error cargando usuario:', err);
+        // Si falla la carga (ej: token inválido), redirigir a auth
+        router.replace('/auth');
+      })
       .finally(() => setLoading(false));
-  }, []);
+  }, [isAuthenticated]);
 
   const onEditProfile = () => console.log('Edit profile');
   const onOpenSettings = () => router.push('/settings');
