@@ -4,10 +4,18 @@ export const createFullAnimal = async (req, res, next) => {
   const client = await pool.connect();
   try {
     const {
-      nombre_animal, edad_animal, size, id_raza, id_estado_salud,
-      descripcion_adopcion, foto_url, historial_medico,
+      nombre_animal,
+      edad_animal,
+      size,
+      id_raza,
+      id_estado_salud,
+      descripcion_adopcion,
+      foto_url,
+      historial_medico,
     } = req.body;
     
+    // Asumimos que el ID del usuario viene del token (middleware de autenticación)
+    // Tus otros controladores usan req.user.id
     const id_usuario_rescatista = req.user.id; 
 
     await client.query('BEGIN');
@@ -36,7 +44,7 @@ export const createFullAnimal = async (req, res, next) => {
       await client.query(historialQuery, [newAnimalId, historial_medico.diagnostico, historial_medico.tratamiento, historial_medico.fecha_examen]);
     }
 
-    // 4. Insertar en 'foto'
+    // 4. Insertar en 'foto' (basado en tu MER)
     if (foto_url) {
       const fotoQuery = `INSERT INTO foto (id_animal, url) VALUES ($1, $2);`;
       await client.query(fotoQuery, [newAnimalId, foto_url]);

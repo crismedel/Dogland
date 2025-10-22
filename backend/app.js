@@ -24,8 +24,11 @@ import medicalHistoryRouter from './routes/medicalHistory.js';
 import statRoutes from './routes/stats.js';
 import infoCompAnimales from './routes/infoCompAnimales.js'; //info de animales completa (en teoria)
 import notificationsRoutes from './routes/notifications.js';
-import envioAnimalesRoutes from './routes/envioAnimales.js';
-
+//-------------------------------------------------------------------------------
+import envioAnimalesRoutes from './routes/animal_form.js';
+import racesFormRouter from './routes/races_form.js'; // archivo para razas pagina adoptar
+import healthStatesFormRouter from './routes/healthStates_form.js'; // pagina adoptar
+//--------------------------------------------------------------------------------
 const app = express();
 
 // Configuraciones base
@@ -57,7 +60,13 @@ app.use('/api', healthRouter);
 app.use('/api', medicalHistoryRouter);
 app.use('/api', infoCompAnimales);
 app.use('/api/notifications', notificationsRoutes);
+
+//---------------NO TOCAR----------------------------
 app.use('/api', envioAnimalesRoutes);
+app.use('/api', racesFormRouter); 
+app.use('/api', healthStatesFormRouter); 
+//-----------------------------------------------
+
 
 // Middleware de manejo de errores general
 app.use(errorHandler);
