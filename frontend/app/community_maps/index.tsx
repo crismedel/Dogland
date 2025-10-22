@@ -7,7 +7,7 @@ import {
   ActivityIndicator,
   Image,
 } from 'react-native';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Marker, PROVIDER_GOOGLE, Heatmap } from 'react-native-maps'; 
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -44,6 +44,13 @@ interface CurrentFilters {
   zona?: string;
 }
 
+// Interfaz para los datos del Mapa de Calor
+interface HeatmapPoint {
+    latitude: number;
+    longitude: number;
+    weight: number; 
+}
+
 const CommunityMapScreen = () => {
   const router = useRouter();
   const mapRef = useRef<MapView>(null);
@@ -72,9 +79,13 @@ const CommunityMapScreen = () => {
   const [showCriticalReports, setShowCriticalReports] = useState(false);
   const [criticalReports, setCriticalReports] = useState<Reporte[]>([]);
   const [criticalLoading, setCriticalLoading] = useState(false);
-  //Usamos useRef para el conteo y evitar el re-renderizado
+  
   const previousCriticalCount = useRef(0);
   const [criticalCountForBadge, setCriticalCountForBadge] = useState(0);
+  const [showHeatmap, setShowHeatmap] = useState(false);
+  const [heatmapData, setHeatmapData] = useState<HeatmapPoint[]>([]);
+  const [heatmapLoading, setHeatmapLoading] = useState(false);
+
 
   useEffect(() => {
     const hasFilters =
@@ -160,6 +171,28 @@ const CommunityMapScreen = () => {
     }
   }, []);
 
+  const fetchHeatmapData = useCallback(async () => {
+    setHeatmapLoading(true);
+    try {
+        const response = await apiClient.get<{ data: any[] }>('/stats/heatmap-data'); 
+        const transformedData: HeatmapPoint[] = response.data.data.map(item => ({
+            latitude: item.latitude,
+            longitude: item.longitude,
+            weight: item.id_estado_salud === 3 ? 3.0 : // Peso alto (Crítico)
+                    item.id_estado_salud === 2 ? 1.5 : // Peso medio (Herido)
+                    0.5, // Peso bajo (Otros)
+        })).filter(point => point.latitude && point.longitude);
+
+        setHeatmapData(transformedData);
+
+    } catch (error) {
+        console.error('Error fetching heatmap data:', error);
+    } finally {
+        setHeatmapLoading(false);
+    }
+  }, []);
+
+
   const toggleCriticalView = async () => {
     const newState = !showCriticalReports;
     setShowCriticalReports(newState);
@@ -217,6 +250,7 @@ const CommunityMapScreen = () => {
     setShowCriticalReports(false);
   };
 
+  // EFECTO DE POLLING (Mantiene el auto-refresco de críticos)
   useEffect(() => {
     if (showCriticalReports || hasActiveFilters) {
       return;
@@ -233,7 +267,6 @@ const CommunityMapScreen = () => {
           (r: Reporte) => r.latitude && r.longitude,
         );
 
-        // Notificar si hay nuevos reportes críticos
         const newCount = newReports.length;
         const currentCount = previousCriticalCount.current;
         if (newCount > currentCount) {
@@ -245,7 +278,6 @@ const CommunityMapScreen = () => {
           );
         }
 
-        // Actualizar el estado para la insignia y la referencia para el próximo chequeo
         setCriticalCountForBadge(newCount);
         previousCriticalCount.current = newCount;
         setCriticalReports(newReports);
@@ -257,35 +289,61 @@ const CommunityMapScreen = () => {
     return () => clearInterval(intervalId);
   }, [showCriticalReports, hasActiveFilters, showSuccess]);
 
-  // Se mantiene este useEffect para la carga inicial de reportes generales
+  useEffect(() => {
+    const initializeData = async () => {
+        try {
+            await Promise.all([
+                obtenerUbicacionActual(),
+                obtenerReportes(currentFilters),
+                fetchCriticalReports(),
+                fetchHeatmapData(), // Carga de datos de calor en paralelo
+            ]);
+        } catch (error) {
+            console.error('Error durante la inicialización del mapa:', error);
+        }
+    };
+    
+    // Solo se llama si no hay filtros activos y no estamos en modo crítico
+    if (!showCriticalReports && !hasActiveFilters) {
+      initializeData();
+    }
+
+  }, [obtenerUbicacionActual, obtenerReportes, fetchCriticalReports, fetchHeatmapData, showCriticalReports, hasActiveFilters]);
+
+  // Se mantiene este useEffect para la recarga de reportes si cambian los filtros
   useEffect(() => {
     if (!showCriticalReports) {
       obtenerReportes(currentFilters);
     }
   }, [currentFilters, obtenerReportes, showCriticalReports]);
 
-  // Se mantiene este useEffect para la ubicación y la carga inicial de críticos
-  useEffect(() => {
-    obtenerUbicacionActual();
-    fetchCriticalReports();
-  }, [obtenerUbicacionActual, fetchCriticalReports]);
 
   const reportsToRender = showCriticalReports ? criticalReports : reportes;
   const currentLoadingState =
-    loading || (showCriticalReports && criticalLoading);
+    loading || (showCriticalReports && criticalLoading) || heatmapLoading; // Incluir carga del heatmap
   const shouldHideMap =
     currentLoadingState ||
     (hasSearchedWithFilters && reportsToRender.length === 0);
 
   const goToStatsScreen = () => {
-    setMenuVisible(false); // Cerrar el menú flotante
-    router.push('/stats'); // Asume que la ruta al componente es '/stats'
+    setMenuVisible(false);
+    router.push('/stats');
   };
 
   const goToMySightingsScreen = () => {
-    setMenuVisible(false); // Cerrar el menú flotante
-    router.push('/my-sightings'); // Asume que la ruta al componente es '/my-sightings'
+    setMenuVisible(false);
+    router.push('/my-sightings');
   };
+  
+  // 🚨 NUEVA FUNCIÓN DE TOGGLE para el mapa de calor
+  const toggleHeatmap = () => {
+    const newState = !showHeatmap;
+    setShowHeatmap(newState);
+    if (newState && heatmapData.length === 0 && !heatmapLoading) {
+        fetchHeatmapData();
+    }
+  };
+
 
   return (
     <View style={styles.container}>
@@ -360,6 +418,27 @@ const CommunityMapScreen = () => {
           </View>
         )}
       </TouchableOpacity>
+      
+      {/*BOTÓN: Alternar Mapa de Calor */}
+      <TouchableOpacity
+        style={[
+            styles.mapHeatmapButton, 
+            showHeatmap && styles.mapHeatmapButtonActive
+        ]}
+        onPress={toggleHeatmap}
+        activeOpacity={0.8}
+        disabled={heatmapLoading}
+      >
+        {heatmapLoading ? (
+            <ActivityIndicator size="small" color={Colors.lightText} />
+        ) : (
+            <Ionicons 
+                name="flame-outline" 
+                size={24} 
+                color={showHeatmap ? Colors.lightText : Colors.danger} 
+            />
+        )}
+      </TouchableOpacity>
 
       {currentLoadingState && (
         <View style={styles.loadingContainer}>
@@ -367,7 +446,7 @@ const CommunityMapScreen = () => {
           <AppText style={styles.loadingText}>
             {showCriticalReports
               ? 'Buscando emergencias...'
-              : 'Buscando avistamientos...'}
+              : 'Cargando mapa...'}
           </AppText>
         </View>
       )}
@@ -402,6 +481,20 @@ const CommunityMapScreen = () => {
         region={mapRegion}
         onPress={() => setSelectedSighting(null)}
       >
+        {showHeatmap && heatmapData.length > 0 && (
+            <Heatmap
+              points={heatmapData}
+              radius={50} // Aumentado para visibilidad
+              opacity={0.9} // Máxima opacidad
+              gradient={{
+                  // Gradiente que va de transparente a amarillo a rojo intenso
+                  colors: ['rgba(0, 0, 0, 0)', 'rgba(255, 255, 0, 0.6)', Colors.danger], 
+                  startPoints: [0.01, 0.4, 0.8], 
+                  colorMapSize: 256,
+              }}
+            />
+        )}
+        
         {location && (
           <Marker
             coordinate={location}
@@ -410,7 +503,7 @@ const CommunityMapScreen = () => {
           />
         )}
 
-        {reportsToRender.map((r) => (
+        {!showHeatmap && reportsToRender.map((r) => (
           <ReporteMarker
             key={r.id_avistamiento}
             reporte={r}
@@ -625,6 +718,30 @@ const styles = StyleSheet.create({
     color: Colors.lightText,
     fontWeight: fontWeightMedium,
     fontSize: 16,
+  },
+
+  // Estilos para el botón del mapa de calor
+  mapHeatmapButton: {
+    position: 'absolute',
+    top: 100, 
+    left: 80, 
+    backgroundColor: Colors.lightText || 'white',
+    borderRadius: 30,
+    padding: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+    zIndex: 10,
+    borderWidth: 2,
+    borderColor: Colors.accent || 'blue',
+  },
+  mapHeatmapButtonActive: {
+    backgroundColor: Colors.danger || 'red',
+    borderColor: Colors.danger || 'red',
+    shadowColor: Colors.danger || 'red',
+    shadowOpacity: 0.5,
   },
 });
 
