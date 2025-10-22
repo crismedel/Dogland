@@ -35,8 +35,8 @@ const compileTemplate = (templateName, data) => {
  */
 export const sendPasswordResetEmail = async (user, token) => {
     // Deep link que abrira la aplicacion movil en la pantalla correcta
-    // 'myapp' es el 'scheme' configurado en app.json de Expo
-    const resetLink = `myapp://reset-password?token=${token}`; 
+    // 'Dogland' es el 'scheme' configurado en app.json de Expo
+    const resetLink = `Dogland://reset-password?token=${token}`; 
 
     const htmlContent = compileTemplate('passwordReset', {
         name: user.nombre_usuario || 'usuario',
