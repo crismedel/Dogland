@@ -1,20 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import { AppText, fontWeightBold } from '@/src/components/AppText';
+import { Picker } from '@react-native-picker/picker';
+import React, { useEffect, useState } from 'react';
 import {
-  View,
-  TextInput,
-  TouchableOpacity,
+  ActivityIndicator,
+  Alert,
   ScrollView,
   StyleSheet,
-  Alert,
-  ActivityIndicator,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
-import { fontWeightBold, AppText } from '@/src/components/AppText';
 
 // 👇 Importamos desde los archivos con los nuevos nombres
-import { fetchRaces } from '@/src/api/razaAnimalesAdop';
-import { fetchHealthStates } from '@/src/api/historialMedicoAdopt';
 import { createFullAnimal } from '@/src/api/envioAnimalesAdop';
+import { fetchHealthStates } from '@/src/api/historialMedicoAdopt';
+import { fetchRaces } from '@/src/api/razaAnimalesAdop';
 
 const initialState = {
   nombre_animal: '',
@@ -101,7 +101,92 @@ const FormAgregarPerrito = () => {
   // El JSX y los estilos se mantienen exactamente igual
   return (
     <ScrollView contentContainerStyle={styles.scroll}>
-       {/* ... Tu JSX del formulario (no necesita cambios) ... */}
+      <View style={styles.card}>
+      <AppText style={styles.sectionTitle}>Información General</AppText>
+
+      <TextInput
+        style={styles.input}
+        placeholder="Nombre del animal *"
+        value={form.nombre_animal}
+        onChangeText={(text) => handleChange('nombre_animal', text)}
+      />
+
+      <TextInput
+        style={styles.input}
+        placeholder="Edad (meses)"
+        keyboardType="numeric"
+        value={form.edad_animal}
+        onChangeText={(text) => handleChange('edad_animal', text)}
+      />
+
+      {/* Picker de raza */}
+      <View style={styles.pickerContainer}>
+        <Picker
+          selectedValue={form.id_raza}
+          onValueChange={(value) => handleChange('id_raza', value)}
+        >
+          <Picker.Item label="Selecciona raza *" value="" />
+          {razas.map((raza) => (
+            <Picker.Item key={raza.id_raza} label={raza.nombre_raza} value={raza.id_raza} />
+          ))}
+        </Picker>
+      </View>
+        
+      {/* Picker de estado de salud */}
+      <View style={styles.pickerContainer}>
+        <Picker
+          selectedValue={form.id_estado_salud}
+          onValueChange={(value) => handleChange('id_estado_salud', value)}
+        >
+          <Picker.Item label="Selecciona estado de salud *" value="" />
+          {estadosSalud.map((estado) => (
+            <Picker.Item key={estado.id_estado_salud} label={estado.nombre_estado} value={estado.id_estado_salud} />
+          ))}
+        </Picker>
+      </View>
+        
+      <TextInput
+        style={styles.textArea}
+        placeholder="Descripción de adopción"
+        multiline
+        value={form.descripcion_adopcion}
+        onChangeText={(text) => handleChange('descripcion_adopcion', text)}
+      />
+
+      <TextInput
+        style={styles.input}
+        placeholder="URL de la foto"
+        value={form.foto_url}
+        onChangeText={(text) => handleChange('foto_url', text)}
+      />
+
+      <AppText style={styles.sectionTitle}>Historial Médico</AppText>
+        
+      <TextInput
+        style={styles.input}
+        placeholder="Diagnóstico"
+        value={form.historial_medico.diagnostico}
+        onChangeText={(text) => handleChange('historial_medico.diagnostico', text)}
+      />
+
+      <TextInput
+        style={styles.input}
+        placeholder="Tratamiento"
+        value={form.historial_medico.tratamiento}
+        onChangeText={(text) => handleChange('historial_medico.tratamiento', text)}
+      />
+
+      <TouchableOpacity
+        style={[styles.button, loading && styles.buttonDisabled]}
+        onPress={handleSubmit}
+        disabled={loading}
+      >
+        <AppText style={styles.buttonText}>
+          {loading ? 'Guardando...' : 'Guardar'}
+        </AppText>
+      </TouchableOpacity>
+    </View>
+        
     </ScrollView>
   );
 };

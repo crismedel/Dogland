@@ -1,25 +1,24 @@
-import React, { useState, useEffect } from 'react';
 import {
-  View,
-  FlatList,
-  StyleSheet,
-  ActivityIndicator,
-  TouchableOpacity,
-  Image,
-  Dimensions,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import AnimalCard from './component/card';
-import FiltroCan from './component/filtroCan';
+  AppText,
+  fontWeightBold,
+  fontWeightSemiBold
+} from '@/src/components/AppText';
 import CustomHeader from '@/src/components/UI/CustomHeader';
 import { Colors } from '@/src/constants/colors';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
 import {
-  fontWeightBold,
-  fontWeightSemiBold,
-  fontWeightMedium,
-  AppText,
-} from '@/src/components/AppText';
+  ActivityIndicator,
+  Dimensions,
+  FlatList,
+  Image,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import AnimalCard from './component/card';
+import FiltroCan from './component/filtroCan';
 
 const { width } = Dimensions.get('window');
 const SPACING = 10;

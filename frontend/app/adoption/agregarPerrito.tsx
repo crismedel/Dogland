@@ -1,8 +1,8 @@
 // app/adoption/agregarPerrito.tsx
-import React from 'react';
-import { View, TouchableOpacity, Image, StyleSheet } from 'react-native';
-import { useRouter } from 'expo-router';
 import CustomHeader from '@/src/components/UI/CustomHeader';
+import { useRouter } from 'expo-router';
+import React from 'react';
+import { Image, StyleSheet, TouchableOpacity, View } from 'react-native';
 import FormAgregarPerrito from './component/formAgregarPerrito';
 
 const AgregarPerrito = () => {
