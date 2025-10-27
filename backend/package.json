@@ -5,7 +5,17 @@
   "main": "index.js",
   "scripts": {
     "test": "NODE_ENV=test jest",
-    "dev": "nodemon index.js"
+    "dev": "nodemon index.js",
+
+    "dev:local": "USE_LOCAL_DB=true nodemon index.js",
+    "dev:remote": "nodemon index.js",
+
+    "docker:up": "docker compose --profile dev --profile test up -d",
+    "docker:down": "docker compose --profile dev --profile test down",
+    "docker:restart": "docker compose --profile dev --profile test down -v && docker compose --profile dev --profile test up -d",
+    "docker:logs": "docker compose logs -f",
+
+    "check:env": "node scripts/check-env.js"
   },
   "keywords": [],
   "author": "",
