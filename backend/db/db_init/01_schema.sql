@@ -82,6 +82,19 @@ BEGIN
 END;
 $$;
 
+--
+-- Name: update_updated_at_column(); Type: FUNCTION
+--
+
+CREATE OR REPLACE FUNCTION dogland.update_updated_at_column() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+   NEW.updated_at = NOW();
+   RETURN NEW;
+END;
+$$;
+
 SET default_tablespace = '';
 SET default_table_access_method = heap;
 
@@ -771,7 +784,7 @@ CREATE TRIGGER trg_dispositivo_update
 CREATE TRIGGER trg_google_accounts_update
     BEFORE UPDATE ON dogland.google_accounts
     FOR EACH ROW
-    EXECUTE FUNCTION dogland.update_fecha_actualizacion_column();
+    EXECUTE FUNCTION dogland.update_updated_at_column();
 
 --
 -- SEQUENCE VALUES (will be set by 02_seed.sql after data insertion)
