@@ -18,6 +18,8 @@ import { Colors } from '@/src/constants/colors';
 import CustomHeader from '@/src/components/UI/CustomHeader';
 import CustomButton from '@/src/components/UI/CustomButton';
 import { Ionicons } from '@expo/vector-icons';
+import { useRefresh } from '@/src/contexts/RefreshContext';
+import { REFRESH_KEYS } from '@/src/constants/refreshKeys';
 import {
   fontWeightBold,
   fontWeightMedium,
@@ -48,8 +50,9 @@ const MOCK_NIVELES_RIESGO = [
 ];
 
 export default function CreateAlertScreen() {
-  const { showError } = useNotification();
+  const { showError, showSuccess } = useNotification();
   const router = useRouter();
+  const { triggerRefresh } = useRefresh(); // 🎯 Obtener función de refresh
   const {
     control,
     handleSubmit,
@@ -99,7 +102,7 @@ export default function CreateAlertScreen() {
         latitude: loc.coords.latitude,
         longitude: loc.coords.longitude,
       });
-      showError(
+      showSuccess(
         'Ubicación obtenida',
         `Latitud: ${loc.coords.latitude.toFixed(
           4,
@@ -118,7 +121,7 @@ export default function CreateAlertScreen() {
 
   const onSubmit = async (data: FormData) => {
     if (!data.tipoAlerta || !data.nivelRiesgo) {
-      alert('Debe seleccionar tipo de alerta y nivel de riesgo');
+      showError('Error', 'Debe seleccionar tipo de alerta y nivel de riesgo');
       return;
     }
 
@@ -138,13 +141,21 @@ export default function CreateAlertScreen() {
     try {
       const newAlert = await createAlert(payload);
       console.log('CreateAlertScreen: Alerta creada con éxito:', newAlert);
-      alert('Alerta creada con éxito!');
+      showSuccess('Éxito', 'Alerta creada con éxito!');
+
+      // 🎯 Disparar refresh para actualizar la lista de alertas
+      triggerRefresh(REFRESH_KEYS.ALERTS);
+
       reset(); // limpia formulario
       limpiarUbicacion();
-      // router.back(); // o navegar a la lista de alertas
+
+      setTimeout(() => {
+        router.back();
+      }, 1500);
     } catch (error: any) {
       console.error('CreateAlertScreen: Error al crear alerta:', error);
-      alert(
+      showError(
+        'Error',
         `Error al crear alerta: ${
           error?.response?.data?.error || 'Inténtalo de nuevo.'
         }`,

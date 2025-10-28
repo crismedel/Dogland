@@ -1,7 +1,7 @@
 import { useNotification } from '@/src/components/notifications/NotificationContext';
 import { Colors } from '@/src/constants/colors';
 import { router } from 'expo-router';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -14,6 +14,8 @@ import { fetchUserProfile } from '../../src/api/users';
 import CustomButton from '../../src/components/UI/CustomButton';
 import CustomHeader from '../../src/components/UI/CustomHeader';
 import { User } from '../../src/types/user';
+import { useAutoRefresh } from '@/src/utils/useAutoRefresh';
+import { REFRESH_KEYS } from '@/src/constants/refreshKeys';
 import {
   fontWeightBold,
   fontWeightSemiBold,
@@ -30,25 +32,35 @@ export default function ProfileScreen() {
   const { showInfo } = useNotification();
   const { isAuthenticated } = useAuth();
 
-  useEffect(() => {
-    // Si no está autenticado, no intentar cargar el perfil
+  // ✅ Usar useCallback para evitar que la función cambie en cada render
+  const loadUserData = useCallback(async () => {
     if (!isAuthenticated) {
       setLoading(false);
       router.replace('/auth');
       return;
     }
 
-    fetchUserProfile()
-      .then((userData) => setUser(userData))
-      .catch((err) => {
-        console.error('Error cargando usuario:', err);
-        // Si falla la carga (ej: token inválido), redirigir a auth
-        router.replace('/auth');
-      })
-      .finally(() => setLoading(false));
+    try {
+      setLoading(true);
+      const userData = await fetchUserProfile();
+      setUser(userData);
+    } catch (err) {
+      console.error('Error cargando usuario:', err);
+      router.replace('/auth');
+    } finally {
+      setLoading(false);
+    }
   }, [isAuthenticated]);
 
-  const onEditProfile = () => console.log('Edit profile');
+  // ✅ Solo usar useAutoRefresh (eliminar el useEffect duplicado)
+  useAutoRefresh({
+    key: REFRESH_KEYS.USER,
+    onRefresh: loadUserData,
+    refreshOnFocus: true,
+    refreshOnMount: true,
+  });
+
+  const onEditProfile = () => router.push('/profile/edit-form');
   const onOpenSettings = () => router.push('/settings');
   const onEditPhoto = () => console.log('Edit photo');
 
@@ -118,12 +130,7 @@ export default function ProfileScreen() {
         <AppText style={styles.errorText}>No se pudo cargar el perfil</AppText>
         <CustomButton
           title="Reintentar"
-          onPress={() => {
-            setLoading(true);
-            fetchUserProfile()
-              .then((userData) => setUser(userData))
-              .finally(() => setLoading(false));
-          }}
+          onPress={loadUserData}
           variant="primary"
           style={{ marginTop: 24 }}
         />

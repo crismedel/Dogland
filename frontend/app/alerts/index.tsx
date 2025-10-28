@@ -15,6 +15,8 @@ import { Alert, FilterOptions } from '../../src/types/alert';
 import AlertCard from '../../src/components/alerts/AlertCard';
 import FilterModal from '../../src/components/alerts/FilterModal';
 import { fetchAlerts } from '../../src/api/alerts';
+import { useAutoRefresh } from '@/src/utils/useAutoRefresh';
+import { REFRESH_KEYS } from '@/src/constants/refreshKeys';
 
 import { Ionicons } from '@expo/vector-icons';
 import FloatingSpeedDial from '../../src/components/UI/FloatingMenu';
@@ -115,11 +117,12 @@ const CommunityAlertsScreen = () => {
     }
   };
 
-  // Fetch inicial
-  useEffect(() => {
-    setLoading(true);
-    loadAlerts();
-  }, []);
+  useAutoRefresh({
+    key: REFRESH_KEYS.ALERTS,
+    onRefresh: loadAlerts,
+    refreshOnFocus: true,
+    refreshOnMount: true,
+  });
 
   // Aplicar filtros cuando cambien
   useEffect(() => {

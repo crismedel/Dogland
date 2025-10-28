@@ -9,6 +9,8 @@ import { useRouter } from 'expo-router';
 import { Alert, alertStyles, riskStyles } from '../../types/alert';
 import { deleteAlert } from '../../api/alerts';
 import { useNotification } from '@/src/components/notifications/NotificationContext';
+import { useRefresh } from '@/src/contexts/RefreshContext';
+import { REFRESH_KEYS } from '@/src/constants/refreshKeys';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/src/constants/colors';
 import {
@@ -17,6 +19,7 @@ import {
   fontWeightMedium,
   AppText,
 } from '@/src/components/AppText';
+
 interface AlertCardProps {
   alert: Alert;
   onDeleteSuccess?: (id: number) => void;
@@ -25,6 +28,7 @@ interface AlertCardProps {
 const AlertCard: React.FC<AlertCardProps> = ({ alert, onDeleteSuccess }) => {
   const router = useRouter();
   const { confirm, showSuccess, showError } = useNotification();
+  const { triggerRefresh } = useRefresh();
   const { card, badge } = alertStyles[alert.tipo];
   const riskStyle = riskStyles[alert.nivel_riesgo];
 
@@ -61,6 +65,10 @@ const AlertCard: React.FC<AlertCardProps> = ({ alert, onDeleteSuccess }) => {
           console.log('Eliminando alerta ID:', alert.id_alerta);
           await deleteAlert(alert.id_alerta);
           showSuccess('Éxito', 'Alerta eliminada correctamente');
+
+          triggerRefresh(REFRESH_KEYS.ALERTS);
+
+          // Callback opcional para actualización local inmediata
           if (onDeleteSuccess) onDeleteSuccess(alert.id_alerta);
         } catch (e: any) {
           console.error('Error al eliminar alerta:', e);

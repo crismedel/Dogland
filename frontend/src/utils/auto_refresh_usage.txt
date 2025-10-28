@@ -1,0 +1,91 @@
+TÍTULO: Guía de uso - Sistema de Auto Refresh (RefreshContext + useAutoRefresh)
+
+RESUMEN
+- Sistema Pub/Sub para sincronizar datos entre pantallas sin pasar props.
+- Dispara eventos con triggerRefresh(KEY) y escucha cambios con useAutoRefresh({ key: KEY, onRefresh }).
+- Usa constantes REFRESH_KEYS para evitar errores de strings.
+
+INSTALACIÓN
+1) Envuelve tu app con el RefreshProvider:
+   // App.tsx o _layout.tsx
+   import { RefreshProvider } from '@/src/contexts/RefreshContext';
+   export default function Root() {
+     return (
+       <RefreshProvider>
+         {/* navegación y pantallas */}
+       </RefreshProvider>
+     );
+   }
+
+2) Define constantes de keys:
+   // src/constants/refreshKeys.ts
+   export const REFRESH_KEYS = {
+     USER: 'user',
+     ITEMS: 'items',
+   } as const;
+
+CÓMO DISPARAR REFRESH (WRITE paths: crear/editar/eliminar)
+- Importa y usa triggerRefresh(KEY) después de una operación exitosa:
+
+   import { useRefresh } from '@/src/contexts/RefreshContext';
+   import { REFRESH_KEYS } from '@/src/constants/refreshKeys';
+
+   const { triggerRefresh } = useRefresh();
+
+   // Crear
+   await createItem(payload);
+   triggerRefresh(REFRESH_KEYS.ITEMS);
+
+   // Editar
+   await updateItem(id, data);
+   triggerRefresh(REFRESH_KEYS.ITEMS);
+
+   // Eliminar
+   await deleteItem(id);
+   triggerRefresh(REFRESH_KEYS.ITEMS);
+
+CÓMO ESCUCHAR REFRESH (READ paths: pantallas que muestran datos)
+- Usa el hook useAutoRefresh y pasa una función de carga envuelta en useCallback:
+
+   import { useAutoRefresh } from '@/src/hooks/useAutoRefresh';
+   import { REFRESH_KEYS } from '@/src/constants/refreshKeys';
+   import { useCallback, useState } from 'react';
+
+   const [items, setItems] = useState([]);
+
+   const loadItems = useCallback(async () => {
+     const data = await fetchItems();
+     setItems(data);
+   }, []);
+
+   useAutoRefresh({
+     key: REFRESH_KEYS.ITEMS,
+     onRefresh: loadItems,
+     refreshOnFocus: true,  // opcional (default true)
+     refreshOnMount: true,  // opcional (default true)
+   });
+
+RECOMENDACIONES
+- Siempre usar REFRESH_KEYS (no strings literales).
+- Envolver onRefresh con useCallback para evitar renders/loops innecesarios.
+- Granularidad: usa keys por dominio (USER, ITEMS, SETTINGS) para refrescar solo lo necesario.
+- Pull-to-refresh manual puede seguir llamando a la misma función onRefresh.
+- Para UI inmediata tras eliminar/crear, puedes hacer actualización optimista local y además llamar triggerRefresh(KEY) para revalidar con el servidor.
+
+PATRONES COMUNES
+- Lista + Crear/Editar/Eliminar:
+  - ListScreen escucha REFRESH_KEYS.ITEMS con useAutoRefresh.
+  - Create/Edit/Delete disparan triggerRefresh(REFRESH_KEYS.ITEMS) tras éxito.
+- Dashboard escuchando múltiples dominios:
+  - Llama useAutoRefresh varias veces con distintas keys (USER, ITEMS, NOTIFICATIONS).
+
+FLUJO GENERAL
+1) Pantalla A modifica datos → triggerRefresh(KEY)
+2) RefreshContext marca cambio en KEY
+3) Pantalla B escucha KEY con useAutoRefresh → ejecuta onRefresh
+4) Datos sincronizados sin navegación extra
+
+SOLUCIÓN DE PROBLEMAS
+- No refresca: verifica que ambas partes usan la misma KEY de REFRESH_KEYS.
+- Doble carga al montar: mantener isFirstMount en el hook (ya manejado).
+- Excessivo refresco: desactiva refreshOnFocus o refina la granularidad de keys.

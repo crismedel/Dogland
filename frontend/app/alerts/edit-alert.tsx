@@ -14,6 +14,8 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { fetchAlertById, updateAlert } from '../../src/api/alerts';
 import type { Alert as AlertTypeFromAPI } from '../../src/types/alert';
 import { useNotification } from '@/src/components/notifications/NotificationContext';
+import { useRefresh } from '@/src/contexts/RefreshContext';
+import { REFRESH_KEYS } from '@/src/constants/refreshKeys';
 import { Colors } from '@/src/constants/colors';
 import {
   fontWeightBold,
@@ -41,6 +43,7 @@ export default function EditAlertScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
   const { showError, showSuccess } = useNotification();
+  const { triggerRefresh } = useRefresh();
 
   const [titulo, setTitulo] = useState<string>('');
   const [descripcion, setDescripcion] = useState<string>('');
@@ -119,7 +122,14 @@ export default function EditAlertScreen() {
     try {
       await updateAlert(Number(id), updatedData);
       showSuccess('Éxito', 'Alerta actualizada');
-      router.back();
+
+      // 🎯 Disparar refresh para actualizar todas las pantallas que muestran alertas
+      triggerRefresh(REFRESH_KEYS.ALERTS);
+
+      // Esperar un momento antes de volver para que el usuario vea el mensaje
+      setTimeout(() => {
+        router.back();
+      }, 1500);
     } catch (e: any) {
       console.error('EditAlertScreen: Error al actualizar alerta:', e);
       const message =
