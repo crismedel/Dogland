@@ -10,11 +10,10 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import CustomButton from './CustomButton';
+import CustomCalendar from './calendary/CustomCalendar';
 import { Colors } from '@/src/constants/colors';
 import { Picker } from '@react-native-picker/picker';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import {
-  fontWeightBold,
   fontWeightSemiBold,
   fontWeightMedium,
   AppText,
@@ -23,15 +22,18 @@ import {
 export interface FormField {
   name: string;
   label: string;
-  placeholder?: string; //opcional
+  placeholder?: string;
   keyboardType?: KeyboardTypeOptions;
   secureTextEntry?: boolean;
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
   multiline?: boolean;
   numberOfLines?: number;
-  icon?: keyof typeof Ionicons.glyphMap; // 👈 campo opcional de ícono
+  icon?: keyof typeof Ionicons.glyphMap;
   type: 'text' | 'password' | 'email' | 'phone' | 'date' | 'picker';
   options?: { label: string; value: any }[];
+  minDate?: string;
+  maxDate?: string;
+  calendarTheme?: 'light' | 'dark';
 }
 
 interface DynamicFormProps {
@@ -61,6 +63,15 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
 
   const handleSubmit = () => {
     onSubmit(values);
+  };
+
+  const formatDate = (date: Date | string) => {
+    const d = typeof date === 'string' ? new Date(date) : date;
+    return d.toLocaleDateString('es-CL', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
   };
 
   return (
@@ -118,6 +129,7 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
               <AppText style={styles.inputLabel}>{field.label}</AppText>
               <TouchableOpacity
                 onPress={() => setShowDatePickerFor(field.name)}
+                activeOpacity={0.7}
               >
                 <View style={styles.inputWrapper}>
                   {field.icon && (
@@ -128,30 +140,29 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
                       style={{ marginRight: 8 }}
                     />
                   )}
-                  <AppText style={styles.textInput}>
+                  <AppText
+                    style={[
+                      styles.textInput,
+                      !values[field.name] && { color: '#9CA3AF' },
+                    ]}
+                  >
                     {values[field.name]
-                      ? new Date(values[field.name]).toLocaleDateString('es-CL')
+                      ? formatDate(values[field.name])
                       : field.placeholder}
                   </AppText>
                 </View>
               </TouchableOpacity>
-              {showDatePickerFor === field.name && (
-                <DateTimePicker
-                  value={
-                    values[field.name]
-                      ? new Date(values[field.name])
-                      : new Date()
-                  }
-                  mode="date"
-                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                  onChange={(event, selectedDate) => {
-                    setShowDatePickerFor(null);
-                    if (selectedDate) {
-                      onValueChange(field.name, selectedDate);
-                    }
-                  }}
-                />
-              )}
+
+              <CustomCalendar
+                visible={showDatePickerFor === field.name}
+                onClose={() => setShowDatePickerFor(null)}
+                onDateSelect={(date) => onValueChange(field.name, date)}
+                selectedDate={values[field.name]}
+                title={field.label}
+                minDate={field.minDate}
+                maxDate={field.maxDate}
+                theme={field.calendarTheme || 'light'}
+              />
             </View>
           );
         }
@@ -210,7 +221,6 @@ export default DynamicForm;
 const styles = StyleSheet.create({
   formContainer: {
     width: '100%',
-    // padding: 20, // Es mejor manejar el padding en la pantalla que usa el formulario.
   },
   inputContainer: {
     marginBottom: 18,

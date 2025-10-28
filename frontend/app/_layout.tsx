@@ -1,5 +1,11 @@
 import { Stack, router, usePathname } from 'expo-router';
-import { View, StyleSheet, Platform, ActivityIndicator, LogBox } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  Platform,
+  ActivityIndicator,
+  LogBox,
+} from 'react-native';
 import { useEffect } from 'react';
 
 import { useCustomFonts } from '@/src/constants/fontFamily';
@@ -7,12 +13,10 @@ import { Colors } from '@/src/constants/colors';
 import { NotificationProvider } from '@/src/components/notifications/NotificationContext';
 import { AuthProvider, useAuth } from '@/src/contexts/AuthContext';
 import BottomNavBar from '@/src/components/UI/TabBar';
+import { RefreshProvider } from '@/src/contexts/RefreshContext';
 
 // Silenciar warning específico de expo-notifications
-LogBox.ignoreLogs([
-  'expo-notifications was removed',
-  'Notifications',
-]);
+LogBox.ignoreLogs(['expo-notifications was removed', 'Notifications']);
 
 // Componente interno que usa el AuthContext
 function AppContent() {
@@ -59,10 +63,7 @@ function AppContent() {
         <Stack.Screen name="home" options={{ headerShown: false }} />
         <Stack.Screen name="alerts" options={{ headerShown: false }} />
         <Stack.Screen name="adoption" options={{ headerShown: false }} />
-        <Stack.Screen
-          name="community_maps"
-          options={{ headerShown: false }}
-        />
+        <Stack.Screen name="community_maps" options={{ headerShown: false }} />
         <Stack.Screen name="profile" options={{ headerShown: false }} />
         <Stack.Screen name="settings" options={{ headerShown: false }} />
         <Stack.Screen name="create-report" options={{ headerShown: false }} />
@@ -77,9 +78,11 @@ function AppContent() {
 export default function RootLayout() {
   return (
     <AuthProvider>
-      <NotificationProvider>
-        <AppContent />
-      </NotificationProvider>
+      <RefreshProvider>
+        <NotificationProvider>
+          <AppContent />
+        </NotificationProvider>
+      </RefreshProvider>
     </AuthProvider>
   );
 }

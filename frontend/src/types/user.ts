@@ -8,6 +8,7 @@ export interface User {
   fecha_nacimiento: string;
   fecha_creacion: string;
   activo: boolean;
+  id_sexo: number;
   nombre_rol: string;
   nombre_ciudad: string;
   sexo: string;

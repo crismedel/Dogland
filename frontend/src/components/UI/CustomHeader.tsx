@@ -47,7 +47,7 @@ export default CustomHeader;
 const styles = StyleSheet.create({
   outerContainer: {
     marginHorizontal: 10,
-    marginTop: 30,
+    marginTop: 50,
     marginBottom: 16,
     // Sombra exterior para efecto 3D profundo
     shadowColor: '#000',
