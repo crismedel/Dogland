@@ -1,6 +1,12 @@
 import { authStorage } from '@/src/utils/authStorage';
 import { decodeJWT, isTokenExpired } from '@/src/utils/jwtDecoder';
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useMemo,
+} from 'react';
 
 interface User {
   id: number;
@@ -16,6 +22,10 @@ interface AuthContextType {
   login: (token: string) => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
+  changePassword: (
+    currentPassword: string,
+    newPassword: string,
+  ) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -93,15 +103,57 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     checkAuth();
   }, []);
 
-  const value: AuthContextType = {
-    user,
-    token,
-    isLoading,
-    isAuthenticated: !!user && !!token,
-    login,
-    logout,
-    checkAuth,
+  const changePassword = async (
+    currentPassword: string,
+    newPassword: string,
+  ) => {
+    if (!token) throw new Error('No autenticado');
+
+    let apiBase = process.env.EXPO_PUBLIC_API_URL;
+    if (!apiBase) {
+      throw new Error('No se ha configurado EXPO_PUBLIC_API_URL');
+    }
+
+    const res = await fetch(`${apiBase}/auth/change-password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ currentPassword, newPassword }),
+    });
+
+    const raw = await res.text(); // lee texto crudo primero para log
+    let data: any = {};
+    try {
+      data = raw ? JSON.parse(raw) : {};
+    } catch {
+      /* no JSON */
+    }
+
+    if (!res.ok) {
+      // backend a veces usa "error" o "message"
+      const msg = data?.message || data?.error || `Error ${res.status}`;
+      throw new Error(msg);
+    }
+
+    // Opcional: si el backend invalida el token tras el cambio, forzar re-login:
+    // await logout();
   };
+
+  const value: AuthContextType = useMemo(
+    () => ({
+      user,
+      token,
+      isLoading,
+      isAuthenticated: !!user && !!token,
+      login,
+      logout,
+      checkAuth,
+      changePassword,
+    }),
+    [user, token, isLoading],
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
