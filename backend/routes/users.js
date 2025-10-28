@@ -7,13 +7,13 @@ import {
   getUserByIdSchema,
   deleteUserSchema,
   getAllUsersSchema,
-  savePushTokenSchema
+  savePushTokenSchema,
 } from '../schemas/user.js';
 import * as usersController from '../controllers/usersController.js';
 
 const router = express.Router();
 
-/** 
+/**
  * GET /api/users - Listar todos los usuarios
  * Requiere autenticacion y rol de Admin
  */
@@ -22,20 +22,22 @@ router.get(
   authenticateToken,
   authorizeRol(['Admin']),
   validateSchema(getAllUsersSchema),
-  usersController.listAllUsers
+  usersController.listAllUsers,
 );
 
-/** 
+/**
  * GET /api/users/profile - Obtener datos del usuario logeado
  * Requiere autenticacion
  */
-router.get(
+router.get('/users/profile', authenticateToken, usersController.getUserProfile);
+
+router.put(
   '/users/profile',
   authenticateToken,
-  usersController.getUserProfile
+  usersController.updateOwnProfile,
 );
 
-/** 
+/**
  * GET /api/users/:id - Obtener usuario por ID
  * Requiere autenticacion y rol de Admin
  */
@@ -44,10 +46,10 @@ router.get(
   authenticateToken,
   authorizeRol(['Admin']),
   validateSchema(getUserByIdSchema),
-  usersController.getUserById
+  usersController.getUserById,
 );
 
-/** 
+/**
  * POST /api/users - Crear usuario
  * Requiere autenticacion y rol de Admin
  */
@@ -56,10 +58,10 @@ router.post(
   authenticateToken,
   authorizeRol(['Admin']),
   validateSchema(createUserSchema),
-  usersController.createUser
+  usersController.createUser,
 );
 
-/** 
+/**
  * PUT /api/users/:id - Actualizar usuario
  * Requiere autenticacion y rol de Admin
  */
@@ -68,10 +70,10 @@ router.put(
   authenticateToken,
   authorizeRol(['Admin']),
   validateSchema(updateUserSchema),
-  usersController.updateUser
+  usersController.updateUser,
 );
 
-/** 
+/**
  * DELETE /api/users/:id - Borrar usuario
  * Requiere autenticacion y rol de Admin
  */
@@ -80,10 +82,10 @@ router.delete(
   authenticateToken,
   authorizeRol(['Admin']),
   validateSchema(deleteUserSchema),
-  usersController.deleteUser
+  usersController.deleteUser,
 );
 
-/** 
+/**
  * PATCH /api/users/:id/deactivate - Desactivar usuario
  * Requiere autenticacion y rol de Admin
  */
@@ -92,10 +94,10 @@ router.patch(
   authenticateToken,
   authorizeRol(['Admin']),
   validateSchema(getUserByIdSchema),
-  usersController.deactivateUser
+  usersController.deactivateUser,
 );
 
-/** 
+/**
  * PATCH /api/users/:id/activate - Activar usuario
  * Requiere autenticacion y rol de Admin
  */
@@ -104,10 +106,10 @@ router.patch(
   authenticateToken,
   authorizeRol(['Admin']),
   validateSchema(getUserByIdSchema),
-  usersController.activateUser
+  usersController.activateUser,
 );
 
-/** 
+/**
  * POST /api/users/:id/push-token - Guardar token push
  * Requiere autenticacion
  */
@@ -116,7 +118,7 @@ router.post(
   authenticateToken,
   authorizeRol(['Admin', 'Usuario', 'Trabajador']),
   validateSchema(savePushTokenSchema),
-  usersController.savePushToken
+  usersController.savePushToken,
 );
 
 export default router;
