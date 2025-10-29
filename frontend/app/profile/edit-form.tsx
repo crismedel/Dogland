@@ -65,6 +65,10 @@ const EditProfileScreen = () => {
     }
   };
 
+  // Solo calendario: usa dateMode: 'date'
+  // Puedes añadir minDate/maxDate (YYYY-MM-DD) para restringir
+  const todayYYYYMMDD = new Date().toISOString().split('T')[0];
+
   const formFields: FormField[] = [
     {
       name: 'nombre_usuario',
@@ -104,6 +108,10 @@ const EditProfileScreen = () => {
       placeholder: 'Selecciona tu fecha de nacimiento',
       type: 'date',
       icon: 'calendar-outline',
+      dateMode: 'date', // <- Solo calendario (sin hora)
+      calendarTheme: 'light', // opcional: 'dark' si quieres tema oscuro
+      maxDate: todayYYYYMMDD, // opcional: no permitir fechas futuras
+      // minDate: '1900-01-01',     // opcional: establece un límite inferior si quieres
     },
     {
       name: 'id_sexo',
@@ -135,6 +143,7 @@ const EditProfileScreen = () => {
         apellido_paterno: values.apellido_paterno,
         apellido_materno: values.apellido_materno,
         telefono: values.telefono,
+        // Enviar fecha como YYYY-MM-DD
         fecha_nacimiento:
           values.fecha_nacimiento instanceof Date
             ? values.fecha_nacimiento.toISOString().split('T')[0]
@@ -148,7 +157,6 @@ const EditProfileScreen = () => {
 
       triggerRefresh(REFRESH_KEYS.USER);
 
-      // Esperar un momento antes de volver para que el usuario vea el mensaje
       setTimeout(() => {
         router.back();
       }, 1500);
@@ -163,7 +171,7 @@ const EditProfileScreen = () => {
     }
   };
 
-  // ✅ Pantalla de carga mientras obtiene datos
+  // Pantalla de carga mientras obtiene datos
   if (initialLoading) {
     return (
       <View style={[styles.container, styles.centerContent]}>

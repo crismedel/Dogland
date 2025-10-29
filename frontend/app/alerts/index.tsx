@@ -110,7 +110,7 @@ const CommunityAlertsScreen = () => {
       setError(
         'No se pudieron cargar las alertas. Revisa tu conexión e inténtalo nuevamente.',
       );
-      setAllAlerts([]); // opcional: vaciar lista en error
+      setAllAlerts([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -138,6 +138,15 @@ const CommunityAlertsScreen = () => {
     await loadAlerts();
   };
 
+  const clearAllFilters = () => {
+    setFilters({
+      type: 'todos',
+      riskLevel: 'todos',
+      status: 'activas',
+      timeRange: 'todas',
+    });
+  };
+
   // Loading
   if (loading) {
     return (
@@ -154,7 +163,6 @@ const CommunityAlertsScreen = () => {
       style={{ flex: 1, backgroundColor: Colors.background }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      {/* Header sin “cuadrado blanco”. Forzamos transparente aquí por si el componente trae fondo por defecto. */}
       <CustomHeader
         title={`Alertas Comunitarias (${filteredAlerts.length})`}
         leftComponent={
@@ -167,30 +175,46 @@ const CommunityAlertsScreen = () => {
         }
         rightComponent={
           <TouchableOpacity
-            // sin fondo, solo borde sutil opcional
             style={styles.filterButton}
             onPress={() => setShowFilters(true)}
           >
             <Ionicons name="options-outline" size={22} color="#fff" />
           </TouchableOpacity>
         }
-        // Si tu CustomHeader acepta estilos del contenedor, asegura transparentes:
-        // containerStyle={{ backgroundColor: 'transparent', elevation: 0, shadowOpacity: 0 }}
-        // contentStyle={{ backgroundColor: 'transparent' }}
       />
 
       <View style={styles.container}>
+        {/* Chips de filtros activos */}
         {(filters.type !== 'todos' ||
           filters.riskLevel !== 'todos' ||
           filters.status !== 'activas' ||
           filters.timeRange !== 'todas') && (
-          <View style={styles.activeFilters}>
-            <AppText style={styles.activeFiltersText}>
-              Filtros: {filters.type !== 'todos' && `Tipo: ${filters.type} `}
-              {filters.riskLevel !== 'todos' && `Riesgo: ${filters.riskLevel} `}
-              {filters.status !== 'activas' && `Estado: ${filters.status} `}
-              {filters.timeRange !== 'todas' && `Período: ${filters.timeRange}`}
-            </AppText>
+          <View style={styles.filtersBar}>
+            <Ionicons name="options-outline" size={16} color="#374151" />
+            <AppText style={styles.filtersBarLabel}>Filtros:</AppText>
+
+            {/* Chip combinado (texto resumido) */}
+            <View style={styles.filterChip}>
+              <AppText numberOfLines={1} style={styles.filterChipText}>
+                {filters.type !== 'todos' ? `Tipo: ${filters.type}  •  ` : ''}
+                {filters.riskLevel !== 'todos'
+                  ? `Riesgo: ${filters.riskLevel}  •  `
+                  : ''}
+                {filters.status !== 'activas'
+                  ? `Estado: ${filters.status}  •  `
+                  : ''}
+                {filters.timeRange !== 'todas'
+                  ? `Período: ${filters.timeRange}`
+                  : ''}
+              </AppText>
+              <TouchableOpacity
+                style={styles.chipClose}
+                onPress={clearAllFilters}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Ionicons name="close" size={14} color="#6B7280" />
+              </TouchableOpacity>
+            </View>
           </View>
         )}
 
@@ -294,10 +318,10 @@ const CommunityAlertsScreen = () => {
               ),
             },
           ]}
-          placement="left" // el tooltip aparece a la izquierda de cada acción (como el ejemplo)
-          direction="up" // las acciones se expanden hacia arriba
+          placement="left"
+          direction="up"
           gap={12}
-          persistentTooltips // tooltips visibles siempre cuando está abierto
+          persistentTooltips
         />
       </View>
     </KeyboardAvoidingView>
@@ -310,11 +334,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: 16,
-    paddingTop: 8, // evita choques visuales con el header
+    paddingTop: 8,
     backgroundColor: Colors.background,
   },
 
-  // Botón del header sin fondo blanco
   filterButton: {
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -323,16 +346,59 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
 
-  activeFilters: {
-    backgroundColor: Colors.secondary,
-    padding: 8,
-    borderRadius: 8,
+  // Nueva barra de filtros con chips
+  filtersBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: '#FFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    marginHorizontal: 0,
     marginBottom: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 1,
   },
-  activeFiltersText: {
+  filtersBarLabel: {
+    fontSize: 13,
+    color: '#374151',
+    fontWeight: fontWeightSemiBold,
+    marginRight: 4,
+  },
+  filterChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F3F4F6',
+    borderColor: '#E5E7EB',
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    maxWidth: '86%',
+  },
+  filterChipText: {
+    color: '#374151',
     fontSize: 12,
-    color: '#1976d2',
-    fontWeight: '500',
+    fontWeight: fontWeightMedium,
+    maxWidth: '90%',
+  },
+  chipClose: {
+    marginLeft: 8,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   center: {

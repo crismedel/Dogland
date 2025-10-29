@@ -123,6 +123,20 @@ const AlertDetailScreen = () => {
   // Obtener el color del marcador según el nivel de riesgo
   const markerColor = riskStyles[alert.nivel_riesgo].color;
 
+  // Función para obtener el ícono según el nivel de riesgo
+  const getMarkerIcon = (nivelRiesgo: string) => {
+    switch (nivelRiesgo.toLowerCase()) {
+      case 'bajo':
+        return 'alert-circle-outline';
+      case 'medio':
+        return 'warning-outline';
+      case 'alto':
+        return 'alert-circle';
+      default:
+        return 'alert-circle';
+    }
+  };
+
   // Renderizado principal con detalles de la alerta
   return (
     <View style={styles.container}>
@@ -204,23 +218,22 @@ const AlertDetailScreen = () => {
                 }}
               >
                 <Marker coordinate={location}>
-                  {/* Marcador personalizado estilo mapa comunitario */}
+                  {/* Marcador personalizado estilo pin moderno */}
                   <View style={styles.customMarker}>
-                    {/* Círculo con color dinámico según nivel de riesgo */}
                     <View
                       style={[
-                        styles.markerCircle,
+                        styles.pinContainer,
                         { backgroundColor: markerColor },
                       ]}
                     >
-                      <AppText style={styles.markerEmoji}>⚠️</AppText>
+                      <Ionicons
+                        name={getMarkerIcon(alert.nivel_riesgo)}
+                        size={20}
+                        color="#fff"
+                      />
                     </View>
-                    {/* Triángulo apuntando hacia abajo */}
                     <View
-                      style={[
-                        styles.markerTriangle,
-                        { borderTopColor: markerColor },
-                      ]}
+                      style={[styles.pinPoint, { borderTopColor: markerColor }]}
                     />
                   </View>
 
@@ -274,107 +287,190 @@ export default AlertDetailScreen;
 
 // Estilos para los componentes de la pantalla
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f0f2f5' },
-  scrollContent: { padding: 20 },
+  container: { flex: 1, backgroundColor: Colors.background },
+  scrollContent: {
+    padding: 20,
+    paddingBottom: 40,
+  },
+
   // TITULO + SUBTITULO
-  headerDetail: { marginBottom: 20, marginTop: 20 },
+  headerDetail: {
+    marginBottom: 24,
+    marginTop: 20,
+  },
   title: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: fontWeightBold,
-    color: '#222',
+    color: '#1A1A1A',
+    letterSpacing: 0.3,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 14,
     color: Colors.secondary,
-    fontWeight: fontWeightMedium,
+    fontWeight: fontWeightSemiBold,
     backgroundColor: '#E3F2FD',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 16,
     alignSelf: 'flex-start',
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: '#BBDEFB',
   },
+
   // SECCIONES TIPO CARD
   card: {
     backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 18,
+    borderRadius: 16,
+    padding: 18,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
   sectionTitle: {
-    fontWeight: fontWeightSemiBold,
-    marginBottom: 12,
-    fontSize: 16,
+    fontWeight: fontWeightBold,
+    marginBottom: 14,
+    fontSize: 17,
+    color: '#1A1A1A',
+    letterSpacing: 0.3,
   },
-  description: { fontSize: 15, color: '#444' },
+  description: {
+    fontSize: 15,
+    color: '#444',
+    lineHeight: 22,
+  },
+
   // INFO EXTRA
-  infoContainer: { flexDirection: 'row', justifyContent: 'space-between' },
-  infoBox: { flex: 1, alignItems: 'center', padding: 12 },
-  infoLabel: { fontSize: 12, color: '#777' },
-  infoValue: {
-    fontSize: 14,
-    fontWeight: fontWeightSemiBold,
+  infoContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
+  infoBox: {
+    flex: 1,
+    alignItems: 'center',
+    padding: 12,
+    backgroundColor: '#FAFAFA',
+    borderRadius: 10,
+    marginHorizontal: 4,
+  },
+  infoLabel: {
+    fontSize: 11,
+    color: '#888',
+    marginBottom: 6,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  infoValue: {
+    fontSize: 15,
+    fontWeight: fontWeightBold,
+    textAlign: 'center',
+  },
+
   // MAPA
-  mapCard: { borderRadius: 12, overflow: 'hidden' },
-  map: { height: 250, width: '100%' },
-  noLocation: { textAlign: 'center', padding: 16, color: '#666' },
+  mapCard: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  map: {
+    height: 280,
+    width: '100%',
+  },
+  noLocation: {
+    textAlign: 'center',
+    padding: 20,
+    color: '#666',
+    fontSize: 14,
+  },
+
   // ESTADOS DE ERROR Y LOADING
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  center: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
   errorText: {
     color: '#E53935',
     marginBottom: 16,
     fontSize: 16,
     textAlign: 'center',
+    fontWeight: fontWeightMedium,
   },
-  loadingText: { marginTop: 8, color: Colors.secondary },
+  loadingText: {
+    marginTop: 12,
+    color: Colors.secondary,
+    fontSize: 15,
+  },
 
-  // MARCADOR PERSONALIZADO (estilo mapa comunitario)
-  customMarker: { alignItems: 'center' },
-  markerCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  // MARCADOR PERSONALIZADO - OPCIÓN 1: PIN MODERNO
+  customMarker: {
+    alignItems: 'center',
+  },
+  pinContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
+    borderWidth: 3,
     borderColor: 'white',
     shadowColor: '#000',
-    shadowOpacity: 0.3,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 3,
-    elevation: 4,
+    shadowOpacity: 0.4,
+    shadowOffset: { width: 0, height: 3 },
+    shadowRadius: 4,
+    elevation: 6,
   },
-  markerEmoji: { fontSize: 20 },
-  markerTriangle: {
+  pinPoint: {
     width: 0,
     height: 0,
-    borderStyle: 'solid',
-    borderLeftWidth: 8,
-    borderRightWidth: 8,
-    borderTopWidth: 10,
+    borderLeftWidth: 6,
+    borderRightWidth: 6,
+    borderTopWidth: 8,
     borderLeftColor: 'transparent',
     borderRightColor: 'transparent',
-    marginTop: -2,
+    marginTop: -1,
   },
 
   // CALLOUT PERSONALIZADO
   calloutContainer: {
     backgroundColor: 'white',
-    borderRadius: 10,
-    padding: 10,
-    minWidth: 160,
+    borderRadius: 12,
+    padding: 14,
+    minWidth: 180,
+    maxWidth: 220,
     shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOpacity: 0.25,
+    shadowOffset: { width: 0, height: 3 },
+    shadowRadius: 6,
+    elevation: 5,
   },
   calloutTitle: {
-    fontWeight: fontWeightSemiBold,
-    fontSize: 14,
-    marginBottom: 6,
+    fontWeight: fontWeightBold,
+    fontSize: 15,
+    marginBottom: 8,
+    color: '#1A1A1A',
   },
-  calloutDivider: { height: 1, backgroundColor: '#ddd', marginBottom: 6 },
-  calloutText: { fontSize: 13, marginBottom: 3 },
-  calloutDate: { fontSize: 12, color: '#888', marginTop: 4 },
+  calloutDivider: {
+    height: 1,
+    backgroundColor: '#E0E0E0',
+    marginBottom: 8,
+  },
+  calloutText: {
+    fontSize: 13,
+    marginBottom: 4,
+    color: '#444',
+  },
+  calloutDate: {
+    fontSize: 12,
+    color: '#888',
+    marginTop: 6,
+  },
 });
