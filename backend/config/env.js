@@ -37,6 +37,7 @@ if (isLocalRequested && canUseLocal && localFileExists) {
 export const NODE_ENV = process.env.NODE_ENV || 'development';
 export const PORT = process.env.PORT || 3001;
 export const JWT_SECRET = process.env.JWT_SECRET;
+export const SESSION_SECRET = process.env.SESSION_SECRET;
 
 export const DB_USER = process.env.DB_USER;
 export const DB_HOST = process.env.DB_HOST;
@@ -48,3 +49,10 @@ export const EMAIL_HOST = process.env.EMAIL_HOST;
 export const EMAIL_PORT = process.env.EMAIL_PORT;
 export const EMAIL_USER = process.env.EMAIL_USER;
 export const EMAIL_PASS = process.env.EMAIL_PASS;
+
+export const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+export const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
+export const GOOGLE_CALLBACK_URL = process.env.GOOGLE_CALLBACK_URL;
+export const GOOGLE_MOBILE_CALLBACK_URL = process.env.GOOGLE_MOBILE_CALLBACK_URL;
+
+export const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';

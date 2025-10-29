@@ -1,16 +1,19 @@
 import express from 'express';
 import cors from 'cors';
-import { NODE_ENV, PORT } from './config/env.js';
+import session from 'express-session';
+import { NODE_ENV, PORT, SESSION_SECRET } from './config/env.js';
+import './config/passport.js'; // Importar configuración de Passport
+import passport from 'passport';
 
 // middlewares
 import { corsOptions, corsBlocker } from './middlewares/corsConfig.js';
 import { errorHandler } from './middlewares/errorHandler.js';
 
 // routes
-
 import sightingsRouter from './routes/sightings.js';
 import alertsRouter from './routes/alerts.js';
 import authRouter from './routes/auth.js';
+import authGoogle from './routes/authGoogle.js'
 import organizationsRouter from './routes/organizations.js';
 import usersRouter from './routes/users.js';
 import animalsRouter from './routes/animals.js';
@@ -24,11 +27,11 @@ import medicalHistoryRouter from './routes/medicalHistory.js';
 import statRoutes from './routes/stats.js';
 import infoCompAnimales from './routes/infoCompAnimales.js'; //info de animales completa (en teoria)
 import notificationsRoutes from './routes/notifications.js';
-//-------------------------------------------------------------------------------
 import envioAnimalesRoutes from './routes/animal_form.js';
 import racesFormRouter from './routes/races_form.js'; // archivo para razas pagina adoptar
 import healthStatesFormRouter from './routes/healthStates_form.js'; // pagina adoptar
-//--------------------------------------------------------------------------------
+
+
 const app = express();
 
 // Configuraciones base
@@ -39,6 +42,22 @@ app.use(express.json());
 app.use(cors(corsOptions));
 app.use(corsBlocker);
 
+// Passport definicion e inicializacion
+app.use(
+  session({
+    secret: SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: NODE_ENV === 'production',
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000 // 24 horas
+    }
+  })
+);
+app.use(passport.initialize());
+app.use(passport.session());
+
 // Rutas principales
 app.get('/', (req, res) => {
   res.send('Servidor funcionando correctamente');
@@ -46,6 +65,7 @@ app.get('/', (req, res) => {
 
 app.use('/api/stats', statRoutes); //estadisticas de avistamientos
 app.use('/api/auth', authRouter);
+app.use('/api/auth/google', authGoogle);
 app.use('/api', sightingsRouter);
 app.use('/api', alertsRouter);
 app.use('/api', organizationsRouter);
