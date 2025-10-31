@@ -198,17 +198,5 @@ describe('Endpoints del Formulario de Adopción (animal_form)', () => {
 
   });
 });
-```
 
-### Paso Siguiente
-
-1.  **Reemplaza** el código de `backend/tests/integration/ingresar_perrito.test.js` con la versión corregida de arriba.
-2.  **Limpia la caché de Jest** para asegurarte de que no está ejecutando una versión antigua del archivo. Corre esto en la terminal:
-    ```bash
-    npm test -- --clearCache
-    ```
-3.  **Vuelve a correr los tests** normalmente:
-    ```bash
-    npm test
-    
 
