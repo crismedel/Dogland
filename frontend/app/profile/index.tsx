@@ -9,6 +9,11 @@ import {
   StyleSheet,
   TouchableOpacity,
   View,
+  Modal,
+  Animated,
+  Dimensions,
+  TouchableWithoutFeedback,
+  PanResponder,
 } from 'react-native';
 import { fetchUserProfile } from '../../src/api/users';
 import CustomButton from '../../src/components/UI/CustomButton';
@@ -23,14 +28,20 @@ import {
   AppText,
 } from '@/src/components/AppText';
 import { useAuth } from '@/src/contexts/AuthContext';
+import ProfileImagePicker from '@/src/components/UI/ProfileImagePicker';
+import { useProfilePhoto } from '@/src/utils/useProfilePhoto';
 
-const AVATAR = 'https://placehold.co/200x200/png?text=Avatar';
+const AVATAR_PLACEHOLDER = 'https://placehold.co/200x200/png?text=Avatar';
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 export default function ProfileScreen() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showImagePicker, setShowImagePicker] = useState(false);
   const { showInfo } = useNotification();
   const { isAuthenticated } = useAuth();
+
+  const { photoUrl, uploading } = useProfilePhoto(user?.id_usuario || 0);
 
   // ✅ Usar useCallback para evitar que la función cambie en cada render
   const loadUserData = useCallback(async () => {
@@ -52,7 +63,6 @@ export default function ProfileScreen() {
     }
   }, [isAuthenticated]);
 
-  // ✅ Solo usar useAutoRefresh (eliminar el useEffect duplicado)
   useAutoRefresh({
     key: REFRESH_KEYS.USER,
     onRefresh: loadUserData,
@@ -62,7 +72,8 @@ export default function ProfileScreen() {
 
   const onEditProfile = () => router.push('/profile/edit-form');
   const onOpenSettings = () => router.push('/settings');
-  const onEditPhoto = () => console.log('Edit photo');
+  const onEditPhoto = () => setShowImagePicker(true);
+  const closeBottomSheet = () => setShowImagePicker(false);
 
   // Helpers
   const calcularEdad = (fechaNacimiento: string) => {
@@ -116,6 +127,10 @@ export default function ProfileScreen() {
     [user],
   );
 
+  const displayAvatar = useMemo(() => {
+    return photoUrl || AVATAR_PLACEHOLDER;
+  }, [photoUrl]);
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -139,167 +154,270 @@ export default function ProfileScreen() {
   }
 
   return (
-    <ScrollView
-      style={styles.scrollView}
-      contentContainerStyle={styles.container}
-    >
-      <CustomHeader
-        title="Perfil"
-        // Sin botón de cerrar sesión aquí
-        rightComponent={null}
-      />
+    <>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.container}
+      >
+        <CustomHeader title="Perfil" rightComponent={null} />
 
-      {/* Profile Card */}
-      <View style={styles.profileCard}>
-        <View style={{ alignItems: 'center' }}>
-          <View style={{ position: 'relative' }}>
-            <Image source={{ uri: AVATAR }} style={styles.avatar} />
-            <TouchableOpacity
-              onPress={onEditPhoto}
-              style={styles.editBadge}
-              accessibilityLabel="Editar foto de perfil"
-            >
-              <AppText style={styles.editBadgeText}>✎</AppText>
-            </TouchableOpacity>
-          </View>
+        {/* Profile Card */}
+        <View style={styles.profileCard}>
+          <View style={{ alignItems: 'center' }}>
+            <View style={{ position: 'relative' }}>
+              <Image source={{ uri: displayAvatar }} style={styles.avatar} />
 
-          <AppText style={styles.name}>{fullName}</AppText>
-          <AppText style={styles.username}>@{handle}</AppText>
+              {uploading && (
+                <View style={styles.uploadingOverlay}>
+                  <ActivityIndicator size="small" color="#fff" />
+                </View>
+              )}
 
-          <View
-            style={[
-              styles.statusBadge,
-              { backgroundColor: user.activo ? '#16A34A' : '#DC2626' },
-            ]}
-          >
-            <AppText style={styles.statusText}>
-              {user.activo ? '✓ Activo' : '✗ Inactivo'}
-            </AppText>
-          </View>
-
-          {/* Acciones */}
-          <View style={styles.actionsRow}>
-            <CustomButton
-              title="Editar perfil"
-              onPress={onEditProfile}
-              variant="primary"
-              icon="create-outline"
-              style={styles.customButtonStyle}
-            />
-            <CustomButton
-              title="Ajustes"
-              onPress={onOpenSettings}
-              variant="secondary"
-              icon="settings-outline"
-              style={styles.customButtonStyle}
-            />
-          </View>
-        </View>
-      </View>
-
-      {/* Stats */}
-      <View style={styles.statsGrid}>
-        <View style={styles.statCard}>
-          <AppText style={styles.statValue}>{edad}</AppText>
-          <AppText style={styles.statLabel}>Años</AppText>
-        </View>
-        <View style={styles.statCard}>
-          <AppText style={styles.statValue}>{user.nombre_rol}</AppText>
-          <AppText style={styles.statLabel}>Rol</AppText>
-        </View>
-        <View style={styles.statCard}>
-          <AppText style={styles.statValue}>{user.sexo}</AppText>
-          <AppText style={styles.statLabel}>Sexo</AppText>
-        </View>
-      </View>
-
-      {/* Información de Contacto */}
-      <View style={styles.card}>
-        <AppText style={styles.sectionTitle}>Información de Contacto</AppText>
-
-        <View style={{ marginBottom: 16 }}>
-          <AppText style={styles.infoLabel}>Email</AppText>
-          <View style={styles.infoValueWrap}>
-            <AppText numberOfLines={2} style={styles.infoValue}>
-              {user.email}
-            </AppText>
-            <TouchableOpacity
-              onPress={() => showInfo('Copiado', user.email)}
-              accessibilityLabel="Copiar Email"
-              style={styles.copyPill}
-            >
-              <AppText style={styles.copyPillText}>Copiar</AppText>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        <View style={styles.divider} />
-
-        <View style={{ marginBottom: 16 }}>
-          <AppText style={styles.infoLabel}>Teléfono</AppText>
-          <View style={styles.infoValueWrap}>
-            <AppText numberOfLines={1} style={styles.infoValue}>
-              {formatPhone(user.telefono)}
-            </AppText>
-            <TouchableOpacity
-              onPress={() => showInfo('Copiado', String(user.telefono))}
-              accessibilityLabel="Copiar Teléfono"
-              style={styles.copyPill}
-            >
-              <AppText style={styles.copyPillText}>Copiar</AppText>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        <View style={styles.divider} />
-
-        <View>
-          <AppText style={styles.infoLabel}>Ciudad</AppText>
-          <View style={styles.infoValueWrap}>
-            <AppText numberOfLines={1} style={styles.infoValue}>
-              {user.nombre_ciudad}
-            </AppText>
-          </View>
-        </View>
-      </View>
-
-      {/* Información Adicional */}
-      <View style={styles.card}>
-        <AppText style={styles.sectionTitle}>Información Adicional</AppText>
-
-        <View style={{ marginBottom: 16 }}>
-          <AppText style={styles.infoLabel}>Fecha de nacimiento</AppText>
-          <View style={styles.infoValueWrap}>
-            <AppText style={styles.infoValue}>
-              {formatDate(user.fecha_nacimiento)}
-            </AppText>
-          </View>
-        </View>
-
-        <View style={styles.divider} />
-
-        <View style={{ marginBottom: user.nombre_organizacion ? 16 : 0 }}>
-          <AppText style={styles.infoLabel}>Miembro desde</AppText>
-          <View style={styles.infoValueWrap}>
-            <AppText style={styles.infoValue}>{fechaCreacion}</AppText>
-          </View>
-        </View>
-
-        {user.nombre_organizacion ? (
-          <>
-            <View style={styles.divider} />
-            <View>
-              <AppText style={styles.infoLabel}>Organización</AppText>
-              <View style={styles.infoValueWrap}>
-                <AppText numberOfLines={2} style={styles.infoValue}>
-                  {user.nombre_organizacion}
-                </AppText>
-              </View>
+              <TouchableOpacity
+                onPress={onEditPhoto}
+                style={styles.editBadge}
+                accessibilityLabel="Editar foto de perfil"
+                disabled={uploading}
+              >
+                <AppText style={styles.editBadgeText}>✎</AppText>
+              </TouchableOpacity>
             </View>
-          </>
-        ) : null}
-      </View>
-    </ScrollView>
+
+            <AppText style={styles.name}>{fullName}</AppText>
+            <AppText style={styles.username}>@{handle}</AppText>
+
+            <View
+              style={[
+                styles.statusBadge,
+                { backgroundColor: user.activo ? '#16A34A' : '#DC2626' },
+              ]}
+            >
+              <AppText style={styles.statusText}>
+                {user.activo ? '✓ Activo' : '✗ Inactivo'}
+              </AppText>
+            </View>
+
+            <View style={styles.actionsRow}>
+              <CustomButton
+                title="Editar perfil"
+                onPress={onEditProfile}
+                variant="primary"
+                icon="create-outline"
+                style={styles.customButtonStyle}
+              />
+              <CustomButton
+                title="Ajustes"
+                onPress={onOpenSettings}
+                variant="secondary"
+                icon="settings-outline"
+                style={styles.customButtonStyle}
+              />
+            </View>
+          </View>
+        </View>
+
+        {/* Stats */}
+        <View style={styles.statsGrid}>
+          <View style={styles.statCard}>
+            <AppText style={styles.statValue}>{edad}</AppText>
+            <AppText style={styles.statLabel}>Años</AppText>
+          </View>
+          <View style={styles.statCard}>
+            <AppText style={styles.statValue}>{user.nombre_rol}</AppText>
+            <AppText style={styles.statLabel}>Rol</AppText>
+          </View>
+          <View style={styles.statCard}>
+            <AppText style={styles.statValue}>{user.sexo}</AppText>
+            <AppText style={styles.statLabel}>Sexo</AppText>
+          </View>
+        </View>
+
+        {/* Información de Contacto */}
+        <View style={styles.card}>
+          <AppText style={styles.sectionTitle}>Información de Contacto</AppText>
+
+          <View style={{ marginBottom: 16 }}>
+            <AppText style={styles.infoLabel}>Email</AppText>
+            <View style={styles.infoValueWrap}>
+              <AppText numberOfLines={2} style={styles.infoValue}>
+                {user.email}
+              </AppText>
+              <TouchableOpacity
+                onPress={() => showInfo('Copiado', user.email)}
+                accessibilityLabel="Copiar Email"
+                style={styles.copyPill}
+              >
+                <AppText style={styles.copyPillText}>Copiar</AppText>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          <View style={styles.divider} />
+
+          <View style={{ marginBottom: 16 }}>
+            <AppText style={styles.infoLabel}>Teléfono</AppText>
+            <View style={styles.infoValueWrap}>
+              <AppText numberOfLines={1} style={styles.infoValue}>
+                {formatPhone(user.telefono)}
+              </AppText>
+              <TouchableOpacity
+                onPress={() => showInfo('Copiado', String(user.telefono))}
+                accessibilityLabel="Copiar Teléfono"
+                style={styles.copyPill}
+              >
+                <AppText style={styles.copyPillText}>Copiar</AppText>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          <View style={styles.divider} />
+
+          <View>
+            <AppText style={styles.infoLabel}>Ciudad</AppText>
+            <View style={styles.infoValueWrap}>
+              <AppText numberOfLines={1} style={styles.infoValue}>
+                {user.nombre_ciudad}
+              </AppText>
+            </View>
+          </View>
+        </View>
+
+        {/* Información Adicional */}
+        <View style={styles.card}>
+          <AppText style={styles.sectionTitle}>Información Adicional</AppText>
+
+          <View style={{ marginBottom: 16 }}>
+            <AppText style={styles.infoLabel}>Fecha de nacimiento</AppText>
+            <View style={styles.infoValueWrap}>
+              <AppText style={styles.infoValue}>
+                {formatDate(user.fecha_nacimiento)}
+              </AppText>
+            </View>
+          </View>
+
+          <View style={styles.divider} />
+
+          <View style={{ marginBottom: user.nombre_organizacion ? 16 : 0 }}>
+            <AppText style={styles.infoLabel}>Miembro desde</AppText>
+            <View style={styles.infoValueWrap}>
+              <AppText style={styles.infoValue}>{fechaCreacion}</AppText>
+            </View>
+          </View>
+
+          {user.nombre_organizacion ? (
+            <>
+              <View style={styles.divider} />
+              <View>
+                <AppText style={styles.infoLabel}>Organización</AppText>
+                <View style={styles.infoValueWrap}>
+                  <AppText numberOfLines={2} style={styles.infoValue}>
+                    {user.nombre_organizacion}
+                  </AppText>
+                </View>
+              </View>
+            </>
+          ) : null}
+        </View>
+      </ScrollView>
+
+      {/* ✅ Bottom Sheet Modal */}
+      <BottomSheetModal
+        visible={showImagePicker}
+        onClose={closeBottomSheet}
+        title="Cambiar foto de perfil"
+      >
+        {user && (
+          <ProfileImagePicker
+            userId={user.id_usuario}
+            onUploadSuccess={() => {
+              console.log('onUploadSuccess llamado');
+              closeBottomSheet();
+              loadUserData(); // Esto debería recargar todo el perfil
+            }}
+          />
+        )}
+      </BottomSheetModal>
+    </>
+  );
+}
+
+// ✅ Componente Bottom Sheet reutilizable
+function BottomSheetModal({
+  visible,
+  onClose,
+  title,
+  children,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  title: string;
+  children: React.ReactNode;
+}) {
+  const slideAnim = React.useRef(new Animated.Value(SCREEN_HEIGHT)).current;
+
+  React.useEffect(() => {
+    if (visible) {
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        useNativeDriver: true,
+        tension: 50,
+        friction: 8,
+      }).start();
+    } else {
+      Animated.timing(slideAnim, {
+        toValue: SCREEN_HEIGHT,
+        duration: 250,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [visible]);
+
+  if (!visible) return null;
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}
+      statusBarTranslucent
+    >
+      <TouchableWithoutFeedback onPress={onClose}>
+        <View style={styles.modalOverlay}>
+          <TouchableWithoutFeedback>
+            <Animated.View
+              style={[
+                styles.bottomSheetContainer,
+                { transform: [{ translateY: slideAnim }] },
+              ]}
+            >
+              {/* Handle bar */}
+              <View style={styles.handleBar} />
+
+              {/* Header */}
+              <View style={styles.bottomSheetHeader}>
+                <AppText style={styles.bottomSheetTitle}>{title}</AppText>
+                <TouchableOpacity
+                  onPress={onClose}
+                  style={styles.closeButton}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <AppText style={styles.closeButtonText}>✕</AppText>
+                </TouchableOpacity>
+              </View>
+
+              {/* Content */}
+              <ScrollView
+                style={styles.bottomSheetContent}
+                showsVerticalScrollIndicator={false}
+              >
+                {children}
+              </ScrollView>
+            </Animated.View>
+          </TouchableWithoutFeedback>
+        </View>
+      </TouchableWithoutFeedback>
+    </Modal>
   );
 }
 
@@ -349,6 +467,17 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: fontWeightSemiBold,
     fontSize: 12,
+  },
+  uploadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 16,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    borderRadius: 56,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 
   name: {
@@ -434,5 +563,57 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 30,
     minWidth: 50,
+  },
+
+  // ✅ Bottom Sheet Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  bottomSheetContainer: {
+    backgroundColor: '#FFFDF4',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: SCREEN_HEIGHT * 0.75,
+    paddingBottom: 20,
+  },
+  handleBar: {
+    width: 40,
+    height: 4,
+    backgroundColor: '#D1D5DB',
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  bottomSheetHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F2EFE6',
+  },
+  bottomSheetTitle: {
+    fontSize: 18,
+    fontWeight: fontWeightBold,
+    color: '#CC5803',
+  },
+  closeButton: {
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  closeButtonText: {
+    fontSize: 24,
+    color: '#6B7280',
+    fontWeight: fontWeightBold,
+  },
+  bottomSheetContent: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
   },
 });

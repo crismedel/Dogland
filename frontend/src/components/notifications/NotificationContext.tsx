@@ -6,6 +6,7 @@ import React, {
   useState,
 } from 'react';
 import {
+  Modal,
   Animated,
   Easing,
   View,
@@ -344,36 +345,44 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   onConfirm,
   onCancel,
 }) => {
-  if (!visible) return null;
-
   return (
-    <View
-      style={styles.dialogOverlay}
-      accessibilityViewIsModal
-      accessibilityLabel="Cuadro de confirmación"
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      statusBarTranslucent
     >
-      <View style={styles.dialogCard}>
-        <AppText style={styles.dialogTitle}>{title}</AppText>
-        {!!message && <AppText style={styles.dialogMessage}>{message}</AppText>}
-        <View style={styles.dialogActions}>
-          <TouchableOpacity
-            onPress={onCancel}
-            style={[styles.btn, styles.btnGhost]}
-          >
-            <AppText style={styles.btnGhostText}>{cancelLabel}</AppText>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={onConfirm}
-            style={[
-              styles.btn,
-              destructive ? styles.btnDanger : styles.btnPrimary,
-            ]}
-          >
-            <AppText style={styles.btnText}>{confirmLabel}</AppText>
-          </TouchableOpacity>
+      <View
+        style={styles.dialogOverlayModal}
+        accessibilityViewIsModal
+        accessibilityLabel="Cuadro de confirmación"
+        pointerEvents="auto"
+      >
+        <View style={styles.dialogCard}>
+          <AppText style={styles.dialogTitle}>{title}</AppText>
+          {!!message && (
+            <AppText style={styles.dialogMessage}>{message}</AppText>
+          )}
+          <View style={styles.dialogActions}>
+            <TouchableOpacity
+              onPress={onCancel}
+              style={[styles.btn, styles.btnGhost]}
+            >
+              <AppText style={styles.btnGhostText}>{cancelLabel}</AppText>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={onConfirm}
+              style={[
+                styles.btn,
+                destructive ? styles.btnDanger : styles.btnPrimary,
+              ]}
+            >
+              <AppText style={styles.btnText}>{confirmLabel}</AppText>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
-    </View>
+    </Modal>
   );
 };
 
@@ -409,6 +418,20 @@ const styles = StyleSheet.create({
   toastActionText: { fontWeight: '700' },
   toastCloseBtn: { paddingHorizontal: 8, paddingVertical: 6 },
   toastCloseText: { color: '#9CA3AF', fontSize: 16 },
+
+  dialogOverlayModal: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+    // zIndex/elevation no son necesarios dentro de Modal, pero no molestan
+    zIndex: 10000,
+    ...Platform.select({
+      android: { elevation: 10000 },
+      ios: {},
+    }),
+  },
 
   dialogOverlay: {
     position: 'absolute',
