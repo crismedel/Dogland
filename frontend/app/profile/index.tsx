@@ -41,7 +41,19 @@ export default function ProfileScreen() {
   const { showInfo } = useNotification();
   const { isAuthenticated } = useAuth();
 
-  const { photoUrl, uploading } = useProfilePhoto(user?.id_usuario || 0);
+  const { photoUrl, uploading, fetchPhoto } = useProfilePhoto(
+    user?.id_usuario || 0,
+  );
+
+  const refreshPhoto = useCallback(async () => {
+    if (user?.id_usuario) {
+      try {
+        await fetchPhoto();
+      } catch (err) {
+        console.error('Error refrescando foto:', err);
+      }
+    }
+  }, [user?.id_usuario, fetchPhoto]);
 
   // ✅ Usar useCallback para evitar que la función cambie en cada render
   const loadUserData = useCallback(async () => {
@@ -68,6 +80,13 @@ export default function ProfileScreen() {
     onRefresh: loadUserData,
     refreshOnFocus: true,
     refreshOnMount: true,
+  });
+
+  useAutoRefresh({
+    key: REFRESH_KEYS.USER_PHOTO,
+    onRefresh: refreshPhoto,
+    refreshOnFocus: false,
+    refreshOnMount: false,
   });
 
   const onEditProfile = () => router.push('/profile/edit-form');
@@ -330,9 +349,8 @@ export default function ProfileScreen() {
           <ProfileImagePicker
             userId={user.id_usuario}
             onUploadSuccess={() => {
-              console.log('onUploadSuccess llamado');
               closeBottomSheet();
-              loadUserData(); // Esto debería recargar todo el perfil
+              void fetchPhoto();
             }}
           />
         )}

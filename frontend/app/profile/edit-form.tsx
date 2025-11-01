@@ -159,7 +159,7 @@ const EditProfileScreen = () => {
 
       setTimeout(() => {
         router.back();
-      }, 1500);
+      }, 500);
     } catch (error: any) {
       showError(
         'Error',

@@ -245,7 +245,7 @@ export default function CreateAlertScreen() {
 
       setTimeout(() => {
         router.back();
-      }, 1500);
+      }, 500);
     } catch (error: any) {
       console.error('CreateAlertScreen: Error al crear alerta:', error);
       showError(

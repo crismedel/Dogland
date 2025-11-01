@@ -199,7 +199,7 @@ export default function EditAlertScreen() {
 
       setTimeout(() => {
         router.back();
-      }, 1500);
+      }, 500);
     } catch (e: any) {
       console.error('EditAlertScreen: Error al actualizar alerta:', e);
       const message =

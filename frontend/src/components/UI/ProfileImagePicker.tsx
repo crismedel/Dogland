@@ -7,6 +7,8 @@ import { fontWeightMedium } from '../AppText';
 import CustomButton from './CustomButton';
 import { Ionicons } from '@expo/vector-icons';
 import { useNotification } from '@/src/components/notifications/NotificationContext';
+import { useRefresh } from '@/src/contexts/RefreshContext';
+import { REFRESH_KEYS } from '@/src/constants/refreshKeys';
 
 type Props = {
   userId: number;
@@ -18,6 +20,7 @@ export default function ProfileImagePicker({ userId, onUploadSuccess }: Props) {
     useProfilePhoto(userId);
   const [selectedUri, setSelectedUri] = useState<string | null>(null);
   const { showError, confirm, showInfo } = useNotification();
+  const { triggerRefresh } = useRefresh();
 
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -52,10 +55,13 @@ export default function ProfileImagePicker({ userId, onUploadSuccess }: Props) {
     if (success) {
       setSelectedUri(null);
 
-      // Espera un momento antes de recargar
+      // Disparar evento global para actualizar foto en otras pantallas
+      triggerRefresh(REFRESH_KEYS.USER_PHOTO);
+
+      // Opcional: notificar al padre para que cierre el sheet / actualice inmediatamente
       setTimeout(() => {
         onUploadSuccess?.();
-      }, 500);
+      }, 300);
     }
   };
 
@@ -70,6 +76,11 @@ export default function ProfileImagePicker({ userId, onUploadSuccess }: Props) {
         const success = await deletePhoto();
         if (success) {
           setSelectedUri(null);
+
+          // Disparar refresh global
+          triggerRefresh(REFRESH_KEYS.USER_PHOTO);
+
+          // Notificar al padre
           onUploadSuccess?.();
         }
       },

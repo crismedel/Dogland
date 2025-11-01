@@ -30,6 +30,9 @@ export const REFRESH_KEYS = {
   /** Lista de adopciones */
   ADOPTION: 'adoption',
 
+  /** Foto de perfil de usuario */
+  USER_PHOTO: 'USER_PHOTO',
+
   // Agrega más keys según las necesidades de tu aplicación
 } as const;
 
