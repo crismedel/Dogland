@@ -1,4 +1,3 @@
-// src/middlewares/uploadProfileImage.js
 import multer from 'multer';
 import sharp from 'sharp';
 

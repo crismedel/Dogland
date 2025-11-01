@@ -30,7 +30,6 @@ import notificationsRoutes from './routes/notifications.js';
 import envioAnimalesRoutes from './routes/animal_form.js';
 import racesFormRouter from './routes/races_form.js'; // archivo para razas pagina adoptar
 import healthStatesFormRouter from './routes/healthStates_form.js'; // pagina adoptar
-import path from 'path';
 import userPhotoRouter from './routes/userPhoto.js';
 const app = express();
 
@@ -80,7 +79,6 @@ app.use('/api', healthRouter);
 app.use('/api', medicalHistoryRouter);
 app.use('/api', infoCompAnimales);
 app.use('/api/notifications', notificationsRoutes);
-app.use('/uploads', express.static(path.join(process.cwd(), 'src', 'uploads')));
 app.use('/api', userPhotoRouter);
 
 //---------------NO TOCAR----------------------------

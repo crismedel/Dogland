@@ -1,4 +1,3 @@
-// src/controllers/userPhotoController.js
 import pool from '../db/db.js';
 
 // GET /user/profile-image/:userId

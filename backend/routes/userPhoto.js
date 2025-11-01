@@ -1,4 +1,3 @@
-// src/routes/userPhoto.js
 import express from 'express';
 import {
   getProfilePhoto,
