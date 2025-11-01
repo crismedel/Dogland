@@ -13,7 +13,7 @@ import { errorHandler } from './middlewares/errorHandler.js';
 import sightingsRouter from './routes/sightings.js';
 import alertsRouter from './routes/alerts.js';
 import authRouter from './routes/auth.js';
-import authGoogle from './routes/authGoogle.js'
+import authGoogle from './routes/authGoogle.js';
 import organizationsRouter from './routes/organizations.js';
 import usersRouter from './routes/users.js';
 import animalsRouter from './routes/animals.js';
@@ -30,8 +30,8 @@ import notificationsRoutes from './routes/notifications.js';
 import envioAnimalesRoutes from './routes/animal_form.js';
 import racesFormRouter from './routes/races_form.js'; // archivo para razas pagina adoptar
 import healthStatesFormRouter from './routes/healthStates_form.js'; // pagina adoptar
-
-
+import path from 'path';
+import userPhotoRouter from './routes/userPhoto.js';
 const app = express();
 
 // Configuraciones base
@@ -51,9 +51,9 @@ app.use(
     cookie: {
       secure: NODE_ENV === 'production',
       httpOnly: true,
-      maxAge: 24 * 60 * 60 * 1000 // 24 horas
-    }
-  })
+      maxAge: 24 * 60 * 60 * 1000, // 24 horas
+    },
+  }),
 );
 app.use(passport.initialize());
 app.use(passport.session());
@@ -80,13 +80,14 @@ app.use('/api', healthRouter);
 app.use('/api', medicalHistoryRouter);
 app.use('/api', infoCompAnimales);
 app.use('/api/notifications', notificationsRoutes);
+app.use('/uploads', express.static(path.join(process.cwd(), 'src', 'uploads')));
+app.use('/api', userPhotoRouter);
 
 //---------------NO TOCAR----------------------------
 app.use('/api', envioAnimalesRoutes);
-app.use('/api', racesFormRouter); 
-app.use('/api', healthStatesFormRouter); 
+app.use('/api', racesFormRouter);
+app.use('/api', healthStatesFormRouter);
 //-----------------------------------------------
-
 
 // Middleware de manejo de errores general
 app.use(errorHandler);
