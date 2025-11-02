@@ -110,9 +110,7 @@ export const uploadProfilePhoto = async (req, res, next) => {
       `UPDATE usuario
          SET foto_perfil_blob = $1,
              foto_perfil_mime = $2,
-             foto_perfil_updated_at = NOW(),
-             foto_perfil = NULL,
-             foto_perfil_url = NULL
+             foto_perfil_updated_at = NOW()
        WHERE id_usuario = $3
        RETURNING id_usuario, foto_perfil_mime, foto_perfil_updated_at`,
       [image.buffer, image.mimetype, userId],
@@ -153,8 +151,6 @@ export const deleteProfilePhoto = async (req, res, next) => {
          SET foto_perfil_blob = NULL,
              foto_perfil_mime = NULL,
              foto_perfil_updated_at = NOW(),
-             foto_perfil = NULL,
-             foto_perfil_url = NULL
        WHERE id_usuario = $1`,
       [userId],
     );
