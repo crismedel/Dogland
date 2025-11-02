@@ -150,7 +150,7 @@ export const deleteProfilePhoto = async (req, res, next) => {
       `UPDATE usuario
          SET foto_perfil_blob = NULL,
              foto_perfil_mime = NULL,
-             foto_perfil_updated_at = NOW(),
+             foto_perfil_updated_at = NOW()
        WHERE id_usuario = $1`,
       [userId],
     );
