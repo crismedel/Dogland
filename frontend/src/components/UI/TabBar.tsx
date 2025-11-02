@@ -1,5 +1,11 @@
 import React from 'react';
-import { View, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import {
+  View,
+  TouchableOpacity,
+  StyleSheet,
+  Platform,
+  useColorScheme,
+} from 'react-native';
 import { Link, usePathname } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import type { ComponentProps } from 'react';
@@ -10,12 +16,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '@/src/constants/colors';
-import {
-  fontWeightBold,
-  fontWeightSemiBold,
-  fontWeightMedium,
-  AppText,
-} from '@/src/components/AppText';
+import { fontWeightSemiBold, AppText } from '@/src/components/AppText';
 
 type IoniconName = ComponentProps<typeof Ionicons>['name'];
 
@@ -55,11 +56,34 @@ const navItems: NavItem[] = [
 ];
 
 const TAB_HEIGHT = 64;
+const PRIMARY_RGB = '251,191,36'; // #fbbf24
+const SECONDARY_RGB = '217,119,6'; // #d97706
 
 export default function BottomNavBar() {
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'dark';
   const bottomInset = Math.max(insets.bottom, Platform.OS === 'ios' ? 8 : 10);
+
+  // Dynamic colors for light/dark
+  const containerBg = isDark ? '#121212' : Colors.backgroundSecon; // darker base for dark mode
+  const containerBorder = isDark
+    ? 'rgba(255,255,255,0.04)'
+    : 'rgba(0,0,0,0.04)';
+  const inactiveColor = isDark ? 'rgba(255,255,255,0.68)' : Colors.darkGray;
+  const activeIconColor = Colors.primary; // solicitado: icono activo con primary
+  const activeLabelColor = Colors.secondary;
+  const pillBg = isDark
+    ? `rgba(${PRIMARY_RGB}, 0.22)`
+    : `rgba(${PRIMARY_RGB}, 0.18)`;
+  const pillBorder = isDark
+    ? `rgba(${PRIMARY_RGB}, 0.30)`
+    : `rgba(${PRIMARY_RGB}, 0.28)`;
+  const indicatorGlow = isDark
+    ? `rgba(${SECONDARY_RGB}, 0.22)`
+    : `rgba(${SECONDARY_RGB}, 0.16)`;
+  const indicatorColor = Colors.secondary;
 
   return (
     <View style={styles.root} pointerEvents="box-none">
@@ -67,6 +91,8 @@ export default function BottomNavBar() {
         style={[
           styles.container,
           {
+            backgroundColor: containerBg,
+            borderTopColor: containerBorder,
             paddingBottom: bottomInset,
             height: TAB_HEIGHT + bottomInset,
           },
@@ -74,7 +100,6 @@ export default function BottomNavBar() {
       >
         <View pointerEvents="none" style={styles.topBevelHighlight} />
         <View pointerEvents="none" style={styles.topBevelShadow} />
-        {/* Gradiente sutil para profundidad (capa detrás) */}
         <View pointerEvents="none" style={styles.containerSheen} />
 
         {navItems.map((item) => {
@@ -83,26 +108,20 @@ export default function BottomNavBar() {
 
           const animatedIcon = useAnimatedStyle(() => ({
             transform: [
-              { translateY: withTiming(isActive ? -2 : 0, { duration: 160 }) },
+              { translateY: withTiming(isActive ? -4 : 0, { duration: 170 }) },
               {
                 scale: isActive
-                  ? withSpring(1.1, { damping: 16, stiffness: 200 })
+                  ? withSpring(1.08, { damping: 14, stiffness: 220 })
                   : withTiming(1, { duration: 140 }),
               },
-              // leve “tilt” 3D opcional
-              {
-                rotateZ: withTiming(isActive ? '0deg' : '0deg', {
-                  duration: 160,
-                }),
-              },
             ],
-            opacity: withTiming(isActive ? 1 : 0.65, { duration: 160 }),
+            opacity: withTiming(isActive ? 1 : 0.72, { duration: 150 }),
           }));
 
           const activePill = useAnimatedStyle(() => ({
             opacity: withTiming(isActive ? 1 : 0, { duration: 160 }),
             transform: [
-              { scale: withTiming(isActive ? 1 : 0.99, { duration: 160 }) },
+              { scale: withTiming(isActive ? 1 : 0.995, { duration: 160 }) },
             ],
           }));
 
@@ -116,38 +135,61 @@ export default function BottomNavBar() {
                 accessibilityLabel={item.label}
                 accessibilityState={{ selected: isActive }}
               >
-                {/* Indicador superior con glow */}
                 {isActive && (
                   <>
-                    <Animated.View style={styles.topIndicatorGlow} />
-                    <Animated.View style={styles.topIndicator} />
+                    <Animated.View
+                      style={[
+                        styles.topIndicatorGlow,
+                        { backgroundColor: indicatorGlow },
+                      ]}
+                    />
+                    <Animated.View
+                      style={[
+                        styles.topIndicator,
+                        { backgroundColor: indicatorColor },
+                      ]}
+                    />
                   </>
                 )}
 
-                {/* Pill activo con efecto neumórfico (capas) */}
-                <Animated.View style={[styles.activePill, activePill]}>
-                  {/* Sombra inferior suave (drop shadow) */}
+                <Animated.View
+                  style={[
+                    styles.activePill,
+                    activePill,
+                    { backgroundColor: pillBg, borderColor: pillBorder },
+                  ]}
+                >
                   <View style={styles.pillShadowBottom} />
-                  {/* Highlight superior (simula inner shadow invertida) */}
                   <View style={styles.pillHighlightTop} />
                 </Animated.View>
 
-                {/* Contenido (icono + label) con bevel del icono */}
                 <Animated.View style={[styles.content, animatedIcon]}>
                   <View style={styles.icon3DWrap}>
-                    {/* highlight arriba del icono */}
                     {isActive && <View style={styles.iconHighlight} />}
-                    {/* sombra abajo del icono */}
                     {isActive && <View style={styles.iconShadow} />}
                     <Ionicons
                       name={iconName}
-                      size={isActive ? 24 : 22}
-                      color={isActive ? Colors.primary : Colors.secondary}
+                      size={isActive ? 22 : 20}
+                      color={isActive ? activeIconColor : inactiveColor}
+                      style={
+                        isActive
+                          ? {
+                              textShadowColor: 'rgba(0,0,0,0.06)',
+                              textShadowRadius: 2,
+                            }
+                          : undefined
+                      }
                     />
                   </View>
+
                   <View style={styles.labelBox}>
                     <AppText
-                      style={[styles.label, isActive && styles.labelActive]}
+                      style={[
+                        styles.label,
+                        { color: inactiveColor, opacity: isDark ? 0.92 : 0.95 },
+                        isActive && { color: activeLabelColor },
+                        isActive && styles.labelActive,
+                      ]}
                       numberOfLines={1}
                       adjustsFontSizeToFit
                     >
@@ -167,77 +209,61 @@ export default function BottomNavBar() {
 const styles = StyleSheet.create({
   root: { left: 0, right: 0, bottom: 0 },
 
-  // En styles.container
   container: {
-    backgroundColor: Platform.OS === 'ios' ? '#D8C8A8' : '#D8C8A8',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-
-    // SOLO arriba redondeado
     borderTopLeftRadius: 18,
     borderTopRightRadius: 18,
-    // Remueve borderRadius: 18
-    // borderRadius: 18,
-
     borderTopWidth: 1,
-    borderTopColor: '#D8C8A8',
     ...Platform.select({
       ios: {
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: -4 },
-        shadowOpacity: 0.14,
+        shadowOffset: { width: 0, height: -6 },
+        shadowOpacity: 0.1,
         shadowRadius: 16,
       },
-      android: { elevation: 14 },
+      android: { elevation: 10 },
     }),
     overflow: 'hidden',
   },
 
-  // capa de “sheen”/gradiente vertical sutil
   containerSheen: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     height: TAB_HEIGHT,
-    backgroundColor: 'rgba(255, 255, 255, 0.10)', // un pelín más suave
+    backgroundColor: 'rgba(255,255,255,0.04)',
   },
 
-  // Línea highlight pegada al borde superior
   topBevelHighlight: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     height: 3,
-    backgroundColor: 'rgba(255,255,255,0.65)', // luz
-    opacity: 1,
+    backgroundColor: 'rgba(255,255,255,0.55)',
   },
 
-  // “Sombra interior” justo debajo del borde superior
   topBevelShadow: {
     position: 'absolute',
     top: 3,
     left: 0,
     right: 0,
-    height: 6,
-    // degrada de sombra a transparente para simular profundidad
+    height: 8,
     backgroundColor: 'transparent',
-    // truco de gradiente con sombras: dos capas superpuestas
-    // como RN no soporta gradient puro aquí sin librería, usamos
-    // una sombra difusa simulada con un color semitransparente:
-    borderTopColor: 'rgba(0,0,0,0.08)',
-    borderTopWidth: 1, // no dibuja línea, solo dejamos como referencia
+    borderTopColor: 'rgba(0,0,0,0.06)',
+    borderTopWidth: 1,
   },
 
   navItem: {
     flex: 1,
     height: TAB_HEIGHT,
-    marginHorizontal: 4,
+    marginHorizontal: 6,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: 20,
+    paddingTop: 14,
   },
 
   content: {
@@ -248,63 +274,57 @@ const styles = StyleSheet.create({
     minWidth: 64,
   },
 
-  // PILL ACTIVO 3D (neumorphism)
   activePill: {
     position: 'absolute',
-    top: 10,
-    bottom: 0,
-    left: 0,
-    right: 0,
-    borderRadius: 16,
-    backgroundColor: Colors.primary + '29', // ~16% alpha
+    top: 6,
+    left: 6,
+    right: 6,
+    bottom: 6,
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: Colors.primary + '4D', // ~30% alpha
     zIndex: 0,
     overflow: 'hidden',
   },
   pillShadowBottom: {
     position: 'absolute',
-    bottom: 0,
-    left: 8,
-    right: 6,
-    height: 10,
+    bottom: 6,
+    left: 14,
+    right: 14,
+    height: 8,
     borderBottomLeftRadius: 12,
     borderBottomRightRadius: 12,
+    backgroundColor: 'rgba(0,0,0,0.06)',
   },
   pillHighlightTop: {
     position: 'absolute',
-    top: 0,
-    left: 6,
-    right: 6,
-    height: 10,
+    top: 6,
+    left: 10,
+    right: 10,
+    height: 8,
     borderTopLeftRadius: 12,
     borderTopRightRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.22)',
+    backgroundColor: 'rgba(255,255,255,0.16)',
   },
 
-  // Indicador superior con glow
   topIndicatorGlow: {
     position: 'absolute',
-    top: 4,
-    height: 10,
-    width: 32,
-    borderRadius: 8,
-    backgroundColor: Colors.primary + '40',
+    top: 2,
+    height: 8,
+    width: 40,
+    borderRadius: 10,
     alignSelf: 'center',
     zIndex: 3,
   },
   topIndicator: {
     position: 'absolute',
-    top: 6,
-    height: 4,
-    width: 24,
-    borderRadius: 4,
-    backgroundColor: Colors.primary,
+    top: 5,
+    height: 5,
+    width: 28,
+    borderRadius: 6,
     alignSelf: 'center',
     zIndex: 4,
   },
 
-  // Icono con “bevel” simulado
   icon3DWrap: {
     position: 'relative',
     alignItems: 'center',
@@ -313,18 +333,18 @@ const styles = StyleSheet.create({
   iconHighlight: {
     position: 'absolute',
     top: -2,
-    width: 20,
-    height: 8,
+    width: 18,
+    height: 6,
     borderRadius: 8,
-    backgroundColor: 'rgba(255,255,255,0.35)',
+    backgroundColor: 'rgba(255,255,255,0.36)',
   },
   iconShadow: {
     position: 'absolute',
     bottom: -2,
-    width: 22,
-    height: 8,
+    width: 20,
+    height: 7,
     borderRadius: 8,
-    backgroundColor: 'rgba(0,0,0,0.10)',
+    backgroundColor: 'rgba(0,0,0,0.08)',
   },
 
   labelBox: {
@@ -333,14 +353,12 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 12,
-    color: Colors.secondary,
     textAlign: 'center',
     marginTop: 2,
     fontWeight: Platform.OS === 'android' ? '500' : '400',
     letterSpacing: 0.2,
   },
   labelActive: {
-    color: Colors.lightText,
     opacity: 1,
     fontWeight: fontWeightSemiBold,
   },

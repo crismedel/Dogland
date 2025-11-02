@@ -4,7 +4,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useProfilePhoto } from '../../utils/useProfilePhoto';
 import { AppText } from '../AppText';
 import { fontWeightMedium } from '../AppText';
-import CustomButton from './CustomButton';
+import CustomButton from '../UI/CustomButton';
 import { Ionicons } from '@expo/vector-icons';
 import { useNotification } from '@/src/components/notifications/NotificationContext';
 import { useRefresh } from '@/src/contexts/RefreshContext';
