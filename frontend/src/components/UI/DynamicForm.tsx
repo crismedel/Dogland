@@ -1,28 +1,25 @@
+import {
+  AppText,
+  fontWeightMedium,
+  fontWeightSemiBold
+} from '@/src/components/AppText';
+import { Colors } from '@/src/constants/colors';
+import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
-  View,
-  TextInput,
-  StyleSheet,
-  KeyboardTypeOptions,
-  TouchableOpacity,
   ActivityIndicator,
-  Platform,
+  KeyboardTypeOptions,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import CustomButton from './CustomButton';
 import CustomCalendar from './calendary/CustomCalendar';
 import DateTimePickerModal from './calendary/DateTimePickerModal';
-import TimePickerInline from './TimePickerInline';
-import { Colors } from '@/src/constants/colors';
+import CustomButton from './CustomButton';
 import CustomPicker from './CustomPicker';
-import {
-  fontWeightSemiBold,
-  fontWeightMedium,
-  AppText,
-} from '@/src/components/AppText';
+import TimePickerInline from './TimePickerInline';
 
-// Si vas a usar el picker nativo de hora, instala e importa:
-// import DateTimePicker from '@react-native-community/datetimepicker';
 
 export interface FormField {
   name: string;
@@ -55,6 +52,7 @@ export interface FormField {
   timeStep?: number; // minutos (default 5)
   useNativeTimePicker?: boolean; // para time mode si usas nativo
   dateFormat?: (value: Date | string) => string; // formateador custom
+  maxLength?: number; 
 }
 
 interface DynamicFormProps {
@@ -444,6 +442,7 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
                 multiline={field.multiline || false}
                 numberOfLines={field.numberOfLines}
                 value={values[field.name]}
+                maxLength={field.maxLength}
                 onChangeText={(text) => onValueChange(field.name, text)}
               />
             </View>

@@ -114,6 +114,8 @@ const Index: React.FC = () => {
         success: boolean;
         message: string;
         token?: string;
+        requires2FA?: boolean;
+        email?: string;
       }
 
       const response = await apiClient.post<LoginResponse>('/auth/login', {
@@ -121,6 +123,28 @@ const Index: React.FC = () => {
         password,
       });
 
+<<<<<<< HEAD
+=======
+      console.log('Datos completos de login response:', response.data);
+
+      // Verificar si se requiere 2FA
+      if (response.data.requires2FA) {
+        console.log('2FA requerido, redirigiendo a verificación...');
+        showSuccess(
+          'Código enviado',
+          'Revisa tu email para obtener el código de verificación.'
+        );
+
+        // Redirigir a la pantalla de verificacion 2FA
+        router.push({
+          pathname: '/auth/verify-2fa',
+          params: { email: response.data.email || email },
+        });
+        return;
+      }
+
+      // Flujo normal sin 2FA
+>>>>>>> 9655146 (feat(auth): implementar autenticacion de dos factores (2FA))
       const { token } = response.data;
 
       if (!token) throw new Error('El servidor no envió un token válido.');

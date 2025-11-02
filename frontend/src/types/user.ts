@@ -13,6 +13,7 @@ export interface User {
   nombre_ciudad: string;
   sexo: string;
   nombre_organizacion?: string;
+  has_2fa?: boolean;
 }
 
 export interface UsersResponse {

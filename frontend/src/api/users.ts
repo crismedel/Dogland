@@ -26,3 +26,8 @@ export async function updateUserProfile(userData: {
   const res = await apiClient.put('/users/profile', userData);
   return res.data.data;
 }
+// Activar/desactivar autenticación de dos factores
+export async function toggle2FA(enable: boolean): Promise<{ success: boolean; message: string; has_2fa: boolean }> {
+  const res = await apiClient.post('/auth/toggle-2fa', { enable });
+  return res.data;
+}

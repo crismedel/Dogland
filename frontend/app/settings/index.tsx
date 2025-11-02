@@ -1,18 +1,71 @@
 // app/settings.tsx
-import React from 'react';
-import { StyleSheet, View, ScrollView, TouchableOpacity } from 'react-native';
-import { router } from 'expo-router';
+import { fetchUserProfile, toggle2FA } from '@/src/api/users';
+import {
+  AppText,
+  fontWeightMedium,
+  fontWeightSemiBold,
+} from '@/src/components/AppText';
 import { useNotification } from '@/src/components/notifications/NotificationContext';
-import { useAuth } from '@/src/contexts/AuthContext';
-import CustomHeader from '@/src/components/UI/CustomHeader';
 import CustomButton from '@/src/components/UI/CustomButton';
-import { fontWeightSemiBold, AppText } from '@/src/components/AppText';
-import { Ionicons } from '@expo/vector-icons';
+import CustomHeader from '@/src/components/UI/CustomHeader';
 import { Colors } from '@/src/constants/colors';
+import { useAuth } from '@/src/contexts/AuthContext';
+import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, ScrollView, StyleSheet, Switch, TouchableOpacity, View } from 'react-native';
 
 export default function SettingsScreen() {
-  const { confirm, showSuccess } = useNotification();
+  const { confirm, showSuccess, showError } = useNotification();
   const { logout } = useAuth();
+  const [has2FA, setHas2FA] = useState(false);
+  const [isLoading2FA, setIsLoading2FA] = useState(false);
+  const [isFetchingProfile, setIsFetchingProfile] = useState(true);
+
+  // Cargar el perfil del usuario al montar el componente
+  useEffect(() => {
+    loadUserProfile();
+  }, []);
+
+  const loadUserProfile = async () => {
+    try {
+      setIsFetchingProfile(true);
+      const profile = await fetchUserProfile();
+      setHas2FA(profile.has_2fa || false);
+    } catch (error) {
+      console.error('Error al cargar perfil:', error);
+      showError('Error', 'No se pudo cargar la configuración del usuario.');
+    } finally {
+      setIsFetchingProfile(false);
+    }
+  };
+
+  const handleToggle2FA = async (value: boolean) => {
+    try {
+      setIsLoading2FA(true);
+      const response = await toggle2FA(value);
+
+      if (response.success) {
+        setHas2FA(value);
+        showSuccess(
+          'Configuración actualizada',
+          value
+            ? 'Autenticación de dos factores activada. Recibirás un código por email al iniciar sesión.'
+            : 'Autenticación de dos factores desactivada.'
+        );
+      }
+    } catch (error: any) {
+      console.error('Error al cambiar 2FA:', error);
+      showError(
+        'Error',
+        error.response?.data?.message || 'No se pudo actualizar la configuración.'
+      );
+      // Revertir el switch en caso de error
+      setHas2FA(!value);
+    } finally {
+      setIsLoading2FA(false);
+    }
+  };
 
   const handleLogout = () => {
     confirm({
@@ -50,6 +103,35 @@ export default function SettingsScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
+
+        {/* Sección de Seguridad */}
+        <View style={styles.card}>
+          <AppText style={styles.sectionTitle}>Seguridad</AppText>
+
+          <View style={styles.settingRow}>
+            <View style={styles.settingInfo}>
+              <AppText style={styles.settingLabel}>
+                Autenticación de dos factores
+              </AppText>
+              <AppText style={styles.settingDescription}>
+                Recibe un código por email al iniciar sesión
+              </AppText>
+            </View>
+            {isFetchingProfile ? (
+              <ActivityIndicator size="small" color="#CC5803" />
+            ) : (
+              <Switch
+                value={has2FA}
+                onValueChange={handleToggle2FA}
+                disabled={isLoading2FA}
+                trackColor={{ false: '#D1D5DB', true: '#FBBF24' }}
+                thumbColor={has2FA ? '#CC5803' : '#F3F4F6'}
+                ios_backgroundColor="#D1D5DB"
+              />
+            )}
+          </View>
+        </View>
+
         {/* Cuenta */}
         <View style={styles.card}>
           <AppText style={styles.sectionTitle}>Cuenta</AppText>
@@ -165,5 +247,26 @@ const styles = StyleSheet.create({
   },
   button: {
     width: '100%', // Todos los botones ocupan el 100% del ancho disponible
+  },
+  settingRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  settingInfo: {
+    flex: 1,
+    marginRight: 16,
+  },
+  settingLabel: {
+    fontSize: 16,
+    fontWeight: fontWeightMedium,
+    color: '#1F2937',
+    marginBottom: 4,
+  },
+  settingDescription: {
+    fontSize: 14,
+    color: '#6B7280',
+    lineHeight: 18,
   },
 });
