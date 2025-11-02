@@ -213,7 +213,8 @@ CREATE TABLE dogland.usuario (
     deleted_at timestamp with time zone DEFAULT NULL,
     id_ciudad integer NOT NULL,
     id_organizacion integer,
-    id_rol smallint NOT NULL
+    id_rol smallint NOT NULL,
+    has_2fa boolean DEFAULT false
 );
 
 ALTER TABLE dogland.usuario ALTER COLUMN id_usuario ADD GENERATED ALWAYS AS IDENTITY (
@@ -265,6 +266,27 @@ CREATE TABLE dogland.google_accounts (
 
 ALTER TABLE dogland.google_accounts ALTER COLUMN id_google_account ADD GENERATED ALWAYS AS IDENTITY (
     SEQUENCE NAME dogland.google_accounts_id_google_account_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+--
+-- Name: two_factor_tokens; Type: TABLE
+--
+
+CREATE TABLE dogland.two_factor_tokens (
+    id_two_factor integer NOT NULL,
+    id_usuario integer NOT NULL,
+    token_hash character varying(255) NOT NULL,
+    expires_at timestamp with time zone NOT NULL,
+    created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP
+);
+
+ALTER TABLE dogland.two_factor_tokens ALTER COLUMN id_two_factor ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME dogland.two_factor_tokens_id_two_factor_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -643,6 +665,7 @@ ALTER TABLE ONLY dogland.organizacion ADD CONSTRAINT organizacion_pkey PRIMARY K
 ALTER TABLE ONLY dogland.usuario ADD CONSTRAINT usuario_pkey PRIMARY KEY (id_usuario);
 ALTER TABLE ONLY dogland.password_reset ADD CONSTRAINT password_reset_pkey PRIMARY KEY (id_reset);
 ALTER TABLE ONLY dogland.google_accounts ADD CONSTRAINT google_accounts_pkey PRIMARY KEY (id_google_account);
+ALTER TABLE ONLY dogland.two_factor_tokens ADD CONSTRAINT two_factor_tokens_pkey PRIMARY KEY (id_two_factor);
 ALTER TABLE ONLY dogland.especie ADD CONSTRAINT especie_pkey PRIMARY KEY (id_especie);
 ALTER TABLE ONLY dogland.raza ADD CONSTRAINT raza_pkey PRIMARY KEY (id_raza);
 ALTER TABLE ONLY dogland.estado_salud ADD CONSTRAINT estado_salud_pkey PRIMARY KEY (id_estado_salud);
@@ -671,6 +694,7 @@ ALTER TABLE ONLY dogland.password_reset ADD CONSTRAINT password_reset_token_key 
 ALTER TABLE ONLY dogland.dispositivo ADD CONSTRAINT dispositivo_token_key UNIQUE (token);
 ALTER TABLE ONLY dogland.google_accounts ADD CONSTRAINT google_accounts_google_account_id_key UNIQUE (google_account_id);
 ALTER TABLE ONLY dogland.google_accounts ADD CONSTRAINT google_accounts_google_email_key UNIQUE (google_email);
+ALTER TABLE ONLY dogland.two_factor_tokens ADD CONSTRAINT two_factor_tokens_id_usuario_key UNIQUE (id_usuario);
 ALTER TABLE ONLY dogland.tipo_alerta ADD CONSTRAINT tipo_alerta_tipo_alerta_key UNIQUE (tipo_alerta);
 ALTER TABLE ONLY dogland.nivel_riesgo ADD CONSTRAINT nivel_riesgo_nivel_riesgo_key UNIQUE (nivel_riesgo);
 
@@ -701,6 +725,9 @@ ALTER TABLE ONLY dogland.password_reset
 
 ALTER TABLE ONLY dogland.google_accounts
     ADD CONSTRAINT fk_google_usuario FOREIGN KEY (id_usuario) REFERENCES dogland.usuario(id_usuario) ON DELETE CASCADE;
+
+ALTER TABLE ONLY dogland.two_factor_tokens
+    ADD CONSTRAINT fk_two_factor_usuario FOREIGN KEY (id_usuario) REFERENCES dogland.usuario(id_usuario) ON DELETE CASCADE;
 
 ALTER TABLE ONLY dogland.raza
     ADD CONSTRAINT fk_raza_especie FOREIGN KEY (id_especie) REFERENCES dogland.especie(id_especie);

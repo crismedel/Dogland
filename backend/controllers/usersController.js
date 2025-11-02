@@ -36,7 +36,7 @@ export const getUserProfile = async (req, res, next) => {
       `
       SELECT u.id_usuario, u.nombre_usuario, u.apellido_paterno, u.apellido_materno,
              u.telefono, u.email, u.fecha_nacimiento, u.fecha_creacion, u.activo,
-             u.id_sexo,
+             u.id_sexo, u.has_2fa,
              r.nombre_rol, c.nombre_ciudad, s.sexo, o.nombre_organizacion
       FROM usuario u
       JOIN rol r ON u.id_rol = r.id_rol

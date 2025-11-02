@@ -31,7 +31,7 @@ export const UserCreate = async (userData) => {
 
 export const findUserByEmail = async (email) => {
     const query = `
-        SELECT id_usuario, password_hash, id_rol, email
+        SELECT id_usuario, password_hash, id_rol, email, has_2fa
         FROM usuario
         WHERE email = $1
         LIMIT 1;

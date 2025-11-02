@@ -12,8 +12,14 @@ import { hashPassword, comparePassword } from '../utils/hash.js';
 import {
   sendPasswordResetEmail,
   sendAccountConfirmationEmail,
-} from '../mail/mail.service.js';
+  send2FACodeEmail,
+} from '../services/emailService.js';
 import { JWT_SECRET } from '../config/env.js';
+import {
+  generate2FACode,
+  save2FAToken,
+  verify2FACode,
+} from '../services/twoFactorService.js';
 
 const router = Router();
 
@@ -120,6 +126,26 @@ router.post('/login', async (req, res) => {
         .json({ success: false, error: 'Credenciales inválidas' });
     }
 
+    // Verificar si el usuario tiene 2FA habilitado
+    if (user.has_2fa) {
+      // Generar código 2FA
+      const code = generate2FACode();
+
+      // Guardar el código hasheado en la base de datos
+      await save2FAToken(user.id_usuario, code);
+
+      // Enviar el código por email
+      await send2FACodeEmail(user, code);
+
+      return res.json({
+        success: true,
+        requires2FA: true,
+        message: 'Código de verificación enviado a tu email',
+        email: user.email, // Para usar en el siguiente paso
+      });
+    }
+
+    // Si no tiene 2FA, continuar con el flujo normal
     // Obtener el rol del usuario desde la base de datos
     const rolResult = await pool.query(
       'SELECT nombre_rol FROM rol WHERE id_rol = $1',
@@ -139,6 +165,64 @@ router.post('/login', async (req, res) => {
     res.json({ success: true, message: 'Inicio de sesión exitoso', token });
   } catch (error) {
     console.error('Error en el endpoint de login:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// POST /api/auth/verify-2fa - Verificar código 2FA
+router.post('/verify-2fa', async (req, res) => {
+  try {
+    const { email, code } = req.body;
+
+    if (!email || !code) {
+      return res.status(400).json({
+        success: false,
+        error: 'Email y código son requeridos',
+      });
+    }
+
+    // Buscar el usuario por email
+    const user = await findUserByEmail(email);
+
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        error: 'Usuario no encontrado',
+      });
+    }
+
+    // Verificar el código 2FA
+    const verification = await verify2FACode(user.id_usuario, code);
+
+    if (!verification.valid) {
+      return res.status(401).json({
+        success: false,
+        error: verification.message,
+      });
+    }
+
+    // Si el código es válido, generar el token JWT
+    const rolResult = await pool.query(
+      'SELECT nombre_rol FROM rol WHERE id_rol = $1',
+      [user.id_rol],
+    );
+    const userRole = rolResult.rows[0].nombre_rol;
+
+    const payload = {
+      id: user.id_usuario,
+      role: userRole,
+      email: user.email,
+    };
+
+    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '1h' });
+
+    res.json({
+      success: true,
+      message: 'Autenticación completada exitosamente',
+      token,
+    });
+  } catch (error) {
+    console.error('Error en el endpoint de verify-2fa:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
@@ -298,6 +382,48 @@ router.post('/reset-password', async (req, res) => {
       .json({ success: false, message: 'Error interno del servidor.' });
   } finally {
     client.release();
+  }
+});
+
+// POST /api/auth/toggle-2fa - Activar/desactivar autenticación de dos factores
+router.post('/toggle-2fa', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const { enable } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'No autorizado.',
+      });
+    }
+
+    if (typeof enable !== 'boolean') {
+      return res.status(400).json({
+        success: false,
+        message: 'El campo "enable" debe ser un booleano.',
+      });
+    }
+
+    // Actualizar el campo has_2fa del usuario
+    await pool.query(
+      'UPDATE usuario SET has_2fa = $1 WHERE id_usuario = $2',
+      [enable, userId]
+    );
+
+    res.json({
+      success: true,
+      message: enable
+        ? 'Autenticación de dos factores activada correctamente.'
+        : 'Autenticación de dos factores desactivada correctamente.',
+      has_2fa: enable,
+    });
+  } catch (error) {
+    console.error('Error en /toggle-2fa:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error interno del servidor.',
+    });
   }
 });
 
