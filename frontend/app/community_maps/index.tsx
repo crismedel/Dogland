@@ -7,7 +7,7 @@ import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Image, Modal, StyleSheet, TouchableOpacity, View } from 'react-native';
-import MapView from 'react-native-maps'; // Import MapView para el tipo de Ref
+import MapView, { Region } from 'react-native-maps';
 import apiClient from '../../src/api/client';
 import MapsFilterModal from '../../src/components/community_maps/MapsFilterModal';
 import { ReporteDetails } from '../../src/components/report/ReporteDetails';
@@ -19,23 +19,20 @@ import { MapControlButtons } from './MapControlButtons';
 import { MapStatusOverlay } from './MapStatusOverlay';
 import { CurrentFilters, HeatmapPoint, Reporte } from './types';
 
-// (Importar AppText si es necesario para los estilos, aunque los componentes hijos ya lo importan)
-// import { AppText } from '@/src/components/AppText';
-
 
 const CommunityMapScreen = () => {
   const router = useRouter();
   const mapRef = useRef<MapView | null>(null);
   const { showError, showSuccess, confirm } = useNotification();
 
-  // --- ESTADOS (Se mantienen en el componente principal) ---
+  // --- ESTADOS ---
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [currentFilters, setCurrentFilters] = useState<CurrentFilters>({});
   const [hasActiveFilters, setHasActiveFilters] = useState(false);
   const [loading, setLoading] = useState(false);
   const [hasSearchedWithFilters, setHasSearchedWithFilters] = useState(false);
   const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
-  const [mapRegion, setMapRegion] = useState({
+  const [mapRegion, setMapRegion] = useState<Region>({
     latitude: -38.7369,
     longitude: -72.5994,
     latitudeDelta: 0.0922,
@@ -52,8 +49,9 @@ const CommunityMapScreen = () => {
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [heatmapData, setHeatmapData] = useState<HeatmapPoint[]>([]);
   const [heatmapLoading, setHeatmapLoading] = useState(false);
+  const [initialZoomDone, setInitialZoomDone] = useState(false); 
 
-  // --- LÓGICA DE DATOS (Se mantiene en el componente principal) ---
+  // --- LÓGICA DE DATOS ---
   useEffect(() => {
     const hasFilters =
       Object.keys(currentFilters).length > 0 &&
@@ -68,15 +66,19 @@ const CommunityMapScreen = () => {
     if (status === 'granted') {
       let loc = await Location.getCurrentPositionAsync({});
       setLocation(loc.coords);
-      setMapRegion((prevRegion) => ({
-        ...prevRegion,
-        latitude: loc.coords.latitude,
-        longitude: loc.coords.longitude,
-      }));
+      if (!initialZoomDone) {
+        setMapRegion({
+          latitude: loc.coords.latitude,
+          longitude: loc.coords.longitude,
+          latitudeDelta: 0.0922,
+          longitudeDelta: 0.0421,
+        });
+        setInitialZoomDone(true); 
+      }
     } else {
       showError('Permiso Denegado', 'No se puede acceder a la ubicación.');
     }
-  }, [showError]);
+  }, [showError, initialZoomDone]); 
 
   const obtenerReportes = useCallback(async (filters: CurrentFilters = {}) => {
     setLoading(true);
@@ -200,6 +202,10 @@ const CommunityMapScreen = () => {
     setShowCriticalReports(false);
   }, []);
 
+  const onRegionChangeComplete = (newRegion: Region) => {
+    setMapRegion(newRegion);
+  };
+
   // --- EFECTOS (EFFECTS) ---
   useEffect(() => {
     if (showCriticalReports || hasActiveFilters) return;
@@ -242,14 +248,42 @@ const CommunityMapScreen = () => {
     }
   }, [obtenerUbicacionActual, obtenerReportes, fetchCriticalReports, fetchHeatmapData, showCriticalReports, hasActiveFilters]);
 
+  // 🚨 CORRECCIÓN DE ORDEN: Mover la declaración de reportsToRender ANTES del useEffect de Zoom
+  const reportsToRender = showCriticalReports ? criticalReports : reportes;
+
+  // 🚨 EFECTO DE ZOOM DINÁMICO
+  useEffect(() => {
+    if (reportsToRender.length === 0 || showHeatmap || !mapRef.current) {
+      return;
+    }
+    const coordinates = reportsToRender.map(report => ({
+        latitude: report.latitude,
+        longitude: report.longitude,
+    }));
+    
+    if (location) {
+        coordinates.push(location);
+    }
+
+    // 🚨 Timeout corto para asegurar que el mapa esté listo
+    setTimeout(() => {
+        mapRef.current?.fitToCoordinates(coordinates, {
+            edgePadding: { top: 150, right: 50, bottom: 100, left: 50 },
+            animated: true,
+        });
+    }, 500); // 500ms de espera
+
+  }, [reportsToRender, showHeatmap, location]); // Depende de los reportes, el heatmap y la ubicación
+
+
   useEffect(() => {
     if (!showCriticalReports) {
       obtenerReportes(currentFilters);
     }
   }, [currentFilters, obtenerReportes, showCriticalReports]);
 
+
   // --- DATOS DERIVADOS ---
-  const reportsToRender = showCriticalReports ? criticalReports : reportes;
   const currentLoadingState = loading || (showCriticalReports && criticalLoading) || heatmapLoading;
   const shouldHideMap = currentLoadingState || (hasSearchedWithFilters && reportsToRender.length === 0);
 
@@ -277,7 +311,7 @@ const CommunityMapScreen = () => {
     if (report.id_estado_salud === 2) return Colors.warning || 'yellow';
     return undefined;
   };
-
+  
   // --- RENDERIZADO ---
   return (
     <View style={styles.container}>
@@ -338,6 +372,7 @@ const CommunityMapScreen = () => {
         onSelectSighting={setSelectedSighting}
         getMarkerColor={getMarkerColor}
         shouldHideMap={shouldHideMap}
+        onRegionChangeComplete={onRegionChangeComplete} // 🚨 Pasar el handler
       />
 
       {selectedSighting && (

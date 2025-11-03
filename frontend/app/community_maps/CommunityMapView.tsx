@@ -16,13 +16,16 @@ export const CommunityMapView = ({
   onSelectSighting,
   getMarkerColor,
   shouldHideMap,
+  onRegionChangeComplete, // 🚨 1. Recibir la prop
 }: MapViewProps) => {
   return (
     <MapView
       ref={mapRef}
       provider={PROVIDER_GOOGLE}
       style={[styles.map, shouldHideMap && styles.hiddenMap]}
-      region={mapRegion}
+      initialRegion={mapRegion} // Usar initialRegion para la carga inicial
+      // 🚨 2. Pasar la prop al MapView
+      onRegionChangeComplete={onRegionChangeComplete} 
       onPress={() => onSelectSighting(null)}
     >
       {/* Capa de Mapa de Calor */}
@@ -48,7 +51,7 @@ export const CommunityMapView = ({
       {!showHeatmap &&
         reportsToRender.map((r: Reporte) => (
           <ReporteMarker
-            key={r.id_avistamiento}
+            key={r.id_avistamiento.toString()} // 🚨 Key como string
             reporte={r}
             onSelect={onSelectSighting}
             criticalColor={getMarkerColor(r)}

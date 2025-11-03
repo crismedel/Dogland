@@ -1,6 +1,5 @@
 //archivo de tipos para que todos los componentes se comuniquen.
-
-import MapView from "react-native-maps";
+import MapView, { Region } from "react-native-maps"; // 🚨 Importar Region
 
 // Interfaz para los reportes (avistamientos)
 export interface Reporte {
@@ -32,7 +31,7 @@ export interface HeatmapPoint {
 // Props para el componente de Mapa
 export type MapViewProps = {
   mapRef: React.RefObject<MapView | null>;
-  mapRegion: { latitude: number; longitude: number; latitudeDelta: number; longitudeDelta: number };
+  mapRegion: Region; // 🚨 Usar el tipo Region
   location: { latitude: number; longitude: number } | null;
   showHeatmap: boolean;
   heatmapData: HeatmapPoint[];
@@ -40,6 +39,8 @@ export type MapViewProps = {
   onSelectSighting: (report: Reporte | null) => void;
   getMarkerColor: (report: Reporte) => string | undefined;
   shouldHideMap: boolean;
+  // 🚨 AÑADIR: Prop para notificar el cambio de región
+  onRegionChangeComplete: (newRegion: Region) => void; 
 };
 
 // Props para los botones flotantes
