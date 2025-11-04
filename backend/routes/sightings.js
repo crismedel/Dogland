@@ -1,5 +1,5 @@
 import express from 'express';
-import { getSightings, getSightingById, createSighting, updateSighting, deleteSighting, getSightingsByLocation, filterSightings, getEspecies, getEstadosSalud, getMySightings } from '../controllers/sightingsController.js';
+import { getSightings, getSightingById, createSighting, updateSighting, deleteSighting, getSightingsByLocation, filterSightings, getEspecies, getEstadosSalud, getMySightings, getEstadosAvistamiento } from '../controllers/sightingsController.js';
 import { authenticateToken} from '../middlewares/auth.js'; // Importa el middleware de autenticación
 
 const router = express.Router();
@@ -10,6 +10,7 @@ router.get('/sightings/location', getSightingsByLocation);
 router.get('/sightings/filter', filterSightings);
 router.get('/especies', getEspecies); 
 router.get('/estados-salud', getEstadosSalud);
+router.get('/estados-avistamiento', getEstadosAvistamiento);
 
 
 // Esta debe ir antes de /sightings/:id para evitar conflictos,
