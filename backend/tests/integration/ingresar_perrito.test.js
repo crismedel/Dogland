@@ -63,10 +63,10 @@ describe('Endpoints del Formulario de Adopción (animal_form)', () => {
     testRazaId = resRaza.rows[0].id_raza;
 
     // 5. Crear un estado de salud de prueba
-    // ✅ CORRECCIÓN: La columna se llama 'descripcion' (según el MER)
+    // (Ajustado: La tabla solo tiene 'estado_salud')
     const resHealth = await pool.query(
-      "INSERT INTO estado_salud (estado_salud, descripcion) VALUES ($1, $2) RETURNING id_estado_salud",
-      ['Estado de Prueba', '...']
+      "INSERT INTO estado_salud (estado_salud) VALUES ($1) RETURNING id_estado_salud",
+      ['Estado de Prueba']
     );
     testHealthStateId = resHealth.rows[0].id_estado_salud;
   });
@@ -198,5 +198,3 @@ describe('Endpoints del Formulario de Adopción (animal_form)', () => {
 
   });
 });
-
-
