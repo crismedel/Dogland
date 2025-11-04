@@ -11,7 +11,7 @@ import {
   View,
 } from 'react-native';
 
-// 👇 Importamos desde los archivos con los nuevos nombres
+// Importa tus funciones de la capa de API
 import { createFullAnimal } from '@/src/api/envioAnimalesAdop';
 import { fetchHealthStates } from '@/src/api/historialMedicoAdopt';
 import { fetchRaces } from '@/src/api/razaAnimalesAdop';
@@ -98,98 +98,116 @@ const FormAgregarPerrito = () => {
     return <ActivityIndicator size="large" color="#1976d2" style={{ marginTop: 50 }} />;
   }
 
-  // El JSX y los estilos se mantienen exactamente igual
   return (
     <ScrollView contentContainerStyle={styles.scroll}>
       <View style={styles.card}>
-      <AppText style={styles.sectionTitle}>Información General</AppText>
+        <AppText style={styles.sectionTitle}>Información General</AppText>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Nombre del animal *"
-        value={form.nombre_animal}
-        onChangeText={(text) => handleChange('nombre_animal', text)}
-      />
+        <TextInput
+          style={styles.input}
+          placeholder="Nombre del animal *"
+          value={form.nombre_animal}
+          onChangeText={(text) => handleChange('nombre_animal', text)}
+        />
 
-      <TextInput
-        style={styles.input}
-        placeholder="Edad (meses)"
-        keyboardType="numeric"
-        value={form.edad_animal}
-        onChangeText={(text) => handleChange('edad_animal', text)}
-      />
+        <TextInput
+          style={styles.input}
+          placeholder="Edad (meses)"
+          keyboardType="numeric"
+          value={form.edad_animal}
+          onChangeText={(text) => handleChange('edad_animal', text)}
+        />
+        
+        <View style={styles.pickerContainer}>
+          <Picker
+            selectedValue={form.size}
+            onValueChange={(itemValue) => handleChange('size', itemValue)}
+          >
+            <Picker.Item label="Selecciona un tamaño... *" value="" />
+            <Picker.Item label="Pequeño" value="Pequeño" />
+            <Picker.Item label="Mediano" value="Mediano" />
+            <Picker.Item label="Grande" value="Grande" />
+          </Picker>
+        </View>
 
-      {/* Picker de raza */}
-      <View style={styles.pickerContainer}>
-        <Picker
-          selectedValue={form.id_raza}
-          onValueChange={(value) => handleChange('id_raza', value)}
+        <View style={styles.pickerContainer}>
+          <Picker
+            selectedValue={form.id_raza}
+            onValueChange={(value) => handleChange('id_raza', value)}
+          >
+            <Picker.Item label="Selecciona raza *" value="" />
+            {razas.map((raza) => (
+              <Picker.Item key={raza.id_raza} label={raza.nombre_raza} value={raza.id_raza} />
+            ))}
+          </Picker>
+        </View>
+          
+        <View style={styles.pickerContainer}>
+          <Picker
+            selectedValue={form.id_estado_salud}
+            onValueChange={(value) => handleChange('id_estado_salud', value)}
+          >
+            <Picker.Item label="Selecciona estado de salud *" value="" />
+            {estadosSalud.map((estado) => (
+              <Picker.Item key={estado.id_estado_salud} label={estado.estado_salud} value={estado.id_estado_salud} />
+            ))}
+          </Picker>
+        </View>
+          
+        <AppText style={styles.sectionTitle}>Adopción</AppText>
+        <TextInput
+          style={styles.textArea}
+          placeholder="Descripción de adopción"
+          multiline
+          value={form.descripcion_adopcion}
+          onChangeText={(text) => handleChange('descripcion_adopcion', text)}
+        />
+
+        <AppText style={styles.sectionTitle}>Fotografía</AppText>
+        <TextInput
+          style={styles.input}
+          placeholder="URL de la foto"
+          value={form.foto_url}
+          onChangeText={(text) => handleChange('foto_url', text)}
+        />
+
+        <AppText style={styles.sectionTitle}>Historial Médico</AppText>
+          
+        <TextInput
+          style={styles.input}
+          placeholder="Diagnóstico"
+          value={form.historial_medico.diagnostico}
+          onChangeText={(text) => handleChange('historial_medico.diagnostico', text)}
+        />
+
+        <TextInput
+          style={styles.input}
+          placeholder="Tratamiento"
+          value={form.historial_medico.tratamiento}
+          onChangeText={(text) => handleChange('historial_medico.tratamiento', text)}
+        />
+
+        <TextInput
+          style={styles.input}
+          placeholder="Fecha de examen (YYYY-MM-DD)"
+          value={form.historial_medico.fecha_examen}
+          onChangeText={(text) => handleChange('historial_medico.fecha_examen', text)}
+        />
+
+        <TouchableOpacity
+          style={[styles.button, loading && styles.buttonDisabled]}
+          onPress={handleSubmit}
+          disabled={loading}
         >
-          <Picker.Item label="Selecciona raza *" value="" />
-          {razas.map((raza) => (
-            <Picker.Item key={raza.id_raza} label={raza.nombre_raza} value={raza.id_raza} />
-          ))}
-        </Picker>
+          <AppText style={styles.buttonText}>
+            {loading ? 'Guardando...' : 'Guardar'}
+          </AppText>
+        </TouchableOpacity>
       </View>
-        
-      {/* Picker de estado de salud */}
-      <View style={styles.pickerContainer}>
-        <Picker
-          selectedValue={form.id_estado_salud}
-          onValueChange={(value) => handleChange('id_estado_salud', value)}
-        >
-          <Picker.Item label="Selecciona estado de salud *" value="" />
-          {estadosSalud.map((estado) => (
-            <Picker.Item key={estado.id_estado_salud} label={estado.nombre_estado} value={estado.id_estado_salud} />
-          ))}
-        </Picker>
-      </View>
-        
-      <TextInput
-        style={styles.textArea}
-        placeholder="Descripción de adopción"
-        multiline
-        value={form.descripcion_adopcion}
-        onChangeText={(text) => handleChange('descripcion_adopcion', text)}
-      />
-
-      <TextInput
-        style={styles.input}
-        placeholder="URL de la foto"
-        value={form.foto_url}
-        onChangeText={(text) => handleChange('foto_url', text)}
-      />
-
-      <AppText style={styles.sectionTitle}>Historial Médico</AppText>
-        
-      <TextInput
-        style={styles.input}
-        placeholder="Diagnóstico"
-        value={form.historial_medico.diagnostico}
-        onChangeText={(text) => handleChange('historial_medico.diagnostico', text)}
-      />
-
-      <TextInput
-        style={styles.input}
-        placeholder="Tratamiento"
-        value={form.historial_medico.tratamiento}
-        onChangeText={(text) => handleChange('historial_medico.tratamiento', text)}
-      />
-
-      <TouchableOpacity
-        style={[styles.button, loading && styles.buttonDisabled]}
-        onPress={handleSubmit}
-        disabled={loading}
-      >
-        <AppText style={styles.buttonText}>
-          {loading ? 'Guardando...' : 'Guardar'}
-        </AppText>
-      </TouchableOpacity>
-    </View>
-        
     </ScrollView>
   );
 };
+
 const styles = StyleSheet.create({
   scroll: { 
     padding: 16, 
