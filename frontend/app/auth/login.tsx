@@ -123,8 +123,6 @@ const Index: React.FC = () => {
         password,
       });
 
-<<<<<<< HEAD
-=======
       console.log('Datos completos de login response:', response.data);
 
       // Verificar si se requiere 2FA
@@ -144,7 +142,6 @@ const Index: React.FC = () => {
       }
 
       // Flujo normal sin 2FA
->>>>>>> 9655146 (feat(auth): implementar autenticacion de dos factores (2FA))
       const { token } = response.data;
 
       if (!token) throw new Error('El servidor no envió un token válido.');

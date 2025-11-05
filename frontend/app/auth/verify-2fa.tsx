@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   TouchableOpacity,
@@ -7,12 +7,12 @@ import {
   KeyboardAvoidingView,
   Platform,
   Image,
-  ActivityIndicator,
 } from 'react-native';
 import apiClient from '@/src/api/client';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { isAxiosError } from 'axios';
 import { router, useLocalSearchParams } from 'expo-router';
+import DynamicForm, { FormField } from '@/src/components/UI/DynamicForm';
 import { useNotification } from '@/src/components/notifications/NotificationContext';
 import { Colors } from '@/src/constants/colors';
 import {
@@ -21,37 +21,30 @@ import {
   AppText,
 } from '@/src/components/AppText';
 import Constants from 'expo-constants';
-import CustomButton from '@/src/components/UI/CustomButton';
-import DynamicForm, { FormField } from '@/src/components/UI/DynamicForm';
-
-// Importaciones para push notifications
 import { getExpoPushTokenAsync } from '@/src/utils/expoNotifications';
 import { registerPushToken } from '@/src/api/notifications';
+import * as SecureStore from 'expo-secure-store';
 
 const { width } = Dimensions.get('window');
 
-// Configuración de campos para el código 2FA
-const verify2FAFields: FormField[] = [
+const verifyFields: FormField[] = [
   {
     name: 'code',
     label: 'Código de verificación',
     placeholder: 'Ingresa el código de 6 dígitos',
     keyboardType: 'number-pad',
     autoCapitalize: 'none',
-    icon: 'shield-checkmark-outline',
+    icon: 'key-outline',
     type: 'text',
-    maxLength: 6,
   },
 ];
 
 const Verify2FA: React.FC = () => {
+  const [loading, setLoading] = useState<boolean>(false);
+  const { showError, showSuccess } = useNotification();
+  const { login } = useAuth();
   const params = useLocalSearchParams();
   const email = params.email as string;
-
-  const [loading, setLoading] = useState<boolean>(false);
-  const [resending, setResending] = useState<boolean>(false);
-  const { showError, showSuccess, showWarning } = useNotification();
-  const { login } = useAuth();
 
   const [formValues, setFormValues] = useState({
     code: '',
@@ -65,23 +58,29 @@ const Verify2FA: React.FC = () => {
     try {
       const projectId =
         Constants?.expoConfig?.extra?.eas?.projectId ||
-        Constants?.easConfig?.projectId;
+        Constants?.easConfig?.projectId ||
+        undefined;
 
-      if (!projectId) {
-        console.warn('⚠️ No se encontró projectId en la configuración de Expo.');
+      const tokenResult = await getExpoPushTokenAsync(projectId);
+
+      if (!tokenResult || !tokenResult.token) {
+        console.warn('No se obtuvo Expo push token');
         return;
       }
 
-      const expoToken = await getExpoPushTokenAsync(projectId);
+      await registerPushToken({
+        push_token: tokenResult.token,
+        platform: tokenResult.platform,
+        app_version: tokenResult.appVersion,
+      });
 
-      if (expoToken) {
-        await registerPushToken(expoToken);
-        console.log('✅ Push token registrado correctamente:', expoToken);
-      } else {
-        console.warn('⚠️ No se pudo obtener el token Expo Push.');
-      }
-    } catch (error) {
-      console.warn('⚠️ Error al registrar push token:', error);
+      await SecureStore.setItemAsync(
+        'last_registered_push_token',
+        tokenResult.token,
+      );
+      console.log('✅ Push token registrado:', tokenResult.token);
+    } catch (err) {
+      console.warn('Error registrando push token en backend:', err);
     }
   };
 
@@ -89,54 +88,43 @@ const Verify2FA: React.FC = () => {
     const { code } = formValues;
 
     if (!code || code.length !== 6) {
-      showWarning('Atención', 'Por favor, ingresa el código de 6 dígitos.');
+      showError('Error', 'Por favor, ingresa el código de 6 dígitos.');
       return;
     }
 
     setLoading(true);
 
     try {
-      interface Verify2FAResponse {
+      interface VerifyResponse {
         success: boolean;
         message: string;
         token?: string;
       }
 
-      const response = await apiClient.post<Verify2FAResponse>(
-        '/auth/verify-2fa',
-        {
-          email,
-          code,
-        }
-      );
+      const response = await apiClient.post<VerifyResponse>('/auth/verify-2fa', {
+        email,
+        code,
+      });
 
-      console.log('🧾 Respuesta de verify-2fa:', response.data);
       const { token } = response.data;
 
       if (!token) throw new Error('El servidor no envió un token válido.');
 
-      console.log('✅ Verificación 2FA exitosa, token recibido.');
+      console.log('✅ 2FA verificado, token recibido');
 
-      // Guardar token en AuthContext
       await login(token);
+      showSuccess('Éxito', 'Verificación completada correctamente.');
 
-      // Mostrar feedback
-      showSuccess('Éxito', 'Autenticación completada correctamente.');
-
-      // Registrar el push token
       registerPushTokenSafely();
 
-      // Redirigir al home
       router.replace('/home');
     } catch (error) {
-      let errorMessage = 'Ocurrió un error al verificar el código.';
+      let errorMessage = 'Código de verificación inválido o expirado.';
 
       if (isAxiosError(error)) {
         if (error.response) {
           errorMessage =
-            error.response.data?.error ||
-            error.response.data?.message ||
-            'Código inválido o expirado.';
+            error.response.data?.message || errorMessage;
         } else if (error.request) {
           errorMessage =
             'No se pudo conectar con el servidor. Revisa tu conexión a internet.';
@@ -152,25 +140,14 @@ const Verify2FA: React.FC = () => {
   };
 
   const handleResendCode = async () => {
-    setResending(true);
+    setLoading(true);
     try {
-      // Hacer un nuevo login para generar un nuevo código
-      await apiClient.post('/auth/login', {
-        email,
-        password: '', // El backend debería manejar esto, o crear un endpoint específico
-      });
-
-      showSuccess(
-        'Código reenviado',
-        'Se ha enviado un nuevo código a tu email.'
-      );
+      await apiClient.post('/auth/resend-2fa', { email });
+      showSuccess('Código reenviado', 'Revisa tu email nuevamente.');
     } catch (error) {
-      showError(
-        'Error',
-        'No se pudo reenviar el código. Por favor, intenta iniciar sesión nuevamente.'
-      );
+      showError('Error', 'No se pudo reenviar el código.');
     } finally {
-      setResending(false);
+      setLoading(false);
     }
   };
 
@@ -180,11 +157,10 @@ const Verify2FA: React.FC = () => {
       style={styles.container}
     >
       <View style={styles.container}>
-        {/* Back Button */}
         <TouchableOpacity
           style={styles.backButton}
           activeOpacity={0.8}
-          onPress={() => router.push('/auth/login')}
+          onPress={() => router.back()}
         >
           <View style={styles.backButtonInner}>
             <Image
@@ -194,42 +170,32 @@ const Verify2FA: React.FC = () => {
           </View>
         </TouchableOpacity>
 
-        {/* Title */}
         <View style={styles.titleContainer}>
-          <AppText style={styles.welcomeTitle}>Verificación de seguridad</AppText>
-          <AppText style={styles.brandTitle}>Código 2FA</AppText>
-          <AppText style={styles.descriptionText}>
-            Hemos enviado un código de 6 dígitos a tu correo electrónico
+          <AppText style={styles.welcomeTitle}>Verificación en dos pasos</AppText>
+          <AppText style={styles.subtitleText}>
+            Ingresa el código que enviamos a {email}
           </AppText>
-          <AppText style={styles.emailText}>{email}</AppText>
         </View>
 
-        {/* Dynamic Form */}
         <View style={styles.formWrapper}>
           <DynamicForm
-            fields={verify2FAFields}
+            fields={verifyFields}
             values={formValues}
             onValueChange={handleValueChange}
             onSubmit={handleVerify}
             loading={loading}
             buttonText="Verificar"
-            buttonIcon="shield-checkmark-outline"
+            buttonIcon="checkmark-circle-outline"
           />
 
-          {/* Resend Code Button */}
           <TouchableOpacity
             style={styles.resendButton}
             onPress={handleResendCode}
-            disabled={resending}
-            activeOpacity={0.7}
+            disabled={loading}
           >
-            {resending ? (
-              <ActivityIndicator size="small" color={Colors.primary} />
-            ) : (
-              <AppText style={styles.resendText}>
-                ¿No recibiste el código? Reenviar
-              </AppText>
-            )}
+            <AppText style={styles.resendText}>
+              ¿No recibiste el código? Reenviar
+            </AppText>
           </TouchableOpacity>
         </View>
       </View>
@@ -245,40 +211,23 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 20,
   },
   titleContainer: {
     marginBottom: 40,
     alignItems: 'center',
   },
   welcomeTitle: {
-    fontSize: 18,
-    fontWeight: '500',
-    color: '#6B7280',
-    textAlign: 'center',
-    letterSpacing: 0.5,
-    marginBottom: 8,
-  },
-  brandTitle: {
-    fontSize: 32,
+    fontSize: 24,
     fontWeight: fontWeightBold,
     color: '#1F2937',
     textAlign: 'center',
-    letterSpacing: 1,
-    marginBottom: 16,
+    letterSpacing: 0.5,
+    marginBottom: 10,
   },
-  descriptionText: {
+  subtitleText: {
     fontSize: 14,
     color: '#6B7280',
     textAlign: 'center',
-    marginBottom: 8,
-    lineHeight: 20,
-  },
-  emailText: {
-    fontSize: 16,
-    color: Colors.primary,
-    textAlign: 'center',
-    fontWeight: fontWeightSemiBold,
   },
   backButton: {
     alignSelf: 'flex-start',
@@ -305,7 +254,6 @@ const styles = StyleSheet.create({
   },
   resendButton: {
     marginTop: 20,
-    paddingVertical: 12,
     alignItems: 'center',
   },
   resendText: {
