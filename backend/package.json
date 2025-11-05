@@ -12,7 +12,8 @@
     "docker:down": "docker compose --profile dev --profile test down",
     "docker:restart": "docker compose --profile dev --profile test down -v && docker compose --profile dev --profile test up -d",
     "docker:logs": "docker compose logs -f",
-    "check:env": "node scripts/check-env.js"
+    "check:env": "node scripts/check-env.js",
+    "worker:push-receipts": "node ./workers/processPushReceipts.js"
   },
   "keywords": [],
   "author": "",

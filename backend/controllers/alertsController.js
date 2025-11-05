@@ -1,6 +1,10 @@
 import pool from '../db/db.js';
 import { sendPushNotificationToUsers } from '../middlewares/pushNotifications.js';
-import { auditCreate, auditUpdate, auditDelete } from '../services/auditService.js';
+import {
+  auditCreate,
+  auditUpdate,
+  auditDelete,
+} from '../services/auditService.js';
 import { getOldValuesForAudit, sanitizeForAudit } from '../utils/audit.js';
 
 // Obtiene todas las alertas activas, con latitud, longitud y dirección
@@ -80,10 +84,8 @@ export const createAlert = async (req, res, next) => {
       fecha_expiracion,
     } = req.body;
 
-    // Obtener el id desde el token
     const id_usuario = req.user.id;
 
-    // Verifica que los campos obligatorios estén presentes
     if (
       !titulo ||
       !descripcion ||
@@ -101,7 +103,6 @@ export const createAlert = async (req, res, next) => {
       ubicacion = `SRID=4326;POINT(${longitude} ${latitude})`;
     }
 
-    // Inserta la nueva alerta en la base de datos, activa por defecto y sin reportes
     const result = await pool.query(
       `
       INSERT INTO alerta (titulo, descripcion, id_tipo_alerta, id_nivel_riesgo, id_usuario, ubicacion, direccion, fecha_expiracion, activa, reportes) 
@@ -122,7 +123,19 @@ export const createAlert = async (req, res, next) => {
 
     const alerta = result.rows[0];
 
-    // Obtener información adicional para notificaciones
+    console.log('createAlert payload (req.body):', {
+      titulo,
+      descripcion,
+      id_tipo_alerta,
+      id_nivel_riesgo,
+      latitude,
+      longitude,
+      direccion,
+      fecha_expiracion,
+      id_usuario,
+    });
+    console.log('createAlert: alerta insertada:', alerta);
+
     const alertaInfo = await pool.query(
       `SELECT ta.tipo_alerta, nr.nivel_riesgo, u.id_ciudad
        FROM alerta a
@@ -133,62 +146,111 @@ export const createAlert = async (req, res, next) => {
       [alerta.id_alerta],
     );
 
-    const { tipo_alerta, nivel_riesgo, id_ciudad } = alertaInfo.rows[0];
+    if (!alertaInfo || alertaInfo.rowCount === 0) {
+      console.warn('createAlert: alertaInfo no disponible para notificaciones');
+    } else {
+      const { tipo_alerta, nivel_riesgo, id_ciudad } = alertaInfo.rows[0];
 
-    // 🔔 ENVIAR NOTIFICACIONES SEGÚN NIVEL DE RIESGO
-    try {
-      let tokensQuery;
-      let tokensParams;
+      console.log('createAlert criterios:', {
+        id_ciudad,
+        nivel_riesgo_from_db: nivel_riesgo,
+        id_nivel_riesgo_request: id_nivel_riesgo,
+        latitude,
+        longitude,
+        direccion,
+      });
 
-      // Nivel de riesgo alto (3 o más): notificar a todos
-      if (id_nivel_riesgo >= 3) {
-        tokensQuery = `
-          SELECT d.token, d.plataforma, d.id_usuario
-          FROM dispositivo d
-          INNER JOIN usuario u ON d.id_usuario = u.id_usuario
-          WHERE u.activo = true 
-          AND d.activo = true
-          AND d.token IS NOT NULL
-        `;
-        tokensParams = [];
-      } else {
-        // Nivel bajo/medio: solo usuarios de la misma ciudad
-        tokensQuery = `
-          SELECT d.token, d.plataforma, d.id_usuario
-          FROM dispositivo d
-          INNER JOIN usuario u ON d.id_usuario = u.id_usuario
-          WHERE u.id_ciudad = $1 
-          AND u.activo = true 
-          AND d.activo = true
-          AND d.token IS NOT NULL
-        `;
-        tokensParams = [id_ciudad];
-      }
+      try {
+        let tokensQuery;
+        let tokensParams;
 
-      const tokensRes = await pool.query(tokensQuery, tokensParams);
-      const tokens = tokensRes.rows.map((row) => row.token);
+        // Usar la tabla con schema dogland (según tu información)
+        if (id_nivel_riesgo >= 3) {
+          // Nivel alto: todos los tokens válidos de usuarios activos
+          tokensQuery = `
+            SELECT upt.push_token, upt.device_id, upt.user_id, upt.platform
+            FROM dogland.user_push_tokens upt
+            INNER JOIN dogland.usuario u ON upt.user_id = u.id_usuario
+            WHERE u.activo = true
+              AND upt.is_valid = true
+              AND upt.push_token IS NOT NULL
+              AND (upt.failure_count IS NULL OR upt.failure_count < 3)
+          `;
+          tokensParams = [];
+        } else {
+          // Nivel bajo/medio: usuarios de la misma ciudad
+          tokensQuery = `
+            SELECT upt.push_token, upt.device_id, upt.user_id, upt.platform
+            FROM dogland.user_push_tokens upt
+            INNER JOIN dogland.usuario u ON upt.user_id = u.id_usuario
+            WHERE u.id_ciudad = $1
+              AND u.activo = true
+              AND upt.is_valid = true
+              AND upt.push_token IS NOT NULL
+              AND (upt.failure_count IS NULL OR upt.failure_count < 3)
+          `;
+          tokensParams = [id_ciudad];
+        }
 
-      if (tokens.length > 0) {
-        await sendPushNotificationToUsers(
-          `🚨 ${tipo_alerta}: ${titulo}`,
-          descripcion,
-          tokens,
-          {
-            type: 'alerta',
-            id: alerta.id_alerta,
-            nivel_riesgo: nivel_riesgo,
-            tipo_alerta: tipo_alerta,
-            ubicacion: direccion || '',
-            latitude: latitude,
-            longitude: longitude,
-          },
-        );
+        console.log('createAlert: tokensQuery:', tokensQuery.trim());
+        console.log('createAlert: tokensParams:', tokensParams);
+
+        const tokensRes = await pool.query(tokensQuery, tokensParams);
+
         console.log(
-          `✅ Notificación de alerta enviada a ${tokens.length} dispositivos`,
+          'createAlert: tokensRes.rowCount:',
+          tokensRes.rowCount,
+          'sample rows:',
+          tokensRes.rows.slice(0, 5),
         );
+
+        // Deduplicar tokens por valor
+        const tokenMap = new Map();
+        for (const row of tokensRes.rows) {
+          if (!row.push_token) continue;
+          const token = row.push_token.toString().trim();
+          if (!token) continue;
+          if (!tokenMap.has(token)) {
+            tokenMap.set(token, {
+              token,
+              platform: row.platform || null,
+              device_id: row.device_id || `user_${row.user_id}`,
+            });
+          }
+        }
+        const entries = Array.from(tokenMap.values());
+
+        console.log(
+          'createAlert: tokens deduplicados (entries.length):',
+          entries.length,
+          'sample entries:',
+          entries.slice(0, 5),
+        );
+
+        if (entries.length > 0) {
+          await sendPushNotificationToUsers(
+            `🚨 ${tipo_alerta}: ${titulo}`,
+            descripcion,
+            entries,
+            {
+              type: 'alerta',
+              id: alerta.id_alerta,
+              nivel_riesgo: nivel_riesgo,
+              tipo_alerta: tipo_alerta,
+              ubicacion: direccion || '',
+              latitude: latitude,
+              longitude: longitude,
+            },
+          );
+          console.log(
+            `✅ Notificación de alerta enviada a ${entries.length} tokens (user_push_tokens)`,
+          );
+        } else {
+          console.log('createAlert: no se encontraron tokens para notificar');
+        }
+      } catch (notifError) {
+        console.error('⚠️ Error al enviar notificación de alerta:', notifError);
       }
-    } catch (notifError) {
-      console.error('⚠️ Error al enviar notificación de alerta:', notifError);
     }
 
     res.status(201).json({
@@ -217,7 +279,11 @@ export const updateAlert = async (req, res, next) => {
     } = req.body;
 
     // Obtener valores antiguos ANTES de actualizar
-    const oldAlert = await getOldValuesForAudit('alerta', 'id_alerta', req.params.id);
+    const oldAlert = await getOldValuesForAudit(
+      'alerta',
+      'id_alerta',
+      req.params.id,
+    );
 
     if (!oldAlert) {
       return res
@@ -272,7 +338,11 @@ export const updateAlert = async (req, res, next) => {
 export const deleteAlert = async (req, res, next) => {
   try {
     // Obtener datos antes de eliminar
-    const oldAlert = await getOldValuesForAudit('alerta', 'id_alerta', req.params.id);
+    const oldAlert = await getOldValuesForAudit(
+      'alerta',
+      'id_alerta',
+      req.params.id,
+    );
 
     if (!oldAlert) {
       return res

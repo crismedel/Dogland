@@ -1,95 +1,50 @@
+// src/controllers/notificationsController.js
 import { Expo } from 'expo-server-sdk';
 import pool from '../db/db.js';
+import * as pushTokens from '../services/pushTokens.js';
+import * as pushService from '../services/pushService.js';
 
 const expo = new Expo();
 
-// ============================================
-// FUNCIÓN AUXILIAR PARA ENVIAR NOTIFICACIONES
-// ============================================
-async function enviarPushNotifications(tokens, notification) {
-  const messages = [];
-
-  for (const token of tokens) {
-    if (!Expo.isExpoPushToken(token)) {
-      console.error(`❌ Token inválido: ${token}`);
-      continue;
-    }
-
-    messages.push({
-      to: token,
-      sound: 'default',
-      title: notification.title,
-      body: notification.body,
-      data: notification.data,
-      priority: 'high',
-      badge: 1,
-      channelId: 'default',
-    });
-  }
-
-  if (messages.length === 0) {
-    console.log('⚠️ No hay mensajes válidos para enviar');
-    return [];
-  }
-
-  const chunks = expo.chunkPushNotifications(messages);
-  const tickets = [];
-
-  for (const chunk of chunks) {
-    try {
-      const ticketChunk = await expo.sendPushNotificationsAsync(chunk);
-      tickets.push(...ticketChunk);
-      console.log(`✅ Enviadas ${ticketChunk.length} notificaciones`);
-    } catch (error) {
-      console.error('❌ Error enviando chunk de notificaciones:', error);
-    }
-  }
-
-  return tickets;
-}
-
-// ============================================
-// CONTROLADOR DE NOTIFICACIONES
-// ============================================
-
+// -----------------------------
+// Gestión de tokens
+// -----------------------------
 // Registrar token de push notification
 export const registrarPushToken = async (req, res) => {
   try {
-    const { push_token } = req.body;
-    const id_usuario = req.user.id; // Desde el middleware de autenticación
+    const {
+      push_token,
+      platform = null,
+      app_version = null,
+      device_id = null,
+    } = req.body;
+    const id_usuario = req.user.id;
 
     if (!id_usuario || !push_token) {
-      return res.status(400).json({
-        success: false,
-        error: 'push_token es requerido',
-      });
+      return res
+        .status(400)
+        .json({ success: false, error: 'push_token es requerido' });
     }
 
-    // Validar que el token sea válido
+    // Si tu app usa Expo tokens exclusivamente, validar; si no, puedes omitir
     if (!Expo.isExpoPushToken(push_token)) {
-      return res.status(400).json({
-        success: false,
-        error: 'Token de Expo inválido',
-      });
+      return res
+        .status(400)
+        .json({ success: false, error: 'Token de Expo inválido' });
     }
 
-    await pool.query(
-      `UPDATE usuario 
-       SET push_token = $1 
-       WHERE id_usuario = $2`,
-      [push_token, id_usuario],
-    );
-
-    res.json({
-      success: true,
-      message: 'Token registrado correctamente',
+    await pushTokens.upsertToken({
+      user_id: id_usuario,
+      push_token,
+      platform,
+      app_version,
+      device_id,
     });
+
+    res.json({ success: true, message: 'Token registrado correctamente' });
   } catch (error) {
     console.error('Error al registrar token:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Error al registrar token',
-    });
+    res.status(500).json({ success: false, error: 'Error al registrar token' });
   }
 };
 
@@ -97,28 +52,78 @@ export const registrarPushToken = async (req, res) => {
 export const eliminarPushToken = async (req, res) => {
   try {
     const id_usuario = req.user.id;
+    const { push_token } = req.body;
 
-    await pool.query(
-      `UPDATE usuario 
-       SET push_token = NULL 
-       WHERE id_usuario = $1`,
+    if (push_token) {
+      const deleted = await pushTokens.deleteToken(id_usuario, push_token);
+      return res.json({
+        success: true,
+        message: 'Token eliminado correctamente',
+        deleted,
+      });
+    } else {
+      const deletedCount = await pushTokens.deleteAllTokens(id_usuario);
+      return res.json({
+        success: true,
+        message: 'Todos los tokens eliminados correctamente',
+        deletedCount,
+      });
+    }
+  } catch (error) {
+    console.error('Error al eliminar token:', error);
+    res.status(500).json({ success: false, error: 'Error al eliminar token' });
+  }
+};
+
+export const enviarNotificacionPrueba = async (req, res) => {
+  try {
+    const id_usuario = req.user.id;
+
+    const result = await pool.query(
+      'SELECT push_token FROM user_push_tokens WHERE user_id = $1 AND is_valid = TRUE',
       [id_usuario],
+    );
+
+    if (!result.rows || result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'No se encontró token de notificación para este usuario',
+      });
+    }
+
+    const tokens = result.rows.map((r) => r.push_token).filter(Boolean);
+    const tokensWithMeta = tokens.map((t) => ({
+      push_token: t,
+      user_id: id_usuario,
+    }));
+
+    const sendResult = await pushService.sendPushNotificationToTokens(
+      {
+        title: '🔔 Notificación de Prueba',
+        body: 'Tu sistema de notificaciones está funcionando correctamente',
+        data: { type: 'test', timestamp: new Date().toISOString() },
+      },
+      tokensWithMeta,
     );
 
     res.json({
       success: true,
-      message: 'Token eliminado correctamente',
+      message: 'Notificación de prueba enviada',
+      sendResult,
     });
   } catch (error) {
-    console.error('Error al eliminar token:', error);
+    console.error('Error al enviar notificación de prueba:', error);
     res.status(500).json({
       success: false,
-      error: 'Error al eliminar token',
+      error: 'Error al enviar notificación de prueba',
     });
   }
 };
 
-// Obtener alertas activas
+// -----------------------------
+// Alertas / banners / historial / estadísticas
+// -----------------------------
+
 export const obtenerAlertasActivas = async (req, res) => {
   try {
     const { id_ciudad, limit = 20 } = req.query;
@@ -353,56 +358,6 @@ export const obtenerHistorialNotificaciones = async (req, res) => {
   }
 };
 
-// Enviar notificación de prueba
-export const enviarNotificacionPrueba = async (req, res) => {
-  try {
-    const id_usuario = req.user.id;
-
-    const userResult = await pool.query(
-      'SELECT push_token FROM usuario WHERE id_usuario = $1',
-      [id_usuario],
-    );
-
-    if (userResult.rows.length === 0 || !userResult.rows[0].push_token) {
-      return res.status(404).json({
-        success: false,
-        error: 'No se encontró token de notificación para este usuario',
-      });
-    }
-
-    const { push_token } = userResult.rows[0];
-
-    if (!Expo.isExpoPushToken(push_token)) {
-      return res.status(400).json({
-        success: false,
-        error: 'Token de Expo inválido',
-      });
-    }
-
-    const tickets = await enviarPushNotifications([push_token], {
-      title: '🔔 Notificación de Prueba',
-      body: 'Tu sistema de notificaciones está funcionando correctamente',
-      data: {
-        type: 'test',
-        timestamp: new Date().toISOString(),
-      },
-    });
-
-    res.json({
-      success: true,
-      message: 'Notificación de prueba enviada',
-      tickets: tickets.length,
-    });
-  } catch (error) {
-    console.error('Error al enviar notificación de prueba:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Error al enviar notificación de prueba',
-    });
-  }
-};
-
-// Obtener estadísticas de notificaciones
 export const obtenerEstadisticasNotificaciones = async (req, res) => {
   try {
     const id_usuario = req.user.id;
@@ -436,14 +391,15 @@ export const obtenerEstadisticasNotificaciones = async (req, res) => {
   }
 };
 
+// Export default (compatibilidad)
 export default {
   registrarPushToken,
   eliminarPushToken,
+  enviarNotificacionPrueba,
   obtenerAlertasActivas,
   obtenerBannersActivos,
   actualizarEstadoAlerta,
   incrementarReportes,
   obtenerHistorialNotificaciones,
-  enviarNotificacionPrueba,
   obtenerEstadisticasNotificaciones,
 };

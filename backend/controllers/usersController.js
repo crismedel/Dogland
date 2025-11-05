@@ -416,25 +416,36 @@ export const activateUser = async (req, res, next) => {
 };
 
 export const savePushToken = async (req, res, next) => {
-  const { token, plataforma } = req.body;
+  const { token, plataforma, device_id, app_version } = req.body;
   const id = req.user.id;
 
   try {
     const query = `
-      INSERT INTO dispositivo (id_usuario, token, plataforma)
-      VALUES ($1, $2, $3)
-      ON CONFLICT (token) DO UPDATE
+      INSERT INTO dogland.user_push_tokens (user_id, push_token, platform, device_id, app_version, created_at, last_seen, is_valid, failure_count)
+      VALUES ($1, $2, $3, $4, $5, NOW(), NOW(), true, 0)
+      ON CONFLICT (push_token) DO UPDATE
       SET
-        id_usuario = EXCLUDED.id_usuario,
-        plataforma = EXCLUDED.plataforma,
-        fecha_actualizacion = NOW();
+        user_id = EXCLUDED.user_id,
+        platform = EXCLUDED.platform,
+        device_id = EXCLUDED.device_id,
+        app_version = EXCLUDED.app_version,
+        last_seen = NOW(),
+        is_valid = true,
+        failure_count = 0
+      ;
     `;
 
-    await pool.query(query, [id, token, plataforma]);
+    await pool.query(query, [
+      id,
+      token,
+      plataforma,
+      device_id || null,
+      app_version || null,
+    ]);
 
     res.json({
       success: true,
-      message: 'Dispositivo registrado exitosamente.',
+      message: 'Token de push registrado/actualizado exitosamente.',
     });
   } catch (error) {
     next(error);

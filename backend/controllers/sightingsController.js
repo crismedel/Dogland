@@ -130,6 +130,7 @@ export const getMySightings = async (req, res) => {
         `;
 
     const result = await pool.query(query, [userId]);
+
     res.status(200).json({ success: true, data: result.rows });
   } catch (error) {
     console.error('Error al obtener los avistamientos del usuario:', error);
@@ -167,14 +168,14 @@ export const createSighting = async (req, res) => {
         .json({ success: false, error: 'Faltan campos obligatorios' });
     }
 
-    // 1. Crear el avistamiento
+    // 1. Crear avistamiento
     const result = await pool.query(
       `
-            INSERT INTO avistamiento 
-            (id_usuario, id_estado_avistamiento, id_estado_salud, id_especie, descripcion, ubicacion, direccion) 
-            VALUES ($1, $2, $3, $4, $5, ST_SetSRID(ST_MakePoint($6, $7), 4326), $8) 
-            RETURNING *
-            `,
+      INSERT INTO avistamiento 
+      (id_usuario, id_estado_avistamiento, id_estado_salud, id_especie, descripcion, ubicacion, direccion) 
+      VALUES ($1, $2, $3, $4, $5, ST_SetSRID(ST_MakePoint($6, $7), 4326), $8) 
+      RETURNING *
+    `,
       [
         id_usuario,
         id_estado_avistamiento,
@@ -192,39 +193,37 @@ export const createSighting = async (req, res) => {
     if (url) {
       await pool.query(
         `
-                INSERT INTO avistamiento_foto (id_avistamiento, url)
-                VALUES ($1, $2)
-                `,
+        INSERT INTO avistamiento_foto (id_avistamiento, url)
+        VALUES ($1, $2)
+      `,
         [avistamiento.id_avistamiento, url],
       );
     }
 
-    // 3. Volvemos a consultar el avistamiento completo para devolver la respuesta
+    // 3. Obtener avistamiento completo
     const finalResult = await pool.query(
       `
-            SELECT 
-                av.id_avistamiento, av.id_usuario, av.id_estado_avistamiento, 
-                av.id_estado_salud, av.id_especie, av.fecha_creacion, 
-                av.fecha_actualizacion, av.descripcion, av.direccion,
-                ST_X(av.ubicacion::geometry) AS longitude,
-                ST_Y(av.ubicacion::geometry) AS latitude,
-                COALESCE(
-                    json_agg(af.url) FILTER (WHERE af.url IS NOT NULL), 
-                    '[]'
-                ) AS fotos_url,
-                e.nombre_especie,
-                es.estado_salud,
-                u.id_ciudad
-            FROM avistamiento av
-            LEFT JOIN avistamiento_foto af ON av.id_avistamiento = af.id_avistamiento
-            LEFT JOIN especie e ON av.id_especie = e.id_especie
-            LEFT JOIN estado_salud es ON av.id_estado_salud = es.id_estado_salud
-            LEFT JOIN usuario u ON av.id_usuario = u.id_usuario
-            WHERE av.id_avistamiento = $1
-            GROUP BY av.id_avistamiento, e.nombre_especie, es.estado_salud, u.id_ciudad
-            `,
+      SELECT 
+        av.id_avistamiento, av.id_usuario, av.id_estado_avistamiento, 
+        av.id_estado_salud, av.id_especie, av.fecha_creacion, 
+        av.fecha_actualizacion, av.descripcion, av.direccion,
+        ST_X(av.ubicacion::geometry) AS longitude,
+        ST_Y(av.ubicacion::geometry) AS latitude,
+        COALESCE(json_agg(af.url) FILTER (WHERE af.url IS NOT NULL), '[]') AS fotos_url,
+        e.nombre_especie,
+        es.estado_salud,
+        u.id_ciudad
+      FROM avistamiento av
+      LEFT JOIN avistamiento_foto af ON av.id_avistamiento = af.id_avistamiento
+      LEFT JOIN especie e ON av.id_especie = e.id_especie
+      LEFT JOIN estado_salud es ON av.id_estado_salud = es.id_estado_salud
+      LEFT JOIN usuario u ON av.id_usuario = u.id_usuario
+      WHERE av.id_avistamiento = $1
+      GROUP BY av.id_avistamiento, e.nombre_especie, es.estado_salud, u.id_ciudad
+    `,
       [avistamiento.id_avistamiento],
     );
+
     const fullSighting = finalResult.rows[0];
 
     await auditCreate(
@@ -234,33 +233,75 @@ export const createSighting = async (req, res) => {
       fullSighting,
     );
 
-    //  4. ENVIAR NOTIFICACIONES PUSH A ORGANIZACIONES CERCANAS
+    // 4. Enviar notificaciones push a organizaciones cercanas
     try {
-      const usersToNotify = await pool.query(
-        `SELECT u.id_usuario 
-                 FROM usuario u
-                 WHERE u.id_organizacion IS NOT NULL
-                 AND u.activo = true
-                 AND u.id_ciudad = $1
-                 AND u.push_token IS NOT NULL`, // (Asegúrate de tener esta columna)
+      const devicesRes = await pool.query(
+        `
+        SELECT upt.push_token, upt.device_id, upt.user_id, upt.platform
+        FROM dogland.user_push_tokens upt
+        INNER JOIN dogland.usuario u ON upt.user_id = u.id_usuario
+        AND u.activo = true
+        AND u.id_ciudad = $1
+        AND upt.is_valid = true
+        AND upt.push_token IS NOT NULL
+        AND (upt.failure_count IS NULL OR upt.failure_count < 3)
+      `,
         [fullSighting.id_ciudad],
       );
 
-      if (usersToNotify.rows.length > 0) {
-        const userIds = usersToNotify.rows.map((row) => row.id_usuario);
+      console.log(
+        'createSighting: tokensRes.rowCount:',
+        devicesRes.rowCount,
+        'sample rows:',
+        devicesRes.rows.slice(0, 5),
+      );
+
+      // Deduplicar por token como en alertas
+      const tokenMap = new Map();
+      for (const row of devicesRes.rows) {
+        if (!row.push_token) continue;
+        const token = row.push_token.toString().trim();
+        if (!token) continue;
+
+        if (!tokenMap.has(token)) {
+          tokenMap.set(token, {
+            token,
+            platform: row.platform || null,
+            device_id: row.device_id || `user_${row.user_id}`,
+            user_id: row.user_id,
+          });
+        }
+      }
+
+      const entries = Array.from(tokenMap.values());
+      const userIds = Array.from(
+        new Set(entries.map((entry) => entry.user_id)),
+      );
+
+      console.log(
+        'createSighting: tokens deduplicados (entries.length):',
+        entries.length,
+        'sample entries:',
+        entries.slice(0, 5),
+      );
+
+      if (entries.length > 0) {
         await sendPushNotificationToUsers(
           `Nuevo Avistamiento: ${fullSighting.nombre_especie}`,
           `${fullSighting.nombre_especie} avistado en ${
             direccion || 'ubicación cercana'
           }. Estado: ${fullSighting.estado_salud}`,
-          userIds,
+          entries,
           {
             type: 'avistamiento',
             id: avistamiento.id_avistamiento,
+            especie: fullSighting.nombre_especie,
+            estado_salud: fullSighting.estado_salud,
             latitude: fullSighting.latitude,
             longitude: fullSighting.longitude,
           },
         );
+
         console.log(
           `Notificación de avistamiento enviada a ${userIds.length} usuarios`,
         );
@@ -338,12 +379,20 @@ export const updateSighting = async (req, res) => {
       url, // URL de la foto
     } = req.body;
 
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Autenticación requerida para actualizar.',
+      });
+    }
+
     // Obtener valores antiguos ANTES de actualizar
     const oldSighting = await getOldValuesForAudit(
       'avistamiento',
       'id_avistamiento',
       id,
     );
+
     if (!oldSighting) {
       return res.status(404).json({
         success: false,
@@ -401,6 +450,7 @@ export const updateSighting = async (req, res) => {
         [url, id],
       );
 
+      // Si no hay foto asociada, inserta la nueva foto
       if (updatePhoto.rowCount === 0) {
         await pool.query(
           `
@@ -416,9 +466,15 @@ export const updateSighting = async (req, res) => {
     const finalResult = await pool.query(
       `
             SELECT 
-                av.id_avistamiento, av.id_usuario, av.id_estado_avistamiento, 
-                av.id_estado_salud, av.id_especie, av.fecha_creacion, 
-                av.fecha_actualizacion, av.descripcion, av.direccion,
+                av.id_avistamiento, 
+                av.id_usuario, 
+                av.id_estado_avistamiento, 
+                av.id_estado_salud, 
+                av.id_especie, 
+                av.fecha_creacion, 
+                av.fecha_actualizacion, 
+                av.descripcion, 
+                av.direccion,
                 ST_X(av.ubicacion::geometry) AS longitude,
                 ST_Y(av.ubicacion::geometry) AS latitude,
                 COALESCE(
@@ -451,6 +507,7 @@ export const updateSighting = async (req, res) => {
 export const deleteSighting = async (req, res) => {
   try {
     const { id } = req.params;
+
     const userId = req.user.id;
 
     // INICIO: Validación de permisos (En línea)
@@ -495,6 +552,7 @@ export const deleteSighting = async (req, res) => {
       'id_avistamiento',
       id,
     );
+
     if (!oldSighting) {
       return res
         .status(404)
@@ -507,6 +565,7 @@ export const deleteSighting = async (req, res) => {
       [id],
     );
 
+    // Luego eliminamos el avistamiento
     const result = await pool.query(
       'DELETE FROM avistamiento WHERE id_avistamiento = $1 RETURNING *',
       [id],
@@ -560,9 +619,15 @@ export const getSightingsByLocation = async (req, res) => {
     const result = await pool.query(
       `
             SELECT 
-                av.id_avistamiento, av.id_usuario, av.id_estado_avistamiento, 
-                av.id_estado_salud, av.id_especie, av.fecha_creacion, 
-                av.fecha_actualizacion, av.descripcion, av.direccion,
+                av.id_avistamiento, 
+                av.id_usuario, 
+                av.id_estado_avistamiento, 
+                av.id_estado_salud, 
+                av.id_especie, 
+                av.fecha_creacion, 
+                av.fecha_actualizacion, 
+                av.descripcion, 
+                av.direccion,
                 ST_X(av.ubicacion::geometry) AS longitude,
                 ST_Y(av.ubicacion::geometry) AS latitude,
                 COALESCE(
@@ -629,9 +694,15 @@ export const filterSightings = async (req, res) => {
 
     let query = `
             SELECT 
-                av.id_avistamiento, av.id_usuario, av.id_estado_avistamiento, 
-                av.id_estado_salud, av.id_especie, av.fecha_creacion, 
-                av.fecha_actualizacion, av.descripcion, av.direccion,
+                av.id_avistamiento, 
+                av.id_usuario, 
+                av.id_estado_avistamiento, 
+                av.id_estado_salud, 
+                av.id_especie, 
+                av.fecha_creacion, 
+                av.fecha_actualizacion,
+                av.descripcion, 
+                av.direccion,
                 ST_X(av.ubicacion::geometry) AS longitude,
                 ST_Y(av.ubicacion::geometry) AS latitude,
                 COALESCE(json_agg(af.url) FILTER (WHERE af.url IS NOT NULL), '[]') AS fotos_url
@@ -650,17 +721,25 @@ export const filterSightings = async (req, res) => {
       return res.status(404).json({
         success: false,
         message: 'No se encontraron avistamientos con los filtros aplicados',
+        filtersApplied: {
+          id_especie: id_especie || 'No aplicado',
+          id_estado_salud: id_estado_salud || 'No aplicado',
+          id_estado_avistamiento: id_estado_avistamiento || 'No aplicado',
+        },
       });
     }
     res.status(200).json({
       success: true,
       data: result.rows,
+      filtersApplied: filters.length,
+      totalResults: result.rows.length,
     });
   } catch (error) {
     console.error(' Error al filtrar los avistamientos:', error);
     res.status(500).json({
       success: false,
       error: 'Error interno del servidor al aplicar filtros.',
+      details: error.message,
     });
   }
 };
