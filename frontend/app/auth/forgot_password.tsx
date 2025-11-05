@@ -4,7 +4,7 @@ import {
   fontWeightMedium,
   fontWeightSemiBold,
 } from '@/src/components/AppText';
-import { useNotification } from '@/src/components/notifications/NotificationContext';
+import { useNotification } from '@/src/components/notifications';
 import DynamicForm, { FormField } from '@/src/components/UI/DynamicForm';
 import { Colors } from '@/src/constants/colors';
 import { isAxiosError } from 'axios';
@@ -65,26 +65,28 @@ export default function Index() {
 
       showSuccess(
         'Correo enviado',
-        'Si el correo existe, recibirás las instrucciones para restablecer tu contraseña.'
+        'Si el correo existe, recibirás las instrucciones para restablecer tu contraseña.',
       );
 
       // Limpiar el formulario
       setFormValues({ email: '' });
 
-      
       // Redirigir a la pantalla de RESET PASSWORD (modo manual) después de 2 segundos
       setTimeout(() => {
         router.push('/auth/reset-password');
       }, 2000);
-
     } catch (error) {
       let errorMessage = 'Ocurrió un error al enviar el correo.';
 
       if (isAxiosError(error)) {
         if (error.response) {
-          errorMessage = error.response.data?.error || error.response.data?.message || errorMessage;
+          errorMessage =
+            error.response.data?.error ||
+            error.response.data?.message ||
+            errorMessage;
         } else if (error.request) {
-          errorMessage = 'No se pudo conectar con el servidor. Revisa tu conexión a internet.';
+          errorMessage =
+            'No se pudo conectar con el servidor. Revisa tu conexión a internet.';
         }
       } else if (error instanceof Error) {
         errorMessage = error.message;

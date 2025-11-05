@@ -5,7 +5,7 @@ import { router } from 'expo-router';
 import CustomHeader from '@/src/components/UI/CustomHeader';
 import CustomButton from '@/src/components/UI/CustomButton';
 import { AppText } from '@/src/components/AppText';
-import { useNotification } from '@/src/components/notifications/NotificationContext';
+import { useNotification } from '@/src/components/notifications';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 

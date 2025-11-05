@@ -10,7 +10,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as Location from 'expo-location';
 import { fetchAlertById, updateAlert } from '../../src/api/alerts';
 import type { Alert as AlertTypeFromAPI } from '../../src/types/alert';
-import { useNotification } from '@/src/components/notifications/NotificationContext';
+import { useNotification } from '@/src/components/notifications';
 import { useRefresh } from '@/src/contexts/RefreshContext';
 import { REFRESH_KEYS } from '@/src/constants/refreshKeys';
 import { Colors } from '@/src/constants/colors';

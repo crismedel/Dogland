@@ -13,7 +13,7 @@ import { useAuth } from '@/src/contexts/AuthContext';
 import { isAxiosError } from 'axios';
 import { router, useLocalSearchParams } from 'expo-router';
 import DynamicForm, { FormField } from '@/src/components/UI/DynamicForm';
-import { useNotification } from '@/src/components/notifications/NotificationContext';
+import { useNotification } from '@/src/components/notifications';
 import { Colors } from '@/src/constants/colors';
 import {
   fontWeightBold,
@@ -101,10 +101,13 @@ const Verify2FA: React.FC = () => {
         token?: string;
       }
 
-      const response = await apiClient.post<VerifyResponse>('/auth/verify-2fa', {
-        email,
-        code,
-      });
+      const response = await apiClient.post<VerifyResponse>(
+        '/auth/verify-2fa',
+        {
+          email,
+          code,
+        },
+      );
 
       const { token } = response.data;
 
@@ -123,8 +126,7 @@ const Verify2FA: React.FC = () => {
 
       if (isAxiosError(error)) {
         if (error.response) {
-          errorMessage =
-            error.response.data?.message || errorMessage;
+          errorMessage = error.response.data?.message || errorMessage;
         } else if (error.request) {
           errorMessage =
             'No se pudo conectar con el servidor. Revisa tu conexión a internet.';
@@ -171,7 +173,9 @@ const Verify2FA: React.FC = () => {
         </TouchableOpacity>
 
         <View style={styles.titleContainer}>
-          <AppText style={styles.welcomeTitle}>Verificación en dos pasos</AppText>
+          <AppText style={styles.welcomeTitle}>
+            Verificación en dos pasos
+          </AppText>
           <AppText style={styles.subtitleText}>
             Ingresa el código que enviamos a {email}
           </AppText>

@@ -6,7 +6,7 @@ import { AppText } from '../AppText';
 import { fontWeightMedium } from '../AppText';
 import CustomButton from '../UI/CustomButton';
 import { Ionicons } from '@expo/vector-icons';
-import { useNotification } from '@/src/components/notifications/NotificationContext';
+import { useNotification } from '@/src/components/notifications';
 import { useRefresh } from '@/src/contexts/RefreshContext';
 import { REFRESH_KEYS } from '@/src/constants/refreshKeys';
 

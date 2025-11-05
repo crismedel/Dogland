@@ -11,7 +11,7 @@ import {
 import { useRouter } from 'expo-router';
 import apiClient from '../../src/api/client';
 import { Colors } from '@/src/constants/colors';
-import { useNotification } from '@/src/components/notifications/NotificationContext';
+import { useNotification } from '@/src/components/notifications';
 import {
   obtenerNombreEspecie,
   obtenerNombreEstadoSalud,

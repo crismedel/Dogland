@@ -5,6 +5,7 @@ import React, {
   useMemo,
   useState,
   useEffect,
+  useRef,
 } from 'react';
 import {
   Modal,
@@ -15,27 +16,30 @@ import {
   StyleSheet,
   Platform,
   AppState,
+  AccessibilityInfo,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as Notifications from 'expo-notifications';
-import * as SecureStore from 'expo-secure-store';
-import { getExpoPushTokenAsync } from '@/src/utils/expoNotifications';
-import { buildAndRegisterPushToken } from '@/src/api/notifications';
-import { useAuth } from '@/src/contexts/AuthContext';
-import { router } from 'expo-router';
 import {
+  AppText,
   fontWeightBold,
   fontWeightSemiBold,
   fontWeightMedium,
-  AppText,
 } from '@/src/components/AppText';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as Notifications from 'expo-notifications';
+import * as SecureStore from 'expo-secure-store';
 import Constants from 'expo-constants';
+import { router } from 'expo-router';
+
+// Ajusta estos imports locales a tus rutas reales:
+import { useAuth } from '@/src/contexts/AuthContext';
+import { buildAndRegisterPushToken } from '@/src/api/notifications';
 
 // ---------- Types ----------
 type ToastType = 'success' | 'error' | 'info' | 'warning';
 type ToastPosition = 'top' | 'bottom';
 
 type ToastOptions = {
+  id?: string;
   type?: ToastType;
   title: string;
   message?: string;
@@ -45,6 +49,7 @@ type ToastOptions = {
   position?: ToastPosition;
   underHeader?: boolean;
   tabBarHeight?: number;
+  dismissible?: boolean;
 };
 
 type ConfirmOptions = {
@@ -58,27 +63,29 @@ type ConfirmOptions = {
 };
 
 type NotificationContextType = {
-  showToast: (opts: ToastOptions) => void;
+  showToast: (opts: ToastOptions) => string;
   showSuccess: (
     title: string,
     message?: string,
     opts?: Partial<ToastOptions>,
-  ) => void;
+  ) => string;
   showError: (
     title: string,
     message?: string,
     opts?: Partial<ToastOptions>,
-  ) => void;
+  ) => string;
   showInfo: (
     title: string,
     message?: string,
     opts?: Partial<ToastOptions>,
-  ) => void;
+  ) => string;
   showWarning: (
     title: string,
     message?: string,
     opts?: Partial<ToastOptions>,
-  ) => void;
+  ) => string;
+  dismissToast: (id?: string) => void;
+  updateToast: (id: string, opts: Partial<ToastOptions>) => void;
   confirm: (opts: ConfirmOptions) => void;
 };
 
@@ -96,15 +103,9 @@ type ProviderProps = { children: React.ReactNode };
 
 export const NotificationProvider: React.FC<ProviderProps> = ({ children }) => {
   // Toast state
-  const [toast, setToast] = useState<
-    | (Required<Pick<ToastOptions, 'type'>> & ToastOptions & { id: number })
-    | null
-  >(null);
-  const [toastAnim] = useState(new Animated.Value(0));
-  const [toastTimer, setToastTimer] = useState<ReturnType<
-    typeof setTimeout
-  > | null>(null);
-  const [toastId, setToastId] = useState(0);
+  const [toasts, setToasts] = useState<Required<ToastOptions>[]>([]);
+  const toastTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  const toastAnimMap = useRef<Record<string, Animated.Value>>({});
 
   // Confirm dialog state
   const [confirmState, setConfirmState] = useState<
@@ -115,44 +116,105 @@ export const NotificationProvider: React.FC<ProviderProps> = ({ children }) => {
   const insets = useSafeAreaInsets();
 
   // -----------------------
-  // Handlers: hideToast & showToast (deben existir antes de los listeners)
+  // Handlers: dismissToast & showToast
   // -----------------------
-  const hideToast = useCallback(() => {
-    Animated.timing(toastAnim, {
-      toValue: 0,
-      duration: 160,
-      easing: Easing.out(Easing.quad),
-      useNativeDriver: true,
-    }).start(() => setToast(null));
-  }, [toastAnim]);
+  const dismissToast = useCallback((id?: string) => {
+    if (!id) {
+      // dismiss all
+      setToasts([]);
+      Object.values(toastTimers.current).forEach(clearTimeout);
+      toastTimers.current = {};
+      toastAnimMap.current = {};
+      return;
+    }
+
+    setToasts((prev) => {
+      const toast = prev.find((t) => t.id === id);
+      if (!toast) return prev;
+
+      const anim = toastAnimMap.current[id];
+      if (anim) {
+        Animated.timing(anim, {
+          toValue: 0,
+          duration: 160,
+          easing: Easing.out(Easing.quad),
+          useNativeDriver: true,
+        }).start(() => {
+          setToasts((prevToasts) => prevToasts.filter((t) => t.id !== id));
+          delete toastAnimMap.current[id];
+        });
+      } else {
+        // sin animación, eliminar inmediatamente
+        return prev.filter((t) => t.id !== id);
+      }
+
+      if (toastTimers.current[id]) {
+        clearTimeout(toastTimers.current[id]);
+        delete toastTimers.current[id];
+      }
+
+      return prev;
+    });
+  }, []);
 
   const showToast = useCallback(
     (opts: ToastOptions) => {
-      if (toastTimer) clearTimeout(toastTimer);
-
-      const nextId = toastId + 1;
-      setToastId(nextId);
-      setToast({
-        ...opts,
-        id: nextId,
+      const id = opts.id || Math.random().toString(36).substring(2, 9);
+      const toast: Required<ToastOptions> = {
+        id,
         type: opts.type ?? 'info',
+        title: opts.title,
+        message: opts.message ?? '',
+        durationMs: opts.durationMs ?? 3000,
+        actionLabel: opts.actionLabel ?? '',
+        onActionPress: opts.onActionPress ?? (() => {}),
         position: opts.position ?? 'top',
         underHeader: opts.underHeader ?? true,
         tabBarHeight: opts.tabBarHeight ?? 0,
-      });
+        dismissible: opts.dismissible ?? true,
+      };
 
-      Animated.timing(toastAnim, {
+      setToasts((prev) => [...prev, toast]);
+
+      // Initialize animation value
+      if (!toastAnimMap.current[id]) {
+        toastAnimMap.current[id] = new Animated.Value(0);
+      }
+
+      const anim = toastAnimMap.current[id];
+      Animated.timing(anim, {
         toValue: 1,
         duration: 180,
         easing: Easing.out(Easing.quad),
         useNativeDriver: true,
       }).start();
 
-      const timeout = setTimeout(hideToast, opts.durationMs ?? 3000);
-      setToastTimer(timeout);
+      // Accessibility announcement
+      const message = `${toast.title}${
+        toast.message ? '. ' + toast.message : ''
+      }`;
+      // announceForAccessibility available en ambos platforms; sin branch redundante
+      AccessibilityInfo.announceForAccessibility(message);
+
+      // Auto-dismiss
+      if (toast.durationMs > 0) {
+        const timer = setTimeout(() => {
+          dismissToast(id);
+          delete toastTimers.current[id];
+        }, toast.durationMs);
+        toastTimers.current[id] = timer;
+      }
+
+      return id;
     },
-    [toastAnim, toastTimer, toastId, hideToast],
+    [dismissToast],
   );
+
+  const updateToast = useCallback((id: string, opts: Partial<ToastOptions>) => {
+    setToasts((prev) =>
+      prev.map((toast) => (toast.id === id ? { ...toast, ...opts } : toast)),
+    );
+  }, []);
 
   const confirm = useCallback((opts: ConfirmOptions) => {
     setConfirmState({ ...opts, visible: true });
@@ -160,16 +222,15 @@ export const NotificationProvider: React.FC<ProviderProps> = ({ children }) => {
 
   useEffect(() => {
     Notifications.setNotificationHandler({
-      handleNotification:
-        async (): Promise<Notifications.NotificationBehavior> => {
-          return {
-            shouldShowAlert: false,
-            shouldPlaySound: false,
-            shouldSetBadge: false,
-            shouldShowBanner: false,
-            shouldShowList: false,
-          };
-        },
+      handleNotification: async () => {
+        return {
+          shouldShowAlert: false,
+          shouldPlaySound: false,
+          shouldSetBadge: false,
+          shouldShowBanner: false,
+          shouldShowList: false,
+        };
+      },
     });
   }, []);
 
@@ -181,7 +242,6 @@ export const NotificationProvider: React.FC<ProviderProps> = ({ children }) => {
     // reintento exponencial simple
     const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-    // ATTEMPT REGISTER MODIFICADO: ahora usa buildAndRegisterPushToken
     async function attemptRegister(tokenResult: {
       token?: string | null;
       platform?: string | null;
@@ -258,18 +318,36 @@ export const NotificationProvider: React.FC<ProviderProps> = ({ children }) => {
     const registerToken = async () => {
       try {
         const projectId =
-          Constants?.expoConfig?.extra?.eas?.projectId ||
-          Constants?.easConfig?.projectId ||
+          (Constants as any)?.expoConfig?.extra?.eas?.projectId ||
+          (Constants as any)?.easConfig?.projectId ||
           undefined;
 
-        const tokenResult = await getExpoPushTokenAsync(projectId);
+        // obtén token desde expo-notifications
+        const tokenResult = await Notifications.getExpoPushTokenAsync(
+          projectId ? { projectId } : {},
+        );
 
-        if (!tokenResult || !tokenResult.token) {
+        if (!tokenResult || !(tokenResult as any).data) {
+          // en algunas versiones token está en .data
+          const token = (tokenResult as any).data ?? (tokenResult as any).token;
+          if (!token) {
+            console.debug('No se obtuvo Expo push token al registrar.');
+            return;
+          }
+          await attemptRegister({ token });
+          return;
+        }
+
+        // En versiones donde la respuesta viene en .data
+        const token =
+          (tokenResult as any).data ?? (tokenResult as any).token ?? null;
+
+        if (!token) {
           console.debug('No se obtuvo Expo push token al registrar.');
           return;
         }
 
-        await attemptRegister(tokenResult);
+        await attemptRegister({ token });
       } catch (err) {
         console.warn('Error en registro automático de push token:', err);
       }
@@ -302,8 +380,8 @@ export const NotificationProvider: React.FC<ProviderProps> = ({ children }) => {
         const { title, body } = notification.request.content;
         showToast({
           type: 'info',
-          title: title ?? 'Notificación',
-          message: body ?? '',
+          title: (title as string) ?? 'Notificación',
+          message: (body as string) ?? '',
           position: 'top',
         });
       });
@@ -327,13 +405,15 @@ export const NotificationProvider: React.FC<ProviderProps> = ({ children }) => {
         try {
           if ((type === 'alerta' || type === 'alert') && id != null) {
             router.push({
-              pathname: '/alerts/detail-alert', // coincide con AlertCard
+              pathname: '/alerts/detail-alert',
               params: { id: String(id) },
             });
           } else if (type === 'avistamiento' && id) {
             router.push(`/sightings/${String(id)}`);
           } else if (type === 'solicitud' && id) {
+            // ejemplo si quieres navegar a adopciones
             // router.push(`/adoption/requests/${String(id)}`);
+            router.push('/settings/notifications');
           } else {
             // Fallback: ir al listado de notificaciones
             router.push('/settings/notifications');
@@ -361,9 +441,11 @@ export const NotificationProvider: React.FC<ProviderProps> = ({ children }) => {
         showToast({ type: 'info', title, message, ...(opts ?? {}) }),
       showWarning: (title, message, opts) =>
         showToast({ type: 'warning', title, message, ...(opts ?? {}) }),
+      dismissToast,
+      updateToast,
       confirm,
     }),
-    [showToast, confirm],
+    [showToast, dismissToast, updateToast, confirm],
   );
 
   return (
@@ -371,19 +453,22 @@ export const NotificationProvider: React.FC<ProviderProps> = ({ children }) => {
       {children}
 
       {/* Toast UI */}
-      <Toast
-        visible={!!toast}
-        anim={toastAnim}
-        type={toast?.type ?? 'info'}
-        title={toast?.title ?? ''}
-        message={toast?.message}
-        actionLabel={toast?.actionLabel}
-        onActionPress={toast?.onActionPress}
-        onHide={hideToast}
-        position={toast?.position ?? 'top'}
-        underHeader={toast?.underHeader ?? true}
-        tabBarHeight={toast?.tabBarHeight ?? 0}
-      />
+      {toasts.map((toast) => (
+        <Toast
+          key={toast.id}
+          anim={toastAnimMap.current[toast.id]}
+          type={toast.type}
+          title={toast.title}
+          message={toast.message}
+          actionLabel={toast.actionLabel}
+          onActionPress={toast.onActionPress}
+          onHide={() => dismissToast(toast.id)}
+          position={toast.position}
+          underHeader={toast.underHeader}
+          tabBarHeight={toast.tabBarHeight}
+          dismissible={toast.dismissible}
+        />
+      ))}
 
       {/* Confirm Dialog */}
       <ConfirmDialog
@@ -419,7 +504,6 @@ const colors = {
 };
 
 type ToastInnerProps = {
-  visible: boolean;
   anim: Animated.Value;
   type: ToastType;
   title: string;
@@ -430,10 +514,10 @@ type ToastInnerProps = {
   position: ToastPosition;
   underHeader: boolean;
   tabBarHeight: number;
+  dismissible: boolean;
 };
 
 const Toast: React.FC<ToastInnerProps> = ({
-  visible,
   anim,
   type,
   title,
@@ -444,10 +528,9 @@ const Toast: React.FC<ToastInnerProps> = ({
   position,
   underHeader,
   tabBarHeight,
+  dismissible,
 }) => {
   const insets = useSafeAreaInsets();
-  if (!visible) return null;
-
   const typeColor = {
     success: colors.success,
     error: colors.error,
@@ -457,7 +540,7 @@ const Toast: React.FC<ToastInnerProps> = ({
 
   const translate = anim.interpolate({
     inputRange: [0, 1],
-    outputRange: position === 'top' ? [40, 0] : [-40, 0],
+    outputRange: position === 'top' ? [40, 0] : [40, 0],
   });
   const opacity = anim as any;
 
@@ -502,6 +585,8 @@ const Toast: React.FC<ToastInnerProps> = ({
             alignSelf: 'center',
           },
         ]}
+        accessibilityLiveRegion={type === 'error' ? 'assertive' : 'polite'}
+        accessibilityRole="alert"
       >
         <View style={styles.toastContent}>
           <AppText style={styles.toastTitle}>{title}</AppText>
@@ -511,7 +596,7 @@ const Toast: React.FC<ToastInnerProps> = ({
         </View>
 
         <View style={styles.toastActions}>
-          {actionLabel && (
+          {actionLabel ? (
             <TouchableOpacity
               onPress={onActionPress}
               style={styles.toastActionBtn}
@@ -520,10 +605,12 @@ const Toast: React.FC<ToastInnerProps> = ({
                 {actionLabel}
               </AppText>
             </TouchableOpacity>
+          ) : null}
+          {dismissible && (
+            <TouchableOpacity onPress={onHide} style={styles.toastCloseBtn}>
+              <AppText style={styles.toastCloseText}>✕</AppText>
+            </TouchableOpacity>
           )}
-          <TouchableOpacity onPress={onHide} style={styles.toastCloseBtn}>
-            <AppText style={styles.toastCloseText}>✕</AppText>
-          </TouchableOpacity>
         </View>
       </View>
     </Animated.View>
@@ -669,3 +756,5 @@ const styles = StyleSheet.create({
   btnGhost: { backgroundColor: 'transparent' },
   btnGhostText: { color: '#D1D5DB', fontWeight: '700' },
 });
+
+export default NotificationProvider;

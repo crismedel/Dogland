@@ -4,7 +4,7 @@ import {
   fontWeightMedium,
   fontWeightSemiBold,
 } from '@/src/components/AppText';
-import { useNotification } from '@/src/components/notifications/NotificationContext';
+import { useNotification } from '@/src/components/notifications';
 import DynamicForm, { FormField } from '@/src/components/UI/DynamicForm';
 import { Colors } from '@/src/constants/colors';
 import { isAxiosError } from 'axios';
@@ -17,7 +17,7 @@ import {
   Platform,
   StyleSheet,
   TouchableOpacity,
-  View
+  View,
 } from 'react-native';
 
 const { width } = Dimensions.get('window');
@@ -123,7 +123,10 @@ export default function ResetPassword() {
     }
 
     if (newPassword.length < 6) {
-      showWarning('Atención', 'La contraseña debe tener al menos 6 caracteres.');
+      showWarning(
+        'Atención',
+        'La contraseña debe tener al menos 6 caracteres.',
+      );
       return;
     }
 
@@ -137,7 +140,7 @@ export default function ResetPassword() {
 
       showSuccess(
         'Contraseña actualizada',
-        'Tu contraseña ha sido restablecida correctamente. Ahora puedes iniciar sesión.'
+        'Tu contraseña ha sido restablecida correctamente. Ahora puedes iniciar sesión.',
       );
 
       // Limpiar formulario
@@ -147,26 +150,38 @@ export default function ResetPassword() {
       setTimeout(() => {
         router.push('/auth/login');
       }, 2000);
-
     } catch (error) {
       let errorMessage = 'Ocurrió un error al restablecer la contraseña.';
 
       if (isAxiosError(error)) {
         if (error.response) {
-          const message = error.response.data?.message || error.response.data?.error;
+          const message =
+            error.response.data?.message || error.response.data?.error;
 
           // Manejar errores específicos del backend
-          if (message?.includes('TOKEN_INVALID') || message?.includes('no es válido')) {
+          if (
+            message?.includes('TOKEN_INVALID') ||
+            message?.includes('no es válido')
+          ) {
             errorMessage = 'El enlace de recuperación no es válido.';
-          } else if (message?.includes('TOKEN_USED') || message?.includes('ya ha sido utilizado')) {
-            errorMessage = 'Este enlace ya ha sido utilizado. Por favor, solicita uno nuevo.';
-          } else if (message?.includes('TOKEN_EXPIRED') || message?.includes('expirado')) {
-            errorMessage = 'El enlace de recuperación ha expirado. Por favor, solicita uno nuevo.';
+          } else if (
+            message?.includes('TOKEN_USED') ||
+            message?.includes('ya ha sido utilizado')
+          ) {
+            errorMessage =
+              'Este enlace ya ha sido utilizado. Por favor, solicita uno nuevo.';
+          } else if (
+            message?.includes('TOKEN_EXPIRED') ||
+            message?.includes('expirado')
+          ) {
+            errorMessage =
+              'El enlace de recuperación ha expirado. Por favor, solicita uno nuevo.';
           } else {
             errorMessage = message || errorMessage;
           }
         } else if (error.request) {
-          errorMessage = 'No se pudo conectar con el servidor. Revisa tu conexión a internet.';
+          errorMessage =
+            'No se pudo conectar con el servidor. Revisa tu conexión a internet.';
         }
       } else if (error instanceof Error) {
         errorMessage = error.message;
@@ -177,7 +192,6 @@ export default function ResetPassword() {
       setLoading(false);
     }
   };
-
 
   return (
     <KeyboardAvoidingView
@@ -199,9 +213,7 @@ export default function ResetPassword() {
       <View style={styles.container}>
         <View style={styles.formContainer}>
           {/* Título */}
-          <AppText style={styles.welcomeTitle}>
-            Restablecer Contraseña
-          </AppText>
+          <AppText style={styles.welcomeTitle}>Restablecer Contraseña</AppText>
 
           {/* Mensaje informativo según el modo */}
           {manualMode && (
@@ -231,7 +243,9 @@ export default function ResetPassword() {
             style={styles.loginContainer}
             onPress={() => router.push('/auth/login')}
           >
-            <AppText style={styles.loginText}>Volver al inicio de sesión</AppText>
+            <AppText style={styles.loginText}>
+              Volver al inicio de sesión
+            </AppText>
           </TouchableOpacity>
         </View>
       </View>

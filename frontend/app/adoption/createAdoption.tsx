@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import apiClient from '@/src/api/client';
-import { useNotification } from '@/src/components/notifications/NotificationContext';
+import { useNotification } from '@/src/components/notifications';
 import { Raza, Especie, EstadoSalud } from '@/src/types/animals';
 import { createAnimal } from '@/src/api/animals';
 import { createAdoption } from '@/src/api/adoptions';
@@ -81,7 +81,9 @@ export default function CreateAdoptionScreen() {
 
     const userId = getTokenID();
     if (!userId) {
-      showError('No se pudo obtener el ID de usuario. Por favor, inicia sesión nuevamente.');
+      showError(
+        'No se pudo obtener el ID de usuario. Por favor, inicia sesión nuevamente.',
+      );
       return;
     }
 

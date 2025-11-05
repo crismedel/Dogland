@@ -13,7 +13,7 @@ import CustomHeader from '@/src/components/UI/CustomHeader';
 import { AppText } from '@/src/components/AppText';
 import { Colors } from '@/src/constants/colors';
 import { fetchUserProfile, updateUserProfile } from '@/src/api/users';
-import { useNotification } from '@/src/components/notifications/NotificationContext';
+import { useNotification } from '@/src/components/notifications';
 import { useRefresh } from '@/src/contexts/RefreshContext';
 import { REFRESH_KEYS } from '@/src/constants/refreshKeys';
 

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import apiClient from '@/src/api/client';
-import { useNotification } from '@/src/components/notifications/NotificationContext';
+import { useNotification } from '@/src/components/notifications';
 
 interface ProfilePhotoMeta {
   id_usuario: number;

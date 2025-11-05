@@ -13,7 +13,7 @@ import { useAuth } from '@/src/contexts/AuthContext';
 import { isAxiosError } from 'axios';
 import { router } from 'expo-router';
 import DynamicForm, { FormField } from '@/src/components/UI/DynamicForm';
-import { useNotification } from '@/src/components/notifications/NotificationContext';
+import { useNotification } from '@/src/components/notifications';
 import { Colors } from '@/src/constants/colors';
 import {
   fontWeightBold,
@@ -130,7 +130,7 @@ const Index: React.FC = () => {
         console.log('2FA requerido, redirigiendo a verificación...');
         showSuccess(
           'Código enviado',
-          'Revisa tu email para obtener el código de verificación.'
+          'Revisa tu email para obtener el código de verificación.',
         );
 
         // Redirigir a la pantalla de verificacion 2FA

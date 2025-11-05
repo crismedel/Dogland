@@ -7,7 +7,7 @@ import {
   Image,
 } from 'react-native';
 import * as Location from 'expo-location';
-import { useNotification } from '@/src/components/notifications/NotificationContext';
+import { useNotification } from '@/src/components/notifications';
 import { useRouter } from 'expo-router';
 import { createAlert } from '../../src/api/alerts';
 import { Colors } from '@/src/constants/colors';

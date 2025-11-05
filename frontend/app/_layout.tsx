@@ -11,7 +11,7 @@ import { useEffect } from 'react';
 
 import { useCustomFonts } from '@/src/constants/fontFamily';
 import { Colors } from '@/src/constants/colors';
-import { NotificationProvider } from '@/src/components/notifications/NotificationContext';
+import { NotificationProvider } from '@/src/components/notifications';
 import { AuthProvider, useAuth } from '@/src/contexts/AuthContext';
 import BottomNavBar from '@/src/components/UI/TabBar';
 import { RefreshProvider } from '@/src/contexts/RefreshContext';

@@ -12,7 +12,7 @@ import {
 import { router } from 'expo-router';
 import DynamicForm, { FormField } from '@/src/components/UI/DynamicForm';
 import apiClient from '@/src/api/client';
-import { useNotification } from '@/src/components/notifications/NotificationContext';
+import { useNotification } from '@/src/components/notifications';
 import { Region, Ciudad } from '@/src/types/location';
 import { Colors } from '@/src/constants/colors';
 import {

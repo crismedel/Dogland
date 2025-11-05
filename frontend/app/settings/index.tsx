@@ -5,7 +5,7 @@ import {
   fontWeightMedium,
   fontWeightSemiBold,
 } from '@/src/components/AppText';
-import { useNotification } from '@/src/components/notifications/NotificationContext';
+import { useNotification } from '@/src/components/notifications';
 import CustomButton from '@/src/components/UI/CustomButton';
 import CustomHeader from '@/src/components/UI/CustomHeader';
 import { Colors } from '@/src/constants/colors';
@@ -13,7 +13,14 @@ import { useAuth } from '@/src/contexts/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Switch, TouchableOpacity, View } from 'react-native';
+import {
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 export default function SettingsScreen() {
   const { confirm, showSuccess, showError } = useNotification();
@@ -51,14 +58,15 @@ export default function SettingsScreen() {
           'Configuración actualizada',
           value
             ? 'Autenticación de dos factores activada. Recibirás un código por email al iniciar sesión.'
-            : 'Autenticación de dos factores desactivada.'
+            : 'Autenticación de dos factores desactivada.',
         );
       }
     } catch (error: any) {
       console.error('Error al cambiar 2FA:', error);
       showError(
         'Error',
-        error.response?.data?.message || 'No se pudo actualizar la configuración.'
+        error.response?.data?.message ||
+          'No se pudo actualizar la configuración.',
       );
       // Revertir el switch en caso de error
       setHas2FA(!value);
@@ -103,7 +111,6 @@ export default function SettingsScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-
         {/* Sección de Seguridad */}
         <View style={styles.card}>
           <AppText style={styles.sectionTitle}>Seguridad</AppText>

@@ -30,7 +30,7 @@ import {
   AppText,
 } from '@/src/components/AppText';
 import { router } from 'expo-router';
-import { useNotification } from '@/src/components/notifications/NotificationContext';
+import { useNotification } from '@/src/components/notifications';
 import BottomSheetModal from '@/src/components/profile/BottomSheetModal';
 import ProfileCard from '@/src/components/profile/ProfileCard';
 import ContactInfo from '@/src/components/profile/ContactInfo';
