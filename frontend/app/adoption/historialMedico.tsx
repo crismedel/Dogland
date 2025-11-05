@@ -8,53 +8,96 @@ import {
   FlatList,
   ActivityIndicator,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+// import { Ionicons } from '@expo/vector-icons'; // No se usa en este archivo, se puede borrar
 import { useRouter } from 'expo-router';
-import TarjetaMedica from './component/terjetasMedicas'; // <<-- fíjate en el nombre exacto
+import TarjetaMedica from './component/terjetasMedicas';
 import {
   fontWeightBold,
   fontWeightSemiBold,
   fontWeightMedium,
   AppText,
 } from '@/src/components/AppText';
-// import { Colors } from '@/src/constants/colors'; // opcional: si lo usas, revisa que exista
+
+// --- 1. Importaciones para la autenticación ---
+import { authStorage } from '@/src/utils/authStorage'; // Ajusta la ruta si es necesario
+import { jwtDecode } from 'jwt-decode';
+
+// --- Opcional: Interfaz para el payload de tu token ---
+interface TokenPayload {
+  id: number;
+  role: string;
+  email: string;
+  iat: number;
+  exp: number;
+}
 
 const HistorialMedico = () => {
   const router = useRouter();
   const [historial, setHistorial] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // Mock que incluye estadoMedico + descripcion (nuevo esquema)
-    const mockHistorial = [
-      {
-        id: '1',
-        nombre: 'Luna',
-        estadoMedico: 2,
-        descripcion: 'Vacunada, en recuperación de cirugía menor',
-      },
-      {
-        id: '2',
-        nombre: 'Thor',
-        estadoMedico: 1,
-        descripcion: 'Sano, necesita chequeo dental',
-      },
-      {
-        id: '3',
-        nombre: 'Max',
-        estadoMedico: 2,
-        descripcion: 'Problemas en la piel, tratamiento en curso',
-      },
-    ];
+  // --- 2. Estado para guardar el rol del usuario ---
+  const [userRole, setUserRole] = useState<string | null>(null);
 
-    setTimeout(() => {
-      setHistorial(mockHistorial);
-      setLoading(false);
-    }, 600);
+  useEffect(() => {
+    // --- 3. Creamos una función async para cargar todo ---
+    const loadData = async () => {
+      try {
+        // --- Lógica para obtener el rol ---
+        const token = await authStorage.getToken();
+        let roleFromToken: string | null = null;
+
+        if (token) {
+          try {
+            const decodedToken = jwtDecode<TokenPayload>(token);
+            roleFromToken = decodedToken.role;
+          } catch (decodeError) {
+            console.error('Error al decodificar el token:', decodeError);
+          }
+        }
+        setUserRole(roleFromToken);
+        // --- Fin de la lógica del token ---
+
+        // Mock que incluye estadoMedico + descripcion (nuevo esquema)
+        const mockHistorial = [
+          {
+            id: '1',
+            nombre: 'Luna',
+            estadoMedico: 2,
+            descripcion: 'Vacunada, en recuperación de cirugía menor',
+          },
+          {
+            id: '2',
+            nombre: 'Thor',
+            estadoMedico: 1,
+            descripcion: 'Sano, necesita chequeo dental',
+          },
+          {
+            id: '3',
+            nombre: 'Max',
+            estadoMedico: 2,
+            descripcion: 'Problemas en la piel, tratamiento en curso',
+          },
+        ];
+
+        // Simulamos la carga
+        setTimeout(() => {
+          setHistorial(mockHistorial);
+          setLoading(false); // --- Movemos esto aquí ---
+        }, 600);
+      } catch (error) {
+        console.error('Error al cargar datos:', error);
+        setLoading(false);
+      }
+      // --- El finally no es necesario si setTimeout maneja el setLoading ---
+    };
+
+    loadData();
   }, []);
 
   const handleAgregarHistorial = () => {
-    console.log('Agregar historial médico');
+    // Aquí puedes navegar a la pantalla de agregar
+    router.push('/adoption/agregarHistorial'); // Ejemplo de ruta
   };
 
   if (loading) {
@@ -65,9 +108,12 @@ const HistorialMedico = () => {
     );
   }
 
+  // --- 4. Variable para chequear permisos ---
+  const canManage = userRole === 'Admin' || userRole === 'Trabajador';
+
   return (
     <View style={styles.container}>
-      {/* Header */}
+      {/* Header (no cambia) */}
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => router.back()}
@@ -81,7 +127,7 @@ const HistorialMedico = () => {
         <AppText style={styles.headerTitle}>Historial Médico</AppText>
       </View>
 
-      {/* Lista de tarjetas médicas */}
+      {/* --- 5. Lista de tarjetas médicas (Pasamos props) --- */}
       <FlatList
         data={historial}
         keyExtractor={(item) => item.id}
@@ -90,25 +136,32 @@ const HistorialMedico = () => {
             nombre={item.nombre}
             estadoMedico={item.estadoMedico}
             descripcion={item.descripcion}
-            condicion={item.condicion} // por compatibilidad si existiera
+            condicion={item.condicion}
+            // --- Props nuevas para los roles ---
+            historialId={item.id} // Para saber qué item editar/borrar
+            userRole={userRole}
           />
         )}
         contentContainerStyle={{ paddingTop: 20, paddingBottom: 20 }}
       />
 
-      {/* Botón amarillo Agregar historial */}
-      <TouchableOpacity
-        style={styles.addButton}
-        onPress={handleAgregarHistorial}
-      >
-        <AppText style={styles.addButtonText}>
-          + Agregar historial médico
-        </AppText>
-      </TouchableOpacity>
+      {/* --- 6. Botón condicional "Agregar historial" --- */}
+      {/* Solo se muestra si 'canManage' es true */}
+      {canManage && (
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={handleAgregarHistorial}
+        >
+          <AppText style={styles.addButtonText}>
+            + Agregar historial médico
+          </AppText>
+        </TouchableOpacity>
+      )}
     </View>
   );
 };
 
+// --- (Estilos no cambian) ---
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#dbe8d3' },
   header: {
@@ -128,7 +181,7 @@ const styles = StyleSheet.create({
   backIconHeader: { width: 24, height: 24, tintColor: '#fff' },
 
   addButton: {
-    backgroundColor: '#fbbf24', // si usas Colors.background reestablece
+    backgroundColor: '#fbbf24',
     marginHorizontal: 16,
     marginVertical: 20,
     padding: 15,
