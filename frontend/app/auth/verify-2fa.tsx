@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   TouchableOpacity,
@@ -11,7 +11,7 @@ import {
 import apiClient from '@/src/api/client';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { isAxiosError } from 'axios';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import DynamicForm, { FormField } from '@/src/components/UI/DynamicForm';
 import { useNotification } from '@/src/components/notifications/NotificationContext';
 import { Colors } from '@/src/constants/colors';
@@ -21,45 +21,33 @@ import {
   AppText,
 } from '@/src/components/AppText';
 import Constants from 'expo-constants';
-
-// Importaciones para push notifications
 import { getExpoPushTokenAsync } from '@/src/utils/expoNotifications';
 import { registerPushToken } from '@/src/api/notifications';
 import * as SecureStore from 'expo-secure-store';
 
 const { width } = Dimensions.get('window');
 
-// Configuración de campos para LOGIN
-const loginFields: FormField[] = [
+const verifyFields: FormField[] = [
   {
-    name: 'email',
-    label: 'Correo',
-    placeholder: 'Ingresa tu correo',
-    keyboardType: 'email-address',
+    name: 'code',
+    label: 'Código de verificación',
+    placeholder: 'Ingresa el código de 6 dígitos',
+    keyboardType: 'number-pad',
     autoCapitalize: 'none',
-    icon: 'mail-outline',
-    type: 'email',
-  },
-  {
-    name: 'password',
-    label: 'Contraseña',
-    placeholder: 'Ingresa tu contraseña',
-    secureTextEntry: true,
-    autoCapitalize: 'none',
-    icon: 'lock-closed-outline',
-    type: 'password',
+    icon: 'key-outline',
+    type: 'text',
   },
 ];
 
-// El componente es un React Functional Component (React.FC)
-const Index: React.FC = () => {
+const Verify2FA: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
-  const { showError, showSuccess, showWarning } = useNotification();
+  const { showError, showSuccess } = useNotification();
   const { login } = useAuth();
+  const params = useLocalSearchParams();
+  const email = params.email as string;
 
   const [formValues, setFormValues] = useState({
-    email: '',
-    password: '',
+    code: '',
   });
 
   const handleValueChange = (name: string, value: string) => {
@@ -80,14 +68,12 @@ const Index: React.FC = () => {
         return;
       }
 
-      // Enviar al backend incluyendo platform y appVersion
       await registerPushToken({
         push_token: tokenResult.token,
         platform: tokenResult.platform,
         app_version: tokenResult.appVersion,
       });
 
-      // Opcional: guardar último token registrado localmente para evitar reenvíos constantes
       await SecureStore.setItemAsync(
         'last_registered_push_token',
         tokenResult.token,
@@ -98,76 +84,47 @@ const Index: React.FC = () => {
     }
   };
 
-  // Adaptar handleLogin para registro del token push
-  const handleLogin = async () => {
-    const { email, password } = formValues;
+  const handleVerify = async () => {
+    const { code } = formValues;
 
-    if (!email || !password) {
-      showWarning('Atención', 'Por favor, completa todos los campos.');
+    if (!code || code.length !== 6) {
+      showError('Error', 'Por favor, ingresa el código de 6 dígitos.');
       return;
     }
 
     setLoading(true);
 
     try {
-      interface LoginResponse {
+      interface VerifyResponse {
         success: boolean;
         message: string;
         token?: string;
-        requires2FA?: boolean;
-        email?: string;
       }
 
-      const response = await apiClient.post<LoginResponse>('/auth/login', {
+      const response = await apiClient.post<VerifyResponse>('/auth/verify-2fa', {
         email,
-        password,
+        code,
       });
 
-      console.log('Datos completos de login response:', response.data);
-
-      // Verificar si se requiere 2FA
-      if (response.data.requires2FA) {
-        console.log('2FA requerido, redirigiendo a verificación...');
-        showSuccess(
-          'Código enviado',
-          'Revisa tu email para obtener el código de verificación.'
-        );
-
-        // Redirigir a la pantalla de verificacion 2FA
-        router.push({
-          pathname: '/auth/verify-2fa',
-          params: { email: response.data.email || email },
-        });
-        return;
-      }
-
-      // Flujo normal sin 2FA
       const { token } = response.data;
 
       if (!token) throw new Error('El servidor no envió un token válido.');
 
-      console.log('✅ Login exitoso, token recibido. token:', token);
+      console.log('✅ 2FA verificado, token recibido');
 
-      // Guardar token en AuthContext (esto también lo guarda en SecureStore)
       await login(token);
+      showSuccess('Éxito', 'Verificación completada correctamente.');
 
-      // Mostrar feedback y continuar
-      showSuccess('Éxito', 'Has iniciado sesión correctamente.');
-
-      // Registrar el push token de forma segura (en segundo plano)
       registerPushTokenSafely();
 
-      // Redirigir al home
       router.replace('/home');
     } catch (error) {
-      let errorMessage =
-        'Ocurrió un error inesperado durante el inicio de sesión.';
+      let errorMessage = 'Código de verificación inválido o expirado.';
 
       if (isAxiosError(error)) {
         if (error.response) {
           errorMessage =
-            error.response.data?.message ||
-            'Credenciales inválidas. Por favor, verifica tus datos.';
+            error.response.data?.message || errorMessage;
         } else if (error.request) {
           errorMessage =
             'No se pudo conectar con el servidor. Revisa tu conexión a internet.';
@@ -176,7 +133,19 @@ const Index: React.FC = () => {
         errorMessage = error.message;
       }
 
-      showError('Error de inicio de sesión', errorMessage);
+      showError('Error de verificación', errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendCode = async () => {
+    setLoading(true);
+    try {
+      await apiClient.post('/auth/resend-2fa', { email });
+      showSuccess('Código reenviado', 'Revisa tu email nuevamente.');
+    } catch (error) {
+      showError('Error', 'No se pudo reenviar el código.');
     } finally {
       setLoading(false);
     }
@@ -188,11 +157,10 @@ const Index: React.FC = () => {
       style={styles.container}
     >
       <View style={styles.container}>
-        {/* Back Button */}
         <TouchableOpacity
           style={styles.backButton}
           activeOpacity={0.8}
-          onPress={() => router.push('/auth')}
+          onPress={() => router.back()}
         >
           <View style={styles.backButtonInner}>
             <Image
@@ -202,47 +170,40 @@ const Index: React.FC = () => {
           </View>
         </TouchableOpacity>
 
-        {/* Title */}
         <View style={styles.titleContainer}>
-          <AppText style={styles.welcomeTitle}>Bienvenido a</AppText>
-          <AppText style={styles.brandTitle}>Dogland</AppText>
+          <AppText style={styles.welcomeTitle}>Verificación en dos pasos</AppText>
+          <AppText style={styles.subtitleText}>
+            Ingresa el código que enviamos a {email}
+          </AppText>
         </View>
 
-        {/* Dynamic Form */}
         <View style={styles.formWrapper}>
           <DynamicForm
-            fields={loginFields}
+            fields={verifyFields}
             values={formValues}
             onValueChange={handleValueChange}
-            onSubmit={handleLogin}
+            onSubmit={handleVerify}
             loading={loading}
-            buttonText="Acceder"
-            buttonIcon="log-in-outline"
+            buttonText="Verificar"
+            buttonIcon="checkmark-circle-outline"
           />
+
+          <TouchableOpacity
+            style={styles.resendButton}
+            onPress={handleResendCode}
+            disabled={loading}
+          >
+            <AppText style={styles.resendText}>
+              ¿No recibiste el código? Reenviar
+            </AppText>
+          </TouchableOpacity>
         </View>
-
-        {/* Register Button */}
-        <TouchableOpacity
-          style={styles.registerButton}
-          onPress={() => router.push('/auth/register')}
-          activeOpacity={0.9}
-        >
-          <AppText style={styles.registerText}>Regístrate</AppText>
-        </TouchableOpacity>
-
-        {/* Forgot Password Link */}
-        <AppText
-          style={styles.forgotPasswordText}
-          onPress={() => router.push('/auth/forgot_password')}
-        >
-          ¿No recuerdas tu contraseña?
-        </AppText>
       </View>
     </KeyboardAvoidingView>
   );
 };
 
-export default Index;
+export default Verify2FA;
 
 const styles = StyleSheet.create({
   container: {
@@ -256,21 +217,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   welcomeTitle: {
-    fontSize: 22,
-    fontWeight: '500',
-    color: '#6B7280',
-    textAlign: 'center',
-    letterSpacing: 0.5,
-  },
-  brandTitle: {
-    fontSize: 36,
+    fontSize: 24,
     fontWeight: fontWeightBold,
     color: '#1F2937',
     textAlign: 'center',
-    letterSpacing: 1,
-    textShadowColor: 'rgba(251, 191, 36, 0.3)',
-    textShadowOffset: { width: 2, height: 2 },
-    textShadowRadius: 4,
+    letterSpacing: 0.5,
+    marginBottom: 10,
+  },
+  subtitleText: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
   },
   backButton: {
     alignSelf: 'flex-start',
@@ -295,38 +252,13 @@ const styles = StyleSheet.create({
     width: width * 0.85,
     maxWidth: 400,
   },
-  registerButton: {
-    backgroundColor: '#FEF3C7',
-    paddingVertical: 16,
-    marginTop: 15,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: Colors.primary,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 6,
-    borderWidth: 1.5,
-    borderColor: Colors.primary,
-    width: width * 0.85,
-    maxWidth: 400,
-  },
-  registerText: {
-    color: Colors.primary,
-    fontSize: 16,
-    fontWeight: fontWeightSemiBold,
-    letterSpacing: 0.3,
-    textAlign: 'center',
-  },
-  forgotPasswordText: {
-    color: '#6B7280',
-    fontSize: 14,
-    textAlign: 'center',
+  resendButton: {
     marginTop: 20,
-    marginBottom: 16,
+    alignItems: 'center',
+  },
+  resendText: {
+    color: Colors.primary,
+    fontSize: 14,
+    fontWeight: fontWeightSemiBold,
   },
 });

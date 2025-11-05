@@ -15,6 +15,9 @@ interface User {
   id: number;
   email: string;
   role: string;
+  nombre?: string;
+  apellido?: string;
+  foto_perfil?: string;
 }
 
 interface AuthContextType {
@@ -29,6 +32,7 @@ interface AuthContextType {
     currentPassword: string,
     newPassword: string,
   ) => Promise<void>;
+  syncUserWithBackend: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -164,6 +168,45 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     // await logout();
   };
 
+  const syncUserWithBackend = async () => {
+    if (!token) {
+      console.warn('No hay token, no se puede sincronizar usuario');
+      return;
+    }
+
+    try {
+      let apiBase = process.env.EXPO_PUBLIC_API_URL;
+      if (!apiBase) {
+        throw new Error('No se ha configurado EXPO_PUBLIC_API_URL');
+      }
+
+      const res = await fetch(`${apiBase}/auth/me`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) {
+        throw new Error(`Error al obtener datos del usuario: ${res.status}`);
+      }
+
+      const userData = await res.json();
+
+      // Actualizar el estado del usuario con la información completa del backend
+      setUser({
+        id: userData.id,
+        email: userData.email,
+        role: userData.role,
+        nombre: userData.nombre,
+        apellido: userData.apellido,
+        foto_perfil: userData.foto_perfil,
+      });
+    } catch (error) {
+      console.error('Error al sincronizar usuario con backend:', error);
+    }
+  };
+
   const value: AuthContextType = useMemo(
     () => ({
       user,
@@ -174,6 +217,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       logout,
       checkAuth,
       changePassword,
+      syncUserWithBackend,
     }),
     [user, token, isLoading],
   );
