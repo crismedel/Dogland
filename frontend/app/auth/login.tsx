@@ -22,9 +22,10 @@ import {
 } from '@/src/components/AppText';
 import Constants from 'expo-constants';
 
-// 👇 Importaciones para push notifications
+// Importaciones para push notifications
 import { getExpoPushTokenAsync } from '@/src/utils/expoNotifications';
 import { registerPushToken } from '@/src/api/notifications';
+import * as SecureStore from 'expo-secure-store';
 
 const { width } = Dimensions.get('window');
 
@@ -67,30 +68,33 @@ const Index: React.FC = () => {
 
   const registerPushTokenSafely = async () => {
     try {
-      // 🧠 Detecta automáticamente el projectId desde app.json / app.config.js
       const projectId =
         Constants?.expoConfig?.extra?.eas?.projectId ||
-        Constants?.easConfig?.projectId;
+        Constants?.easConfig?.projectId ||
+        undefined;
 
-      if (!projectId) {
-        console.warn(
-          '⚠️ No se encontró projectId en la configuración de Expo.',
-        );
+      const tokenResult = await getExpoPushTokenAsync(projectId);
+
+      if (!tokenResult || !tokenResult.token) {
+        console.warn('No se obtuvo Expo push token');
         return;
       }
 
-      // 📲 Obtiene el token de notificaciones usando tu helper
-      const expoToken = await getExpoPushTokenAsync(projectId);
+      // Enviar al backend incluyendo platform y appVersion
+      await registerPushToken({
+        push_token: tokenResult.token,
+        platform: tokenResult.platform,
+        app_version: tokenResult.appVersion,
+      });
 
-      // 📨 Si existe token, lo registra en backend
-      if (expoToken) {
-        await registerPushToken(expoToken);
-        console.log('✅ Push token registrado correctamente:', expoToken);
-      } else {
-        console.warn('⚠️ No se pudo obtener el token Expo Push.');
-      }
-    } catch (error) {
-      console.warn('⚠️ Error al registrar push token:', error);
+      // Opcional: guardar último token registrado localmente para evitar reenvíos constantes
+      await SecureStore.setItemAsync(
+        'last_registered_push_token',
+        tokenResult.token,
+      );
+      console.log('✅ Push token registrado:', tokenResult.token);
+    } catch (err) {
+      console.warn('Error registrando push token en backend:', err);
     }
   };
 
@@ -117,7 +121,6 @@ const Index: React.FC = () => {
         password,
       });
 
-      console.log('🧾 Datos completos de login response:', response.data);
       const { token } = response.data;
 
       if (!token) throw new Error('El servidor no envió un token válido.');

@@ -1,11 +1,5 @@
 import React from 'react';
-import {
-  View,
-  TouchableOpacity,
-  StyleSheet,
-  Platform,
-  useColorScheme,
-} from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { Link, usePathname } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import type { ComponentProps } from 'react';
@@ -62,27 +56,17 @@ const SECONDARY_RGB = '217,119,6'; // #d97706
 export default function BottomNavBar() {
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
   const bottomInset = Math.max(insets.bottom, Platform.OS === 'ios' ? 8 : 10);
 
-  // Dynamic colors for light/dark
-  const containerBg = isDark ? '#121212' : Colors.backgroundSecon; // darker base for dark mode
-  const containerBorder = isDark
-    ? 'rgba(255,255,255,0.04)'
-    : 'rgba(0,0,0,0.04)';
-  const inactiveColor = isDark ? 'rgba(255,255,255,0.68)' : Colors.darkGray;
-  const activeIconColor = Colors.primary; // solicitado: icono activo con primary
+  // ✅ Colores fijos (solo modo claro)
+  const containerBg = Colors.backgroundSecon;
+  const containerBorder = 'rgba(0,0,0,0.04)';
+  const inactiveColor = Colors.darkGray;
+  const activeIconColor = Colors.primary;
   const activeLabelColor = Colors.secondary;
-  const pillBg = isDark
-    ? `rgba(${PRIMARY_RGB}, 0.22)`
-    : `rgba(${PRIMARY_RGB}, 0.18)`;
-  const pillBorder = isDark
-    ? `rgba(${PRIMARY_RGB}, 0.30)`
-    : `rgba(${PRIMARY_RGB}, 0.28)`;
-  const indicatorGlow = isDark
-    ? `rgba(${SECONDARY_RGB}, 0.22)`
-    : `rgba(${SECONDARY_RGB}, 0.16)`;
+  const pillBg = `rgba(${PRIMARY_RGB}, 0.18)`;
+  const pillBorder = `rgba(${PRIMARY_RGB}, 0.28)`;
+  const indicatorGlow = `rgba(${SECONDARY_RGB}, 0.16)`;
   const indicatorColor = Colors.secondary;
 
   return (
@@ -171,14 +155,6 @@ export default function BottomNavBar() {
                       name={iconName}
                       size={isActive ? 22 : 20}
                       color={isActive ? activeIconColor : inactiveColor}
-                      style={
-                        isActive
-                          ? {
-                              textShadowColor: 'rgba(0,0,0,0.06)',
-                              textShadowRadius: 2,
-                            }
-                          : undefined
-                      }
                     />
                   </View>
 
@@ -186,7 +162,7 @@ export default function BottomNavBar() {
                     <AppText
                       style={[
                         styles.label,
-                        { color: inactiveColor, opacity: isDark ? 0.92 : 0.95 },
+                        { color: inactiveColor },
                         isActive && { color: activeLabelColor },
                         isActive && styles.labelActive,
                       ]}
@@ -208,7 +184,6 @@ export default function BottomNavBar() {
 
 const styles = StyleSheet.create({
   root: { left: 0, right: 0, bottom: 0 },
-
   container: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -227,7 +202,6 @@ const styles = StyleSheet.create({
     }),
     overflow: 'hidden',
   },
-
   containerSheen: {
     position: 'absolute',
     top: 0,
@@ -236,7 +210,6 @@ const styles = StyleSheet.create({
     height: TAB_HEIGHT,
     backgroundColor: 'rgba(255,255,255,0.04)',
   },
-
   topBevelHighlight: {
     position: 'absolute',
     top: 0,
@@ -245,7 +218,6 @@ const styles = StyleSheet.create({
     height: 3,
     backgroundColor: 'rgba(255,255,255,0.55)',
   },
-
   topBevelShadow: {
     position: 'absolute',
     top: 3,
@@ -256,7 +228,6 @@ const styles = StyleSheet.create({
     borderTopColor: 'rgba(0,0,0,0.06)',
     borderTopWidth: 1,
   },
-
   navItem: {
     flex: 1,
     height: TAB_HEIGHT,
@@ -265,7 +236,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingTop: 14,
   },
-
   content: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -273,7 +243,6 @@ const styles = StyleSheet.create({
     zIndex: 1,
     minWidth: 64,
   },
-
   activePill: {
     position: 'absolute',
     top: 6,
@@ -305,7 +274,6 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 12,
     backgroundColor: 'rgba(255,255,255,0.16)',
   },
-
   topIndicatorGlow: {
     position: 'absolute',
     top: 2,
@@ -324,7 +292,6 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     zIndex: 4,
   },
-
   icon3DWrap: {
     position: 'relative',
     alignItems: 'center',
@@ -346,13 +313,12 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: 'rgba(0,0,0,0.08)',
   },
-
   labelBox: {
     height: 18,
     justifyContent: 'center',
   },
   label: {
-    fontSize: 12,
+    fontSize: 15,
     textAlign: 'center',
     marginTop: 2,
     fontWeight: Platform.OS === 'android' ? '500' : '400',

@@ -1,3 +1,4 @@
+// src/contexts/AuthContext.tsx
 import { authStorage } from '@/src/utils/authStorage';
 import { decodeJWT, isTokenExpired } from '@/src/utils/jwtDecoder';
 import React, {
@@ -7,6 +8,8 @@ import React, {
   useState,
   useMemo,
 } from 'react';
+import * as SecureStore from 'expo-secure-store';
+import { deletePushToken } from '@/src/api/notifications';
 
 interface User {
   id: number;
@@ -37,7 +40,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Función para decodificar y establecer el usuario desde el token
+  // Decodifica token y setea user/token
   const setUserFromToken = (tokenString: string) => {
     const payload = decodeJWT(tokenString);
 
@@ -65,9 +68,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
-  // Logout: limpiar token y usuario
+  // Logout: limpiar token y usuario. Además intenta eliminar push token remoto si existe.
   const logout = async () => {
     try {
+      // Intentar eliminar push token guardado en SecureStore (si existe)
+      try {
+        const lastPushToken = await SecureStore.getItemAsync(
+          'last_registered_push_token',
+        );
+        if (lastPushToken) {
+          // deletePushToken es una llamada axios.delete('/notifications/token', { data: { push_token } })
+          await deletePushToken(lastPushToken).catch((err) => {
+            console.warn(
+              'No se pudo eliminar push token en backend:',
+              err?.response?.data || err.message || err,
+            );
+          });
+          // borrar local
+          await SecureStore.deleteItemAsync('last_registered_push_token');
+        }
+      } catch (err) {
+        console.warn('Error intentando eliminar push token en logout:', err);
+      }
+
       await authStorage.removeToken();
       setUser(null);
       setToken(null);

@@ -4,6 +4,7 @@ import React, {
   useContext,
   useMemo,
   useState,
+  useEffect,
 } from 'react';
 import {
   Modal,
@@ -13,15 +14,24 @@ import {
   TouchableOpacity,
   StyleSheet,
   Platform,
+  AppState,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as Notifications from 'expo-notifications';
+import * as SecureStore from 'expo-secure-store';
+import { getExpoPushTokenAsync } from '@/src/utils/expoNotifications';
+import { buildAndRegisterPushToken } from '@/src/api/notifications';
+import { useAuth } from '@/src/contexts/AuthContext';
+import { router } from 'expo-router';
 import {
   fontWeightBold,
   fontWeightSemiBold,
   fontWeightMedium,
   AppText,
 } from '@/src/components/AppText';
+import Constants from 'expo-constants';
 
+// ---------- Types ----------
 type ToastType = 'success' | 'error' | 'info' | 'warning';
 type ToastPosition = 'top' | 'bottom';
 
@@ -29,12 +39,12 @@ type ToastOptions = {
   type?: ToastType;
   title: string;
   message?: string;
-  durationMs?: number; // por defecto 3000
+  durationMs?: number;
   actionLabel?: string;
   onActionPress?: () => void;
-  position?: ToastPosition; // NUEVO: 'top' | 'bottom' (default 'top')
-  underHeader?: boolean; // NUEVO: si 'top', coloca bajo el header
-  tabBarHeight?: number; // NUEVO: si 'bottom', suma altura del TabBar
+  position?: ToastPosition;
+  underHeader?: boolean;
+  tabBarHeight?: number;
 };
 
 type ConfirmOptions = {
@@ -81,6 +91,7 @@ export const useNotification = () => {
   return ctx;
 };
 
+// ---------- Provider ----------
 type ProviderProps = { children: React.ReactNode };
 
 export const NotificationProvider: React.FC<ProviderProps> = ({ children }) => {
@@ -100,6 +111,12 @@ export const NotificationProvider: React.FC<ProviderProps> = ({ children }) => {
     (ConfirmOptions & { visible: boolean }) | null
   >(null);
 
+  const { isAuthenticated, user } = useAuth();
+  const insets = useSafeAreaInsets();
+
+  // -----------------------
+  // Handlers: hideToast & showToast (deben existir antes de los listeners)
+  // -----------------------
   const hideToast = useCallback(() => {
     Animated.timing(toastAnim, {
       toValue: 0,
@@ -111,7 +128,6 @@ export const NotificationProvider: React.FC<ProviderProps> = ({ children }) => {
 
   const showToast = useCallback(
     (opts: ToastOptions) => {
-      // limpiar timer previo
       if (toastTimer) clearTimeout(toastTimer);
 
       const nextId = toastId + 1;
@@ -125,7 +141,6 @@ export const NotificationProvider: React.FC<ProviderProps> = ({ children }) => {
         tabBarHeight: opts.tabBarHeight ?? 0,
       });
 
-      // animación in
       Animated.timing(toastAnim, {
         toValue: 1,
         duration: 180,
@@ -142,6 +157,198 @@ export const NotificationProvider: React.FC<ProviderProps> = ({ children }) => {
   const confirm = useCallback((opts: ConfirmOptions) => {
     setConfirmState({ ...opts, visible: true });
   }, []);
+
+  useEffect(() => {
+    Notifications.setNotificationHandler({
+      handleNotification:
+        async (): Promise<Notifications.NotificationBehavior> => {
+          return {
+            shouldShowAlert: false,
+            shouldPlaySound: false,
+            shouldSetBadge: false,
+            shouldShowBanner: false,
+            shouldShowList: false,
+          };
+        },
+    });
+  }, []);
+
+  // Registrar el token cuando el usuario se autentica y al iniciar la app cuando la autenticación está presente
+  useEffect(() => {
+    let mounted = true;
+    let appStateListener: { remove?: () => void } | null = null;
+
+    // reintento exponencial simple
+    const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+    // ATTEMPT REGISTER MODIFICADO: ahora usa buildAndRegisterPushToken
+    async function attemptRegister(tokenResult: {
+      token?: string | null;
+      platform?: string | null;
+      appVersion?: string | null;
+    }) {
+      if (!tokenResult || !tokenResult.token) return;
+
+      const lastRegistered = await SecureStore.getItemAsync(
+        'last_registered_push_token',
+      );
+      if (tokenResult.token === lastRegistered) {
+        // ya registrado localmente: actualizar llave por si cambió formato u otros metadatos
+        await SecureStore.setItemAsync(
+          'last_registered_push_token',
+          tokenResult.token,
+        );
+        return;
+      }
+
+      // Intentos con backoff exponencial
+      const maxAttempts = 3;
+      let attempt = 0;
+      let registered = false;
+
+      while (attempt < maxAttempts && !registered) {
+        try {
+          // <-- USO DEL HELPER -->
+          await buildAndRegisterPushToken(tokenResult.token);
+
+          // Si se llegó aquí, registro OK
+          await SecureStore.setItemAsync(
+            'last_registered_push_token',
+            tokenResult.token,
+          );
+          registered = true;
+          console.log(
+            '✅ Push token registrado (backend) en intento',
+            attempt + 1,
+          );
+        } catch (err: any) {
+          attempt += 1;
+          // Si el backend devuelve 400 indicando token inválido, no reintentar: eliminar local y salir
+          const status = err?.response?.status ?? null;
+          const backendMsg = err?.response?.data ?? err?.message ?? null;
+
+          if (status === 400) {
+            console.warn(
+              'Backend rechazó push token (400). Eliminando localmente y sin reintentos.',
+              backendMsg,
+            );
+            await SecureStore.deleteItemAsync('last_registered_push_token');
+            registered = true; // detener el loop
+            break;
+          }
+
+          console.warn(
+            `Error registrando push token, intento ${attempt}/${maxAttempts}`,
+            err?.message ?? err,
+          );
+
+          // esperar backoff antes de reintentar (exponencial)
+          const backoffMs = 500 * Math.pow(2, attempt - 1); // 500, 1000, 2000
+          await wait(backoffMs);
+        }
+      }
+
+      if (!registered) {
+        console.warn(
+          'No se pudo registrar push token tras varios intentos. Se intentará de nuevo en próxima reanudación.',
+        );
+      }
+    }
+
+    const registerToken = async () => {
+      try {
+        const projectId =
+          Constants?.expoConfig?.extra?.eas?.projectId ||
+          Constants?.easConfig?.projectId ||
+          undefined;
+
+        const tokenResult = await getExpoPushTokenAsync(projectId);
+
+        if (!tokenResult || !tokenResult.token) {
+          console.debug('No se obtuvo Expo push token al registrar.');
+          return;
+        }
+
+        await attemptRegister(tokenResult);
+      } catch (err) {
+        console.warn('Error en registro automático de push token:', err);
+      }
+    };
+
+    if (isAuthenticated && mounted) {
+      // Registrar en cold start / login
+      registerToken();
+
+      // Re-registrar cuando la app vuelve a primer plano (posible que el token haya cambiado)
+      appStateListener = AppState.addEventListener('change', (nextAppState) => {
+        if (nextAppState === 'active' && isAuthenticated) {
+          registerToken();
+        }
+      });
+    }
+
+    return () => {
+      mounted = false;
+      if (appStateListener && typeof appStateListener.remove === 'function') {
+        appStateListener.remove();
+      }
+    };
+  }, [isAuthenticated, user?.id]);
+
+  // Listeners: received & response
+  useEffect(() => {
+    const notificationReceivedListener =
+      Notifications.addNotificationReceivedListener((notification) => {
+        const { title, body } = notification.request.content;
+        showToast({
+          type: 'info',
+          title: title ?? 'Notificación',
+          message: body ?? '',
+          position: 'top',
+        });
+      });
+
+    const notificationResponseListener =
+      Notifications.addNotificationResponseReceivedListener((response) => {
+        const { notification } = response;
+        const rawData = (notification.request.content as any).data ?? {};
+
+        // Normalizar keys posibles (compatibilidad con backend)
+        const type =
+          rawData.type || rawData.eventType || rawData.notificationType || null;
+
+        const id =
+          rawData.alert_id ??
+          rawData.alertId ??
+          rawData.id ??
+          rawData.resource_id ??
+          null;
+
+        try {
+          if ((type === 'alerta' || type === 'alert') && id != null) {
+            router.push({
+              pathname: '/alerts/detail-alert', // coincide con AlertCard
+              params: { id: String(id) },
+            });
+          } else if (type === 'avistamiento' && id) {
+            router.push(`/sightings/${String(id)}`);
+          } else if (type === 'solicitud' && id) {
+            // router.push(`/adoption/requests/${String(id)}`);
+          } else {
+            // Fallback: ir al listado de notificaciones
+            router.push('/settings/notifications');
+          }
+        } catch (err) {
+          console.warn('Error navegando desde notificación:', err);
+          router.push('/settings/notifications');
+        }
+      });
+
+    return () => {
+      notificationReceivedListener.remove();
+      notificationResponseListener.remove();
+    };
+  }, [showToast]);
 
   const value = useMemo<NotificationContextType>(
     () => ({
@@ -199,7 +406,7 @@ export const NotificationProvider: React.FC<ProviderProps> = ({ children }) => {
   );
 };
 
-// UI
+/* ---------- Toast y Confirm UI (sin cambios funcionales) ---------- */
 const colors = {
   bg: '#111827',
   text: '#F9FAFB',
@@ -252,12 +459,11 @@ const Toast: React.FC<ToastInnerProps> = ({
     inputRange: [0, 1],
     outputRange: position === 'top' ? [40, 0] : [-40, 0],
   });
-  const opacity = anim;
+  const opacity = anim as any;
 
-  // Constantes de diseño
   const H_MARGIN = 16;
-  const V_MARGIN = 12; // espacio extra desde borde seguro
-  const HEADER_HEIGHT = 56; // TODO: ajusta si usas un header distinto
+  const V_MARGIN = 12;
+  const HEADER_HEIGHT = 56;
   const MAX_WIDTH = 440;
 
   const containerStyle =
@@ -425,7 +631,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
-    // zIndex/elevation no son necesarios dentro de Modal, pero no molestan
     zIndex: 10000,
     ...Platform.select({
       android: { elevation: 10000 },
@@ -433,15 +638,6 @@ const styles = StyleSheet.create({
     }),
   },
 
-  dialogOverlay: {
-    position: 'absolute',
-    inset: 0 as any,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
-    zIndex: 1000,
-  },
   dialogCard: {
     width: '100%',
     maxWidth: 420,

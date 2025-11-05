@@ -1,4 +1,3 @@
-import { View, AppText } from 'react-native';
 import { Slot, Stack } from 'expo-router';
 import React from 'react';
 

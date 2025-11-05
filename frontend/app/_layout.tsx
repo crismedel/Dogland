@@ -1,3 +1,4 @@
+// app/_layout.tsx
 import { Stack, router, usePathname } from 'expo-router';
 import {
   View,
@@ -15,26 +16,22 @@ import { AuthProvider, useAuth } from '@/src/contexts/AuthContext';
 import BottomNavBar from '@/src/components/UI/TabBar';
 import { RefreshProvider } from '@/src/contexts/RefreshContext';
 
-// Silenciar warning específico de expo-notifications
+// Silenciar warning específico de expo-notifications (si aparece)
 LogBox.ignoreLogs(['expo-notifications was removed', 'Notifications']);
 
-// Componente interno que usa el AuthContext
 function AppContent() {
   const fontsLoaded = useCustomFonts();
   const pathname = usePathname();
-  const { isAuthenticated, isLoading, user } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
 
-  // Redirigir según autenticación cuando las fuentes estén cargadas
   useEffect(() => {
     if (!fontsLoaded || isLoading) return;
 
     if (!isAuthenticated) {
-      // No autenticado -> ir a /auth
       if (pathname !== '/auth' && !pathname?.startsWith('/auth')) {
         router.replace('/auth');
       }
     } else {
-      // Autenticado -> redirigir desde /auth a home
       if (pathname === '/auth' || pathname?.startsWith('/auth')) {
         router.replace('/home');
       }
@@ -69,7 +66,6 @@ function AppContent() {
         <Stack.Screen name="create-report" options={{ headerShown: false }} />
       </Stack>
 
-      {/* Aquí muestras la barra solo si no estás en auth */}
       {showTabBar && <BottomNavBar />}
     </View>
   );
