@@ -10,6 +10,9 @@ import {
   obtenerHistorialNotificaciones,
   enviarNotificacionPrueba,
   obtenerEstadisticasNotificaciones,
+  marcarNotificacionLeida,
+  borrarNotificacion,
+  marcarTodasLeidas,
 } from '../controllers/notificationsController.js';
 
 const router = express.Router();
@@ -40,6 +43,16 @@ router.get(
   obtenerEstadisticasNotificaciones,
 );
 
+// DELETE /notifications/:id
+router.delete('/:id', authenticateToken, borrarNotificacion);
+
+// Marcar una notificación como leída (corregida)
+router.patch('/:id/read', authenticateToken, marcarNotificacionLeida);
+
+// Marcar todas como leídas (ruta relativa al router)
+router.patch('/read-all', authenticateToken, marcarTodasLeidas);
+
+router.patch('/notifications/read-all', authenticateToken, marcarTodasLeidas);
 // Testing
 router.post('/test', authenticateToken, enviarNotificacionPrueba);
 

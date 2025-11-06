@@ -6,6 +6,7 @@ import {
   auditDelete,
 } from '../services/auditService.js';
 import { getOldValuesForAudit, sanitizeForAudit } from '../utils/audit.js';
+import * as notificationService from '../services/notificationService.js';
 
 // --- FUNCIONES DE LECTURA (GET) ---
 
@@ -249,13 +250,6 @@ export const createSighting = async (req, res) => {
         [fullSighting.id_ciudad],
       );
 
-      console.log(
-        'createSighting: tokensRes.rowCount:',
-        devicesRes.rowCount,
-        'sample rows:',
-        devicesRes.rows.slice(0, 5),
-      );
-
       // Deduplicar por token como en alertas
       const tokenMap = new Map();
       for (const row of devicesRes.rows) {
@@ -278,13 +272,6 @@ export const createSighting = async (req, res) => {
         new Set(entries.map((entry) => entry.user_id)),
       );
 
-      console.log(
-        'createSighting: tokens deduplicados (entries.length):',
-        entries.length,
-        'sample entries:',
-        entries.slice(0, 5),
-      );
-
       if (entries.length > 0) {
         await sendPushNotificationToUsers(
           `Nuevo Avistamiento: ${fullSighting.nombre_especie}`,
@@ -302,9 +289,76 @@ export const createSighting = async (req, res) => {
           },
         );
 
-        console.log(
-          `Notificación de avistamiento enviada a ${userIds.length} usuarios`,
-        );
+        // 🔔 Guardar notificación en BD con fallback
+        try {
+          const notificationPayload = {
+            title: `🐾 Nuevo Avistamiento: ${fullSighting.nombre_especie}`,
+            body: `${fullSighting.nombre_especie} avistado en ${
+              direccion || 'ubicación cercana'
+            }. Estado: ${fullSighting.estado_salud}`,
+            type: 'avistamiento',
+            data: {
+              id: avistamiento.id_avistamiento,
+              especie: fullSighting.nombre_especie,
+              estado_salud: fullSighting.estado_salud,
+              latitude: fullSighting.latitude,
+              longitude: fullSighting.longitude,
+            },
+          };
+
+          await notificationService.createNotificationsBulk(
+            userIds,
+            notificationPayload,
+          );
+          console.log(
+            `✅ Notificación de avistamiento guardada en BD para ${userIds.length} usuarios`,
+          );
+        } catch (err) {
+          console.error(
+            '⚠️ Error al guardar notificación de avistamiento en BD:',
+            err,
+          );
+
+          // Fallback si el servicio falla por esquema
+          if (
+            err &&
+            err.code === '42703' &&
+            /metadata/i.test(err.message || '')
+          ) {
+            try {
+              const insertPromises = userIds.map((uid) =>
+                pool.query(
+                  `INSERT INTO notifications (user_id, title, body, type, data, read, created_at)
+                   VALUES ($1, $2, $3, $4, $5, false, NOW())`,
+                  [
+                    uid,
+                    `🐾 Nuevo Avistamiento: ${fullSighting.nombre_especie}`,
+                    `${fullSighting.nombre_especie} avistado en ${
+                      direccion || 'ubicación cercana'
+                    }. Estado: ${fullSighting.estado_salud}`,
+                    'avistamiento',
+                    {
+                      sightingId: avistamiento.id_avistamiento,
+                      especie: fullSighting.nombre_especie,
+                      estado_salud: fullSighting.estado_salud,
+                      latitude: fullSighting.latitude,
+                      longitude: fullSighting.longitude,
+                    },
+                  ],
+                ),
+              );
+              await Promise.all(insertPromises);
+              console.log(
+                `✅ Notificación guardada en BD (fallback) para ${userIds.length} usuarios`,
+              );
+            } catch (fallbackErr) {
+              console.error(
+                '⚠️ Error en fallback al guardar notificaciones en BD:',
+                fallbackErr,
+              );
+            }
+          }
+        }
       }
     } catch (notifError) {
       console.error(

@@ -6,6 +6,7 @@ import {
   auditDelete,
 } from '../services/auditService.js';
 import { getOldValuesForAudit, sanitizeForAudit } from '../utils/audit.js';
+import * as notificationService from '../services/notificationService.js';
 
 // Obtiene todas las alertas activas, con latitud, longitud y dirección
 export const getAlerts = async (req, res, next) => {
@@ -123,19 +124,6 @@ export const createAlert = async (req, res, next) => {
 
     const alerta = result.rows[0];
 
-    console.log('createAlert payload (req.body):', {
-      titulo,
-      descripcion,
-      id_tipo_alerta,
-      id_nivel_riesgo,
-      latitude,
-      longitude,
-      direccion,
-      fecha_expiracion,
-      id_usuario,
-    });
-    console.log('createAlert: alerta insertada:', alerta);
-
     const alertaInfo = await pool.query(
       `SELECT ta.tipo_alerta, nr.nivel_riesgo, u.id_ciudad
        FROM alerta a
@@ -150,15 +138,6 @@ export const createAlert = async (req, res, next) => {
       console.warn('createAlert: alertaInfo no disponible para notificaciones');
     } else {
       const { tipo_alerta, nivel_riesgo, id_ciudad } = alertaInfo.rows[0];
-
-      console.log('createAlert criterios:', {
-        id_ciudad,
-        nivel_riesgo_from_db: nivel_riesgo,
-        id_nivel_riesgo_request: id_nivel_riesgo,
-        latitude,
-        longitude,
-        direccion,
-      });
 
       try {
         let tokensQuery;
@@ -192,17 +171,7 @@ export const createAlert = async (req, res, next) => {
           tokensParams = [id_ciudad];
         }
 
-        console.log('createAlert: tokensQuery:', tokensQuery.trim());
-        console.log('createAlert: tokensParams:', tokensParams);
-
         const tokensRes = await pool.query(tokensQuery, tokensParams);
-
-        console.log(
-          'createAlert: tokensRes.rowCount:',
-          tokensRes.rowCount,
-          'sample rows:',
-          tokensRes.rows.slice(0, 5),
-        );
 
         // Deduplicar tokens por valor
         const tokenMap = new Map();
@@ -215,17 +184,11 @@ export const createAlert = async (req, res, next) => {
               token,
               platform: row.platform || null,
               device_id: row.device_id || `user_${row.user_id}`,
+              user_id: row.user_id,
             });
           }
         }
         const entries = Array.from(tokenMap.values());
-
-        console.log(
-          'createAlert: tokens deduplicados (entries.length):',
-          entries.length,
-          'sample entries:',
-          entries.slice(0, 5),
-        );
 
         if (entries.length > 0) {
           await sendPushNotificationToUsers(
@@ -250,6 +213,103 @@ export const createAlert = async (req, res, next) => {
         }
       } catch (notifError) {
         console.error('⚠️ Error al enviar notificación de alerta:', notifError);
+      }
+
+      // 🔔 Guardar notificación en BD (dentro del mismo bloque)
+      try {
+        const usersToNotify = await pool.query(
+          `SELECT DISTINCT upt.user_id
+           FROM dogland.user_push_tokens upt
+           INNER JOIN dogland.usuario u ON upt.user_id = u.id_usuario
+           WHERE u.activo = true
+             AND upt.is_valid = true
+             AND upt.push_token IS NOT NULL
+             AND (upt.failure_count IS NULL OR upt.failure_count < 3)
+             ${id_nivel_riesgo >= 3 ? '' : 'AND u.id_ciudad = $1'}
+          `,
+          id_nivel_riesgo >= 3 ? [] : [id_ciudad],
+        );
+
+        const userIds = usersToNotify.rows.map((r) => r.user_id);
+        const notificationPayload = {
+          title: `🚨 ${tipo_alerta}: ${titulo}`,
+          body: descripcion,
+          type: 'alerta',
+          data: {
+            alertId: alerta.id_alerta,
+            nivel_riesgo,
+            tipo_alerta,
+            latitude,
+            longitude,
+          },
+        };
+
+        try {
+          // Intento estándar vía servicio
+          await notificationService.createNotificationsBulk(
+            userIds,
+            notificationPayload,
+          );
+          console.log(
+            `✅ Notificación guardada en BD para ${userIds.length} usuarios`,
+          );
+        } catch (err) {
+          // Si falla por esquema (p. ej. columna 'metadata' no existe), hacemos fallback
+          console.error(
+            '⚠️ Error al guardar notificación en BD (service):',
+            err,
+          );
+
+          // Fallback: intentar insertar directamente en la tabla notifications usando columna "data" (JSONB)
+          // Nota: Ajusta las columnas si tu tabla difiere.
+          if (
+            err &&
+            err.code === '42703' &&
+            /metadata/i.test(err.message || '')
+          ) {
+            try {
+              if (userIds.length > 0) {
+                const insertPromises = userIds.map((uid) =>
+                  pool.query(
+                    `INSERT INTO notifications (user_id, title, body, type, data, read, created_at)
+                     VALUES ($1, $2, $3, $4, $5, false, NOW())`,
+                    [
+                      uid,
+                      notificationPayload.title,
+                      notificationPayload.body,
+                      notificationPayload.type,
+                      notificationPayload.data,
+                    ],
+                  ),
+                );
+                await Promise.all(insertPromises);
+                console.log(
+                  `✅ Notificación guardada en BD (fallback) para ${userIds.length} usuarios`,
+                );
+              } else {
+                console.log(
+                  'createAlert: no hay userIds para fallback de guardado',
+                );
+              }
+            } catch (fallbackErr) {
+              console.error(
+                '⚠️ Error en fallback al guardar notificaciones en BD:',
+                fallbackErr,
+              );
+            }
+          } else {
+            // Si es otro error, solo lo logueamos (no rompemos el endpoint)
+            console.error(
+              'createAlert: error al crear notificaciones (no se intentó fallback):',
+              err,
+            );
+          }
+        }
+      } catch (err) {
+        console.error(
+          '⚠️ Error al preparar lista de usuarios para guardar notificación en BD:',
+          err,
+        );
       }
     }
 

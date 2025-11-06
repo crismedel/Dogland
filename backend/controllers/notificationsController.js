@@ -1,8 +1,8 @@
-// src/controllers/notificationsController.js
 import { Expo } from 'expo-server-sdk';
 import pool from '../db/db.js';
 import * as pushTokens from '../services/pushTokens.js';
 import * as pushService from '../services/pushService.js';
+import * as notificationService from '../services/notificationService.js';
 
 const expo = new Expo();
 
@@ -307,54 +307,41 @@ export const incrementarReportes = async (req, res) => {
 export const obtenerHistorialNotificaciones = async (req, res) => {
   try {
     const id_usuario = req.user.id;
-    const { limit = 50, offset = 0 } = req.query;
+    const { limit = 50, offset = 0, read = null } = req.query;
 
-    // Obtener ciudad del usuario
-    const userResult = await pool.query(
-      'SELECT id_ciudad FROM usuario WHERE id_usuario = $1',
-      [id_usuario],
+    const notifications = await notificationService.getNotificationsByUser(
+      id_usuario,
+      {
+        limit: parseInt(limit, 10),
+        offset: parseInt(offset, 10),
+        read: read === 'true' ? true : read === 'false' ? false : null,
+      },
     );
 
-    if (userResult.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        error: 'Usuario no encontrado',
-      });
+    // Obtener total para paginación
+    let countQuery = `SELECT COUNT(*) FROM notifications WHERE user_id = $1`;
+    const countParams = [id_usuario];
+    if (read !== null) {
+      countQuery += ` AND read = $2`;
+      countParams.push(read === 'true');
     }
-
-    const { id_ciudad } = userResult.rows[0];
-
-    // Obtener alertas relevantes para el usuario
-    const result = await pool.query(
-      `SELECT a.id_alerta, a.titulo, a.descripcion, a.fecha_creacion,
-              a.fecha_expiracion, a.activa, a.reportes,
-              ta.tipo_alerta, nr.nivel_riesgo, nr.id_nivel_riesgo,
-              u.nombre_usuario, c.nombre_ciudad,
-              ST_Y(a.ubicacion::geometry) AS latitude,
-              ST_X(a.ubicacion::geometry) AS longitude,
-              a.direccion
-       FROM alerta a
-       JOIN tipo_alerta ta ON a.id_tipo_alerta = ta.id_tipo_alerta
-       JOIN nivel_riesgo nr ON a.id_nivel_riesgo = nr.id_nivel_riesgo
-       JOIN usuario u ON a.id_usuario = u.id_usuario
-       LEFT JOIN ciudad c ON u.id_ciudad = c.id_ciudad
-       WHERE (nr.id_nivel_riesgo >= 3 OR u.id_ciudad = $1)
-       ORDER BY a.fecha_creacion DESC
-       LIMIT $2 OFFSET $3`,
-      [id_ciudad, limit, offset],
-    );
+    const countResult = await pool.query(countQuery, countParams);
+    const total = parseInt(countResult.rows[0].count, 10);
 
     res.json({
       success: true,
-      count: result.rows.length,
-      data: result.rows,
+      data: notifications,
+      pagination: {
+        limit: parseInt(limit, 10),
+        offset: parseInt(offset, 10),
+        total,
+      },
     });
-  } catch (error) {
-    console.error('Error al obtener historial:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Error al obtener historial',
-    });
+  } catch (err) {
+    console.error('Error al obtener historial (notifications):', err);
+    res
+      .status(500)
+      .json({ success: false, error: 'Error al obtener historial' });
   }
 };
 
@@ -391,6 +378,110 @@ export const obtenerEstadisticasNotificaciones = async (req, res) => {
   }
 };
 
+// Marcar notificación como leída
+export const marcarNotificacionLeida = async (req, res) => {
+  try {
+    const id_usuario = req.user?.id;
+    const { id } = req.params;
+    console.info(
+      '[marcarNotificacionLeida] req.user=',
+      JSON.stringify(req.user),
+      'idParam=',
+      id,
+    );
+
+    const updated = await notificationService.markAsRead(
+      parseInt(id, 10),
+      id_usuario,
+    );
+    if (!updated) {
+      console.warn(
+        '[marcarNotificacionLeida] notificación no encontrada o no pertenece al usuario. id=%s user=%s',
+        id,
+        id_usuario,
+      );
+      return res
+        .status(404)
+        .json({ success: false, error: 'Notificación no encontrada' });
+    }
+    return res.json({
+      success: true,
+      message: 'Notificación marcada como leída',
+      data: updated,
+    });
+  } catch (error) {
+    console.error('Error al marcar notificación como leída:', error);
+    res
+      .status(500)
+      .json({ success: false, error: 'Error al marcar notificación' });
+  }
+};
+
+export const marcarTodasLeidas = async (req, res) => {
+  try {
+    const id_usuario = req.user.id;
+    const updated = await notificationService.markAllAsRead(id_usuario);
+    res.json({
+      success: true,
+      message: `${updated.length} notificaciones marcadas como leídas`,
+      data: updated,
+    });
+  } catch (error) {
+    console.error('Error al marcar todas como leídas:', error);
+    res
+      .status(500)
+      .json({ success: false, error: 'Error al marcar notificaciones' });
+  }
+};
+
+// Borrar notificación
+export const borrarNotificacion = async (req, res) => {
+  try {
+    const id_usuario = req.user.id;
+    const { id } = req.params; // route: /notifications/:id
+
+    if (notificationService.deleteNotification) {
+      const deleted = await notificationService.deleteNotification(
+        parseInt(id, 10),
+        id_usuario,
+      );
+      if (!deleted) {
+        return res
+          .status(404)
+          .json({ success: false, error: 'Notificación no encontrada' });
+      }
+      return res.json({
+        success: true,
+        message: 'Notificación borrada',
+        data: deleted,
+      });
+    }
+
+    // Fallback direct query
+    const result = await pool.query(
+      `DELETE FROM notifications WHERE id = $1 AND user_id = $2 RETURNING *`,
+      [id, id_usuario],
+    );
+
+    if (result.rows.length === 0) {
+      return res
+        .status(404)
+        .json({ success: false, error: 'Notificación no encontrada' });
+    }
+
+    res.json({
+      success: true,
+      message: 'Notificación borrada',
+      data: result.rows[0],
+    });
+  } catch (error) {
+    console.error('Error al borrar notificación:', error);
+    res
+      .status(500)
+      .json({ success: false, error: 'Error al borrar notificación' });
+  }
+};
+
 // Export default (compatibilidad)
 export default {
   registrarPushToken,
@@ -402,4 +493,6 @@ export default {
   incrementarReportes,
   obtenerHistorialNotificaciones,
   obtenerEstadisticasNotificaciones,
+  marcarNotificacionLeida,
+  borrarNotificacion,
 };

@@ -6,6 +6,7 @@ import {
   auditDelete,
 } from '../services/auditService.js';
 import { getOldValuesForAudit, sanitizeForAudit } from '../utils/audit.js';
+import * as notificationService from '../services/notificationService.js';
 
 // Todas las solicitudes de adopción
 export const getAdoptions = async (req, res, next) => {
@@ -69,8 +70,6 @@ export const getAdoptionById = async (req, res, next) => {
 export const createAdoptionRequest = async (req, res, next) => {
   try {
     const { id_adopcion } = req.body;
-
-    // Obtener el id desde el token
     const id_usuario = req.user.id;
 
     if (!id_adopcion || !id_usuario) {
@@ -80,7 +79,6 @@ export const createAdoptionRequest = async (req, res, next) => {
       });
     }
 
-    // Verificar que la adopción existe y está disponible
     const adoptionCheck = await pool.query(
       `SELECT ad.disponible, ad.id_usuario_rescatista, a.nombre_animal
        FROM adopcion ad
@@ -104,7 +102,6 @@ export const createAdoptionRequest = async (req, res, next) => {
         .json({ success: false, error: 'Esta adopción ya no está disponible' });
     }
 
-    // Crear solicitud con estado "Pendiente" (id = 1)
     const result = await pool.query(
       `
       INSERT INTO solicitud_adopcion (id_usuario, id_adopcion, id_estado_solicitud)
@@ -114,11 +111,8 @@ export const createAdoptionRequest = async (req, res, next) => {
       [id_usuario, id_adopcion],
     );
 
-    res.status(201).json({ success: true, data: result.rows[0] });
-
     const newRequest = result.rows[0];
 
-    // Auditar creación
     await auditCreate(
       req,
       'solicitud_adopcion',
@@ -126,7 +120,6 @@ export const createAdoptionRequest = async (req, res, next) => {
       newRequest,
     );
 
-    // 🔔 ENVIAR NOTIFICACIÓN A TODOS
     try {
       const devicesRes = await pool.query(
         `SELECT upt.push_token, upt.device_id, upt.user_id, upt.platform
@@ -139,14 +132,6 @@ export const createAdoptionRequest = async (req, res, next) => {
         [],
       );
 
-      console.log(
-        'createAdoptionRequest: tokensRes.rowCount:',
-        devicesRes.rowCount,
-        'sample rows:',
-        devicesRes.rows.slice(0, 5),
-      );
-
-      // Deduplicar tokens por valor
       const tokenMap = new Map();
       for (const row of devicesRes.rows) {
         if (!row.push_token) continue;
@@ -164,13 +149,6 @@ export const createAdoptionRequest = async (req, res, next) => {
 
       const entries = Array.from(tokenMap.values());
 
-      console.log(
-        'createAdoptionRequest: tokens deduplicados (entries.length):',
-        entries.length,
-        'sample entries:',
-        entries.slice(0, 5),
-      );
-
       if (entries.length > 0) {
         await sendPushNotificationToUsers(
           `🐾 Nueva Solicitud de Adopción`,
@@ -185,6 +163,71 @@ export const createAdoptionRequest = async (req, res, next) => {
         console.log(
           `Notificación de nueva solicitud enviada a ${entries.length} tokens (admin)`,
         );
+
+        // 🔔 Guardar notificación en BD con fallback
+        try {
+          const userIds = entries.map((e) => e.user_id);
+          const notificationPayload = {
+            title: `🐾 Nueva Solicitud de Adopción`,
+            body: `Tienes una nueva solicitud para adoptar a ${nombre_animal}`,
+            type: 'adoption_request',
+            data: {
+              requestId: newRequest.id_solicitud_adopcion,
+              id_adopcion,
+              nombre_animal,
+            },
+          };
+
+          await notificationService.createNotificationsBulk(
+            userIds,
+            notificationPayload,
+          );
+          console.log(
+            `✅ Notificación de solicitud guardada en BD para ${userIds.length} usuarios`,
+          );
+        } catch (err) {
+          console.error(
+            '⚠️ Error al guardar notificación de solicitud en BD:',
+            err,
+          );
+
+          // Fallback si el servicio falla por esquema
+          if (
+            err &&
+            err.code === '42703' &&
+            /metadata/i.test(err.message || '')
+          ) {
+            try {
+              const userIds = entries.map((e) => e.user_id);
+              const insertPromises = userIds.map((uid) =>
+                pool.query(
+                  `INSERT INTO notifications (user_id, title, body, type, data, read, created_at)
+                   VALUES ($1, $2, $3, $4, $5, false, NOW())`,
+                  [
+                    uid,
+                    `🐾 Nueva Solicitud de Adopción`,
+                    `Tienes una nueva solicitud para adoptar a ${nombre_animal}`,
+                    'adoption_request',
+                    {
+                      requestId: newRequest.id_solicitud_adopcion,
+                      id_adopcion,
+                      nombre_animal,
+                    },
+                  ],
+                ),
+              );
+              await Promise.all(insertPromises);
+              console.log(
+                `✅ Notificación guardada en BD (fallback) para ${userIds.length} usuarios`,
+              );
+            } catch (fallbackErr) {
+              console.error(
+                '⚠️ Error en fallback al guardar notificaciones en BD:',
+                fallbackErr,
+              );
+            }
+          }
+        }
       } else {
         console.log(
           'createAdoptionRequest: no se encontraron tokens para notificar',
@@ -197,7 +240,6 @@ export const createAdoptionRequest = async (req, res, next) => {
       );
     }
 
-    // ✅ Enviar respuesta solo una vez
     res.status(201).json({
       success: true,
       data: newRequest,
@@ -491,8 +533,6 @@ export const getAvailableAdoptions = async (req, res, next) => {
 export const createAdoptionPost = async (req, res, next) => {
   try {
     const { id_animal, descripcion } = req.body;
-
-    // Obtener el id de rescatista del token por seguridad
     const id_usuario_rescatista = req.user.id;
 
     if (!id_animal || !id_usuario_rescatista) {
@@ -502,7 +542,6 @@ export const createAdoptionPost = async (req, res, next) => {
       });
     }
 
-    // Crear publicación de adopción
     const result = await pool.query(
       `
       INSERT INTO adopcion (id_animal, id_usuario_rescatista, descripcion)
@@ -514,10 +553,8 @@ export const createAdoptionPost = async (req, res, next) => {
 
     const newAdoption = result.rows[0];
 
-    // Auditar creación
     await auditCreate(req, 'adopcion', newAdoption.id_adopcion, newAdoption);
 
-    // 🔔 NOTIFICAR A USUARIOS INTERESADOS EN LA MISMA CIUDAD
     try {
       const animalInfo = await pool.query(
         `SELECT a.nombre_animal, e.nombre_especie, u.id_ciudad
@@ -545,13 +582,6 @@ export const createAdoptionPost = async (req, res, next) => {
           [id_ciudad, id_usuario_rescatista],
         );
 
-        console.log(
-          'createAdoptionPost: tokensRes.rowCount:',
-          devicesRes.rowCount,
-          'sample rows:',
-          devicesRes.rows.slice(0, 5),
-        );
-
         const tokenMap = new Map();
         for (const row of devicesRes.rows) {
           if (!row.push_token) continue;
@@ -569,13 +599,6 @@ export const createAdoptionPost = async (req, res, next) => {
 
         const entries = Array.from(tokenMap.values());
 
-        console.log(
-          'createAdoptionPost: tokens deduplicados (entries.length):',
-          entries.length,
-          'sample entries:',
-          entries.slice(0, 5),
-        );
-
         if (entries.length > 0) {
           await sendPushNotificationToUsers(
             `🐾 Nueva Adopción Disponible`,
@@ -591,6 +614,70 @@ export const createAdoptionPost = async (req, res, next) => {
           console.log(
             `Notificación de nueva adopción enviada a ${entries.length} usuarios`,
           );
+
+          // 🔔 Guardar notificación en BD con fallback
+          try {
+            const userIds = entries.map((e) => e.user_id);
+            const notificationPayload = {
+              title: `🐾 Nueva Adopción Disponible`,
+              body: `${nombre_animal} (${nombre_especie}) está disponible para adopción`,
+              type: 'nueva_adopcion',
+              data: {
+                id: newAdoption.id_adopcion,
+                id_animal,
+                nombre_animal,
+              },
+            };
+
+            await notificationService.createNotificationsBulk(
+              userIds,
+              notificationPayload,
+            );
+            console.log(
+              `✅ Notificación de nueva adopción guardada en BD para ${userIds.length} usuarios`,
+            );
+          } catch (err) {
+            console.error(
+              '⚠️ Error al guardar notificación de nueva adopción en BD:',
+              err,
+            );
+
+            // Fallback si el servicio falla por esquema
+            if (
+              err &&
+              err.code === '42703' &&
+              /metadata/i.test(err.message || '')
+            ) {
+              try {
+                const insertPromises = userIds.map((uid) =>
+                  pool.query(
+                    `INSERT INTO notifications (user_id, title, body, type, data, read, created_at)
+                     VALUES ($1, $2, $3, $4, $5, false, NOW())`,
+                    [
+                      uid,
+                      `🐾 Nueva Adopción Disponible`,
+                      `${nombre_animal} (${nombre_especie}) está disponible para adopción`,
+                      'nueva_adopcion',
+                      {
+                        id: newAdoption.id_adopcion,
+                        id_animal,
+                        nombre_animal,
+                      },
+                    ],
+                  ),
+                );
+                await Promise.all(insertPromises);
+                console.log(
+                  `✅ Notificación guardada en BD (fallback) para ${userIds.length} usuarios`,
+                );
+              } catch (fallbackErr) {
+                console.error(
+                  '⚠️ Error en fallback al guardar notificaciones en BD:',
+                  fallbackErr,
+                );
+              }
+            }
+          }
         } else {
           console.log(
             'createAdoptionPost: no se encontraron tokens para notificar',
@@ -604,7 +691,6 @@ export const createAdoptionPost = async (req, res, next) => {
       );
     }
 
-    // ✅ Enviar respuesta solo una vez
     res.status(201).json({
       success: true,
       data: newAdoption,
