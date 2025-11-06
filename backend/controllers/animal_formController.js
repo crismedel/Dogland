@@ -6,7 +6,7 @@ export const createFullAnimal = async (req, res, next) => {
     const {
       nombre_animal,
       edad_animal,
-      size,
+      edad_aproximada, 
       id_raza,
       id_estado_salud,
       descripcion_adopcion,
@@ -15,20 +15,19 @@ export const createFullAnimal = async (req, res, next) => {
     } = req.body;
     
     // Asumimos que el ID del usuario viene del token (middleware de autenticación)
-    // Tus otros controladores usan req.user.id
     const id_usuario_rescatista = req.user.id; 
 
     await client.query('BEGIN');
 
     // 1. Insertar en 'animal'
     const animalQuery = `
-      INSERT INTO animal (nombre_animal, edad_animal, size, id_raza, id_estado_salud)
+      INSERT INTO animal (nombre_animal, edad_animal, edad_aproximada, id_raza, id_estado_salud)
       VALUES ($1, $2, $3, $4, $5) RETURNING id_animal;
     `;
-    const animalResult = await client.query(animalQuery, [nombre_animal, edad_animal, size, id_raza, id_estado_salud]);
+    const animalResult = await client.query(animalQuery, [nombre_animal, edad_animal, edad_aproximada, id_raza, id_estado_salud]);
     const newAnimalId = animalResult.rows[0].id_animal;
 
-    // 2. Insertar en 'adopcion'
+    // 2. Insertar en 'adopcion' (Esta consulta estaba correcta)
     const adopcionQuery = `
       INSERT INTO adopcion (id_animal, id_usuario_rescatista, descripcion)
       VALUES ($1, $2, $3);
@@ -37,16 +36,27 @@ export const createFullAnimal = async (req, res, next) => {
 
     // 3. Insertar en 'historial_medico'
     if (historial_medico && historial_medico.diagnostico) {
+      // CORRECCIÓN 2: Se ajustan columnas a dogland.sql
       const historialQuery = `
-        INSERT INTO historial_medico (id_animal, diagnostico, tratamiento, fecha_examen)
-        VALUES ($1, $2, $3, $4);
+        INSERT INTO historial_medico (id_animal, diagnostico, detalles, fecha_evento, tipo_evento, nombre_veterinario)
+        VALUES ($1, $2, $3, $4, $5, $6);
       `;
-      await client.query(historialQuery, [newAnimalId, historial_medico.diagnostico, historial_medico.tratamiento, historial_medico.fecha_examen]);
+      
+      // Mapeamos los datos del 'body' (test) a las columnas reales de la BD
+      await client.query(historialQuery, [
+        newAnimalId, 
+        historial_medico.diagnostico, 
+        historial_medico.tratamiento, // 'tratamiento' (body) -> 'detalles' (BD)
+        historial_medico.fecha_examen,  // 'fecha_examen' (body) -> 'fecha_evento' (BD)
+        historial_medico.tipo_evento || 'Consulta', // 'tipo_evento' es NOT NULL, usamos un default
+        historial_medico.nombre_veterinario
+      ]);
     }
 
-    // 4. Insertar en 'foto' (basado en tu MER)
+    // 4. Insertar en 'animal_foto'
     if (foto_url) {
-      const fotoQuery = `INSERT INTO foto (id_animal, url) VALUES ($1, $2);`;
+      // CORRECCIÓN 3: La tabla es 'animal_foto'
+      const fotoQuery = `INSERT INTO animal_foto (id_animal, url) VALUES ($1, $2);`;
       await client.query(fotoQuery, [newAnimalId, foto_url]);
     }
 

@@ -1,5 +1,4 @@
 import express from 'express';
-// Asegúrate que la ruta al controlador sea correcta y que el archivo se llame 'animal_formController.js'
 import { createFullAnimal } from '../controllers/animal_formController.js'; 
 // El middleware de permisos está comentado para evitar problemas durante la prueba. Puedes descomentarlo después.
 // import { checkPermissions } from '../middlewares/permissions.js'; 
