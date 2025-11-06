@@ -41,7 +41,7 @@ const verifyFields: FormField[] = [
 
 const Verify2FA: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
-  const { showError, showSuccess } = useNotification();
+  const { showInfo, showError, showSuccess } = useNotification();
   const { login } = useAuth();
   const params = useLocalSearchParams();
   const email = params.email as string;
@@ -61,7 +61,10 @@ const Verify2FA: React.FC = () => {
         Constants?.easConfig?.projectId ||
         undefined;
 
-      const tokenResult = await getExpoPushTokenAsync(projectId);
+      const tokenResult = await getExpoPushTokenAsync({
+        projectId,
+        onInfo: showInfo, // ✅ ahora correcto
+      });
 
       if (!tokenResult || !tokenResult.token) {
         console.warn('No se obtuvo Expo push token');

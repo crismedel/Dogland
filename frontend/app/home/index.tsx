@@ -10,8 +10,6 @@ import {
   ScrollView,
   Pressable,
   ActivityIndicator,
-  Modal,
-  TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -24,7 +22,6 @@ import {
   fontWeightMedium,
   AppText,
 } from '@/src/components/AppText';
-import { NotificationBanner } from '@/src/components/NotificationBanner';
 
 const { width } = Dimensions.get('window');
 const BADGE_SIZE = 42;
@@ -124,7 +121,7 @@ export default function Index() {
       />
 
       {/* Badge de perfil */}
-      <View style={styles.topBar}>
+      <View style={styles.topBar1}>
         <Pressable
           onPress={() => router.push('/profile')}
           accessibilityLabel="Ir al perfil"
@@ -134,6 +131,18 @@ export default function Index() {
           ]}
         >
           <AppText style={styles.profileInitial}>{userInitial}</AppText>
+        </Pressable>
+      </View>
+      <View style={styles.topBar2}>
+        <Pressable
+          onPress={() => router.push('/notifications')}
+          accessibilityLabel="Ir al perfil"
+          style={({ pressed }) => [
+            styles.profileBadge,
+            pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] },
+          ]}
+        >
+          <Ionicons name="notifications-outline" size={24} color="white" />
         </Pressable>
       </View>
 
@@ -260,7 +269,8 @@ const styles = StyleSheet.create({
     height: '100%',
     resizeMode: 'repeat',
   },
-  topBar: { position: 'absolute', top: 50, left: 20, zIndex: 10 },
+  topBar1: { position: 'absolute', top: 50, left: 20, zIndex: 10 },
+  topBar2: { position: 'absolute', top: 50, right: 20, zIndex: 10 },
   profileBadge: {
     width: BADGE_SIZE,
     height: BADGE_SIZE,

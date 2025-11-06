@@ -4,14 +4,27 @@ import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 
-export async function getExpoPushTokenAsync(projectId?: string): Promise<{
+type PushTokenResult = {
   token: string | null;
   platform: string;
   appVersion?: string;
-} | null> {
+} | null;
+
+type Options = {
+  projectId?: string;
+  onInfo?: (message: string) => void;
+};
+
+export async function getExpoPushTokenAsync(
+  options: Options = {},
+): Promise<PushTokenResult> {
+  const { projectId, onInfo } = options;
+
   try {
     if (!Device.isDevice) {
-      alert('⚠️ Las notificaciones push requieren un dispositivo físico real.');
+      onInfo?.(
+        '⚠️ Las notificaciones push requieren un dispositivo físico real.',
+      );
       return null;
     }
 
@@ -31,6 +44,7 @@ export async function getExpoPushTokenAsync(projectId?: string): Promise<{
     }
 
     if (finalStatus !== 'granted') {
+      onInfo?.('⚠️ Permisos de notificación denegados');
       return null;
     }
 

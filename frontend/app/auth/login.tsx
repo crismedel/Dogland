@@ -54,7 +54,7 @@ const loginFields: FormField[] = [
 // El componente es un React Functional Component (React.FC)
 const Index: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
-  const { showError, showSuccess, showWarning } = useNotification();
+  const { showInfo, showError, showSuccess, showWarning } = useNotification();
   const { login } = useAuth();
 
   const [formValues, setFormValues] = useState({
@@ -73,7 +73,10 @@ const Index: React.FC = () => {
         Constants?.easConfig?.projectId ||
         undefined;
 
-      const tokenResult = await getExpoPushTokenAsync(projectId);
+      const tokenResult = await getExpoPushTokenAsync({
+        projectId,
+        onInfo: showInfo, // ✅ ahora correcto
+      });
 
       if (!tokenResult || !tokenResult.token) {
         console.warn('No se obtuvo Expo push token');
