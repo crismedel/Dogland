@@ -97,7 +97,7 @@ const HistorialMedico = () => {
 
   const handleAgregarHistorial = () => {
     // Aquí puedes navegar a la pantalla de agregar
-    router.push('/adoption/agregarHistorial'); // Ejemplo de ruta
+    console.log('/adoption/agregarHistorial'); // Ejemplo de ruta
   };
 
   if (loading) {

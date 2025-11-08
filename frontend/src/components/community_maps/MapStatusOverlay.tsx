@@ -3,7 +3,7 @@ import { AppText, fontWeightBold, fontWeightMedium } from '@/src/components/AppT
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { ActivityIndicator, StyleSheet, TouchableOpacity, View } from 'react-native';
-import { Colors } from '../../src/constants/colors';
+import { Colors } from '../../constants/colors';
 import { MapStatusOverlayProps } from './types'; // Importar los props
 
 export const MapStatusOverlay = ({

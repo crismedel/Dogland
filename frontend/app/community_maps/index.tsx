@@ -14,10 +14,10 @@ import { ReporteDetails } from '../../src/components/report/ReporteDetails';
 import { Colors } from '../../src/constants/colors';
 
 // 1. Importar los nuevos componentes y tipos
-import { CommunityMapView } from './CommunityMapView';
-import { MapControlButtons } from './MapControlButtons';
-import { MapStatusOverlay } from './MapStatusOverlay';
-import { CurrentFilters, HeatmapPoint, Reporte } from './types';
+import { CommunityMapView } from '../../src/components/community_maps/CommunityMapView';
+import { MapControlButtons } from '../../src/components/community_maps/MapControlButtons';
+import { MapStatusOverlay } from '../../src/components/community_maps/MapStatusOverlay';
+import { CurrentFilters, HeatmapPoint, Reporte } from '../../src/components/community_maps/types';
 
 const CommunityMapScreen = () => {
   const router = useRouter();

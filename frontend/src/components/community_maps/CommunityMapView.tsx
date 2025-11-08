@@ -2,8 +2,8 @@
 import React from 'react';
 import { StyleSheet } from 'react-native';
 import MapView, { Heatmap, Marker, PROVIDER_GOOGLE } from 'react-native-maps';
-import { ReporteMarker } from '../../src/components/report/ReporteMarker';
-import { Colors } from '../../src/constants/colors';
+import { ReporteMarker } from '../report/ReporteMarker';
+import { Colors } from '../../constants/colors';
 import { MapViewProps, Reporte } from './types'; // Importar los props y tipos
 
 export const CommunityMapView = ({
