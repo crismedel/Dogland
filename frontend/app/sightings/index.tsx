@@ -21,7 +21,7 @@ import {
 import { AppText } from '@/src/components/AppText';
 import CustomHeader from '@/src/components/UI/CustomHeader';
 
-interface Sighting {
+interface ApiSighting {
   id_avistamiento: number;
   descripcion: string;
   id_especie: number;
@@ -29,9 +29,13 @@ interface Sighting {
   fecha_creacion: string;
   fotos_url: string[];
   nivel_riesgo: string;
-  activa: boolean;
+  id_estado_avistamiento: number;
   latitude?: number;
   longitude?: number;
+}
+
+interface Sighting extends ApiSighting {
+  activa: boolean;
 }
 
 const AvistamientosScreen: React.FC = () => {
@@ -43,10 +47,17 @@ const AvistamientosScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
+  const normalizeSighting = (item: ApiSighting): Sighting => ({
+    ...item,
+    activa: item.id_estado_avistamiento === 1,
+  });
+
   const fetchSightings = useCallback(async () => {
     try {
       const res = await apiClient.get('/sightings');
-      setSightings(res.data.data || []);
+      const rawData: ApiSighting[] = res.data.data || [];
+      const normalized = rawData.map(normalizeSighting);
+      setSightings(normalized);
     } catch (err) {
       console.error('Error al obtener los avistamientos:', err);
     } finally {
@@ -60,7 +71,9 @@ const AvistamientosScreen: React.FC = () => {
       const res = await apiClient.get('/sightings/filter', {
         params: { id_estado_salud: 3 },
       });
-      setCriticalSightings(res.data.data || []);
+      const rawData: ApiSighting[] = res.data.data || [];
+      const normalized = rawData.map(normalizeSighting);
+      setCriticalSightings(normalized);
     } catch (err) {
       console.error('Error al obtener avistamientos críticos:', err);
     }
