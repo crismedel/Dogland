@@ -64,6 +64,7 @@ function AppContent() {
         <Stack.Screen name="profile" options={{ headerShown: false }} />
         <Stack.Screen name="settings" options={{ headerShown: false }} />
         <Stack.Screen name="create-report" options={{ headerShown: false }} />
+        <Stack.Screen name="sightings" options={{ headerShown: false }} />
         <Stack.Screen name="notifications" options={{ headerShown: false }} />
       </Stack>
 
