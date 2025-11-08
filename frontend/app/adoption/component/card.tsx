@@ -162,7 +162,7 @@ const AnimalCard: React.FC<Props> = ({ animal }) => {
 const styles = StyleSheet.create({
   card: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#f4ecde',
     borderRadius: 14,
     margin: 8,
     elevation: 4, // sombra Android

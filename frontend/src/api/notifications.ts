@@ -37,6 +37,10 @@ export interface PushTokenPayload {
   app_version?: string | null;
   device_id?: string | null;
   user_id?: string | number | null;
+  preferences?: {
+    marketing: boolean;
+    system: boolean;
+  } | null;
 }
 
 /**
@@ -59,6 +63,10 @@ export const buildAndRegisterPushToken = async (
     app_version?: string | null;
     device_id?: string | null;
     user_id?: string | number | null;
+    preferences?: {
+      marketing: boolean;
+      system: boolean;
+    } | null;
   },
 ) => {
   if (!pushToken) {
@@ -87,6 +95,7 @@ export const buildAndRegisterPushToken = async (
     app_version: appVersion ?? null,
     device_id: deviceId ?? null,
     user_id: opts?.user_id ?? null,
+    preferences: opts?.preferences ?? { marketing: true, system: true }, // Valor por defecto
   };
 
   return registerPushToken(payload);

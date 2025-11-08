@@ -1,5 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, Switch, TouchableOpacity } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  Switch,
+  TouchableOpacity,
+  Platform,
+} from 'react-native';
 import CustomHeader from '@/src/components/UI/CustomHeader';
 import { AppText } from '@/src/components/AppText';
 import CustomButton from '@/src/components/UI/CustomButton';
@@ -8,6 +14,22 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 import * as Linking from 'expo-linking';
 import { Ionicons } from '@expo/vector-icons';
+import * as Device from 'expo-device';
+import Constants from 'expo-constants';
+import {
+  buildAndRegisterPushToken,
+  deletePushToken,
+} from '@/src/api/notifications';
+
+async function getExpoTokenString() {
+  try {
+    const tokenResult = await Notifications.getExpoPushTokenAsync();
+    return tokenResult?.data ?? null;
+  } catch (error) {
+    console.error('Error obteniendo token de Expo:', error);
+    return null;
+  }
+}
 
 export default function NotificationsScreen() {
   const [enabled, setEnabled] = useState(false);
@@ -36,8 +58,34 @@ export default function NotificationsScreen() {
         return;
       }
     }
+
     setEnabled(true);
     await AsyncStorage.setItem('notif_enabled', '1');
+
+    try {
+      const token = await getExpoTokenString();
+      if (!token) {
+        console.warn('No se obtuvo expo push token');
+        return;
+      }
+
+      const marketingStored = await AsyncStorage.getItem('notif_marketing');
+      const systemStored = await AsyncStorage.getItem('notif_system');
+
+      const preferences = {
+        marketing: marketingStored === '1',
+        system: systemStored === '1',
+      };
+
+      await buildAndRegisterPushToken(token, {
+        platform: Platform.OS,
+        app_version: Constants.expoConfig?.version ?? null,
+        device_id: Device.modelName || null,
+        preferences,
+      });
+    } catch (error) {
+      console.error('Error al registrar el token en el backend:', error);
+    }
   };
 
   const toggle = async (
@@ -47,6 +95,52 @@ export default function NotificationsScreen() {
   ) => {
     setter(val);
     await AsyncStorage.setItem(key, val ? '1' : '0');
+
+    try {
+      const token = await getExpoTokenString();
+
+      if (key === 'notif_enabled' && val === false) {
+        if (token) {
+          await deletePushToken(token);
+        }
+        return;
+      }
+
+      if (token) {
+        const marketingStored = await AsyncStorage.getItem('notif_marketing');
+        const systemStored = await AsyncStorage.getItem('notif_system');
+        const preferences = {
+          marketing: marketingStored === '1',
+          system: systemStored === '1',
+        };
+
+        await buildAndRegisterPushToken(token, {
+          platform: Platform.OS,
+          app_version: Constants.expoConfig?.version ?? null,
+          device_id: Device.modelName || null,
+          preferences,
+        });
+      }
+    } catch (error) {
+      console.error('Error al actualizar preferencias en el backend:', error);
+    }
+  };
+
+  const handleTestNotification = async () => {
+    if (!enabled) return;
+
+    try {
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: 'Hola',
+          body: 'Esto es una prueba.',
+          data: { type: 'test' },
+        },
+        trigger: null,
+      });
+    } catch (error) {
+      console.error('Error al enviar notificación de prueba:', error);
+    }
   };
 
   return (
@@ -90,13 +184,9 @@ export default function NotificationsScreen() {
         </View>
         <CustomButton
           title="Probar notificación"
-          onPress={async () => {
-            if (!enabled) return;
-            await Notifications.scheduleNotificationAsync({
-              content: { title: 'Hola', body: 'Esto es una prueba.' },
-              trigger: null,
-            });
-          }}
+          onPress={handleTestNotification}
+          disabled={!enabled}
+          style={!enabled ? { opacity: 0.5 } : {}}
         />
       </View>
     </View>

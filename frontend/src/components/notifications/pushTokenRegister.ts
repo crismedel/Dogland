@@ -6,6 +6,7 @@ import * as Notifications from 'expo-notifications';
 import * as SecureStore from 'expo-secure-store';
 import Constants from 'expo-constants';
 import { buildAndRegisterPushToken } from '@/src/api/notifications';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type TokenResult = {
   token?: string | null;
@@ -34,6 +35,15 @@ export function usePushTokenRegistration(
       if (!tokenResult || !tokenResult.token) return;
 
       try {
+        // Obtener preferencias de AsyncStorage
+        const marketing = await AsyncStorage.getItem('notif_marketing');
+        const system = await AsyncStorage.getItem('notif_system');
+
+        const preferences = {
+          marketing: marketing === '1',
+          system: system === '1',
+        };
+
         const lastRegistered = await SecureStore.getItemAsync(
           'last_registered_push_token',
         );
@@ -59,6 +69,7 @@ export function usePushTokenRegistration(
               app_version: tokenResult.appVersion ?? null,
               device_id: tokenResult.deviceId ?? null,
               user_id: userId ?? null,
+              preferences, // Incluir preferencias
             });
 
             await SecureStore.setItemAsync(

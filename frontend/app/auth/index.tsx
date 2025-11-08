@@ -16,7 +16,7 @@ import {
   AppText,
 } from '@/src/components/AppText';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
 export default function Index() {
   return (
@@ -62,7 +62,6 @@ const styles = StyleSheet.create({
   backgroundImage: {
     flex: 1,
     width: width,
-    height: height,
     justifyContent: 'center',
     alignItems: 'center',
   },
