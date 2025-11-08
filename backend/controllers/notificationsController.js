@@ -17,6 +17,7 @@ export const registrarPushToken = async (req, res) => {
       platform = null,
       app_version = null,
       device_id = null,
+      preferences = { marketing: true, system: true }, // Valor por defecto
     } = req.body;
     const id_usuario = req.user.id;
 
@@ -39,6 +40,7 @@ export const registrarPushToken = async (req, res) => {
       platform,
       app_version,
       device_id,
+      preferences, // Incluir preferencias
     });
 
     res.json({ success: true, message: 'Token registrado correctamente' });
@@ -80,7 +82,7 @@ export const enviarNotificacionPrueba = async (req, res) => {
     const id_usuario = req.user.id;
 
     const result = await pool.query(
-      'SELECT push_token FROM user_push_tokens WHERE user_id = $1 AND is_valid = TRUE',
+      'SELECT push_token, preferences FROM user_push_tokens WHERE user_id = $1 AND is_valid = TRUE',
       [id_usuario],
     );
 
@@ -91,10 +93,10 @@ export const enviarNotificacionPrueba = async (req, res) => {
       });
     }
 
-    const tokens = result.rows.map((r) => r.push_token).filter(Boolean);
-    const tokensWithMeta = tokens.map((t) => ({
-      push_token: t,
+    const tokensWithMeta = result.rows.map((r) => ({
+      push_token: r.push_token,
       user_id: id_usuario,
+      preferences: r.preferences,
     }));
 
     const sendResult = await pushService.sendPushNotificationToTokens(
@@ -482,6 +484,60 @@ export const borrarNotificacion = async (req, res) => {
   }
 };
 
+export const enviarNotificacionUsuario = async (req, res) => {
+  try {
+    const { userId, title, body, data } = req.body;
+
+    const result = await pushService.sendPushNotificationToUsers(
+      { title, body, data },
+      [userId],
+    );
+
+    res.json({
+      success: true,
+      message: 'Notificación enviada',
+      result,
+    });
+  } catch (error) {
+    console.error('Error al enviar notificación:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error al enviar notificación',
+    });
+  }
+};
+
+// Actualizar preferencias de token de push notification
+export const actualizarPreferenciasToken = async (req, res) => {
+  try {
+    const { push_token, preferences } = req.body;
+    const id_usuario = req.user.id;
+
+    if (!id_usuario || !push_token || !preferences) {
+      return res.status(400).json({
+        success: false,
+        error: 'push_token y preferences son requeridos',
+      });
+    }
+
+    await pushTokens.updateTokenPreferences({
+      user_id: id_usuario,
+      push_token,
+      preferences,
+    });
+
+    res.json({
+      success: true,
+      message: 'Preferencias actualizadas correctamente',
+    });
+  } catch (error) {
+    console.error('Error al actualizar preferencias:', error);
+    res
+      .status(500)
+      .json({ success: false, error: 'Error al actualizar preferencias' });
+  }
+};
+
 // Export default (compatibilidad)
 export default {
   registrarPushToken,
@@ -495,4 +551,5 @@ export default {
   obtenerEstadisticasNotificaciones,
   marcarNotificacionLeida,
   borrarNotificacion,
+  actualizarPreferenciasToken,
 };

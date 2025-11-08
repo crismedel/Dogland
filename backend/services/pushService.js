@@ -1,4 +1,3 @@
-// src/services/pushService.js
 import { Expo } from 'expo-server-sdk';
 import * as pushTokens from './pushTokens.js';
 
@@ -27,7 +26,11 @@ export async function markTokenInvalid(push_token, reason = null) {
  * NOTA: Esta función envía y guarda tickets (para procesamiento de receipts en worker).
  * No procesa receipts aquí (se hará en worker).
  */
-export async function sendPushNotificationToUsers(payload, userIds) {
+export async function sendPushNotificationToUsers(
+  payload,
+  userIds,
+  notificationType = 'system',
+) {
   const tokensRows = await getTokensForUsers(userIds);
   if (!tokensRows || tokensRows.length === 0) {
     console.log('No hay tokens válidos para los usuarios pedidos');
@@ -36,7 +39,23 @@ export async function sendPushNotificationToUsers(payload, userIds) {
 
   const messagesMeta = [];
   for (const row of tokensRows) {
-    const { user_id, push_token } = row;
+    const { user_id, push_token, preferences } = row;
+
+    // Verificar si el token tiene preferencias y si permite este tipo de notificación
+    const allowsNotification = preferences
+      ? notificationType === 'marketing'
+        ? preferences.marketing
+        : preferences.system
+      : true; // Si no hay preferencias definidas, permitir por defecto
+
+    // Si el usuario ha desactivado este tipo de notificación, saltar
+    if (!allowsNotification) {
+      console.log(
+        `Saltando notificación para token ${push_token} (tipo: ${notificationType})`,
+      );
+      continue;
+    }
+
     if (!Expo.isExpoPushToken(push_token)) {
       // No invalidamos aquí si queremos soportar otros backends: marcar sólo si somos Expo-only.
       await markTokenInvalid(push_token, 'invalid_expo_token_format');
@@ -64,19 +83,36 @@ export async function sendPushNotificationToUsers(payload, userIds) {
 
 /**
  * Enviar notificaciones a tokens concretos
- * - tokensWithMeta: [{ push_token, user_id }]
+ * - tokensWithMeta: [{ push_token, user_id, preferences }]
  */
 export async function sendPushNotificationToTokens(
   payload,
   tokensWithMeta = [],
+  notificationType = 'system', // Tipo de notificación por defecto
 ) {
   const messagesMeta = [];
 
   for (const t of tokensWithMeta) {
+    // Verificar si el token tiene preferencias y si permite este tipo de notificación
+    const allowsNotification = t.preferences
+      ? notificationType === 'marketing'
+        ? t.preferences.marketing
+        : t.preferences.system
+      : true; // Si no hay preferencias definidas, permitir por defecto
+
+    // Si el usuario ha desactivado este tipo de notificación, saltar
+    if (!allowsNotification) {
+      console.log(
+        `Saltando notificación para token ${t.push_token} (tipo: ${notificationType})`,
+      );
+      continue;
+    }
+
     if (!Expo.isExpoPushToken(t.push_token)) {
       await markTokenInvalid(t.push_token, 'invalid_expo_token_format');
       continue;
     }
+
     messagesMeta.push({
       user_id: t.user_id || null,
       push_token: t.push_token,

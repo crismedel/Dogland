@@ -1,4 +1,3 @@
-// src/services/pushTokens.js
 import pool from '../db/db.js';
 
 /**
@@ -10,20 +9,29 @@ export async function upsertToken({
   platform = null,
   app_version = null,
   device_id = null,
+  preferences = { marketing: true, system: true }, // Valor por defecto
 }) {
   const q = `
     INSERT INTO user_push_tokens
-      (user_id, push_token, platform, app_version, is_valid, created_at, last_seen, device_id)
-    VALUES ($1,$2,$3,$4, TRUE, now(), now(), $5)
+      (user_id, push_token, platform, app_version, is_valid, created_at, last_seen, device_id, preferences)
+    VALUES ($1,$2,$3,$4, TRUE, now(), now(), $5, $6)
     ON CONFLICT (user_id, push_token)
     DO UPDATE SET
       last_seen = now(),
       platform = EXCLUDED.platform,
       app_version = EXCLUDED.app_version,
       is_valid = TRUE,
-      device_id = EXCLUDED.device_id
+      device_id = EXCLUDED.device_id,
+      preferences = EXCLUDED.preferences
   `;
-  const params = [user_id, push_token, platform, app_version, device_id];
+  const params = [
+    user_id,
+    push_token,
+    platform,
+    app_version,
+    device_id,
+    preferences,
+  ];
   await pool.query(q, params);
   return { ok: true };
 }
@@ -77,7 +85,7 @@ export async function markTokenInvalid(push_token, reason = null) {
 export async function getValidTokensByUserIds(userIds = []) {
   if (!userIds || userIds.length === 0) return [];
   const q = `
-    SELECT user_id, push_token, platform, app_version, device_id
+    SELECT user_id, push_token, platform, app_version, device_id, preferences
     FROM user_push_tokens
     WHERE user_id = ANY($1) AND is_valid = TRUE
   `;
@@ -90,7 +98,7 @@ export async function getValidTokensByUserIds(userIds = []) {
  */
 export async function getActiveTokensByCity(id_ciudad, { limit = 500 } = {}) {
   const q = `
-    SELECT upt.push_token, upt.user_id, upt.device_id
+    SELECT upt.push_token, upt.user_id, upt.device_id, upt.preferences
     FROM user_push_tokens upt
     INNER JOIN usuario u ON upt.user_id = u.id_usuario
     WHERE u.id_ciudad = $1 AND u.activo = true AND upt.is_valid = true
@@ -105,7 +113,7 @@ export async function getActiveTokensByCity(id_ciudad, { limit = 500 } = {}) {
  */
 export async function getAllActiveTokens({ limit = 1000 } = {}) {
   const q = `
-    SELECT user_id, push_token, device_id
+    SELECT user_id, push_token, device_id, preferences
     FROM user_push_tokens
     WHERE is_valid = TRUE
     LIMIT $1
@@ -157,6 +165,26 @@ export async function markTicketProcessed(
   return r.rows[0];
 }
 
+/**
+ * Actualizar preferencias de token
+ */
+export async function updateTokenPreferences({
+  user_id,
+  push_token,
+  preferences,
+}) {
+  const query = `
+    UPDATE user_push_tokens
+    SET preferences = $1
+    WHERE user_id = $2 AND push_token = $3
+  `;
+
+  const values = [preferences, user_id, push_token];
+
+  const result = await pool.query(query, values);
+  return result.rowCount > 0; // Retorna true si se actualizó algún registro
+}
+
 export default {
   upsertToken,
   deleteToken,
@@ -168,4 +196,5 @@ export default {
   saveTicket,
   getPendingTickets,
   markTicketProcessed,
+  updateTokenPreferences,
 };

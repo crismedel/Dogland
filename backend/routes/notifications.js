@@ -13,6 +13,8 @@ import {
   marcarNotificacionLeida,
   borrarNotificacion,
   marcarTodasLeidas,
+  enviarNotificacionUsuario,
+  actualizarPreferenciasToken,
 } from '../controllers/notificationsController.js';
 
 const router = express.Router();
@@ -55,5 +57,14 @@ router.patch('/read-all', authenticateToken, marcarTodasLeidas);
 router.patch('/notifications/read-all', authenticateToken, marcarTodasLeidas);
 // Testing
 router.post('/test', authenticateToken, enviarNotificacionPrueba);
+
+// Actualizar preferencias de notificación
+router.patch(
+  '/token/preferences',
+  authenticateToken,
+  actualizarPreferenciasToken,
+);
+// Nuevo endpoint para enviar notificaciones a usuarios específicos
+router.post('/send-to-user', authenticateToken, enviarNotificacionUsuario); // Agregar
 
 export default router;
