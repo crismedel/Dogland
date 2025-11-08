@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ScrollView,
   Image,
+  Dimensions,
 } from 'react-native';
 import MapView, { Marker, Callout } from 'react-native-maps';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -21,6 +22,8 @@ import {
   fontWeightMedium,
   AppText,
 } from '@/src/components/AppText';
+
+const { width } = Dimensions.get('window');
 
 const AlertDetailScreen = () => {
   // Hook para manejar la navegación
@@ -163,47 +166,56 @@ const AlertDetailScreen = () => {
       />
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Encabezado con título y tipo de alerta */}
         <View style={styles.headerDetail}>
           <AppText style={styles.title}>{alert.titulo}</AppText>
-          <AppText style={styles.subtitle}>{alert.tipo}</AppText>
+          <View style={styles.typeBadge}>
+            <Ionicons
+              name="megaphone-outline"
+              size={16}
+              color={Colors.secondary}
+            />
+            <AppText style={styles.subtitle}>{alert.tipo}</AppText>
+          </View>
         </View>
 
-        {/* Descripción de la alerta */}
         <View style={styles.card}>
           <AppText style={styles.sectionTitle}>Descripción</AppText>
           <AppText style={styles.description}>{alert.descripcion}</AppText>
         </View>
 
-        {/* Información adicional: nivel de riesgo, creador y fecha */}
         <View style={styles.card}>
           <AppText style={styles.sectionTitle}>Información adicional</AppText>
           <View style={styles.infoContainer}>
-            <View style={styles.infoBox}>
-              <AppText style={styles.infoLabel}>Nivel de Riesgo</AppText>
-              <AppText
-                style={[
-                  styles.infoValue,
-                  { color: riskStyles[alert.nivel_riesgo].color },
-                ]}
-              >
+            <View style={styles.infoItem}>
+              <Ionicons name="flame-outline" size={18} color={markerColor} />
+              <AppText style={styles.infoLabel}>Riesgo</AppText>
+              <AppText style={[styles.infoValue, { color: markerColor }]}>
                 {alert.nivel_riesgo}
               </AppText>
             </View>
-            <View style={styles.infoBox}>
+            <View style={styles.infoItem}>
+              <Ionicons
+                name="person-outline"
+                size={18}
+                color={Colors.secondary}
+              />
               <AppText style={styles.infoLabel}>Creado por</AppText>
               <AppText style={styles.infoValue}>{alert.creado_por}</AppText>
             </View>
-            <View style={styles.infoBox}>
-              <AppText style={styles.infoLabel}>Fecha de creación</AppText>
+            <View style={styles.infoItem}>
+              <Ionicons
+                name="calendar-outline"
+                size={18}
+                color={Colors.secondary}
+              />
+              <AppText style={styles.infoLabel}>Fecha</AppText>
               <AppText style={styles.infoValue}>
-                {new Date(alert.fecha_creacion).toLocaleDateString()}
+                {new Date(alert.fecha_creacion).toLocaleDateString('es-ES')}
               </AppText>
             </View>
           </View>
         </View>
 
-        {/* Ubicación */}
         <View style={styles.card}>
           <AppText style={styles.sectionTitle}>Ubicación</AppText>
           {location ? (
@@ -218,7 +230,6 @@ const AlertDetailScreen = () => {
                 }}
               >
                 <Marker coordinate={location}>
-                  {/* Marcador personalizado estilo pin moderno */}
                   <View style={styles.customMarker}>
                     <View
                       style={[
@@ -237,10 +248,9 @@ const AlertDetailScreen = () => {
                     />
                   </View>
 
-                  {/* Callout personalizado con información de la alerta */}
                   <Callout tooltip>
                     <View style={styles.calloutContainer}>
-                      <AppText style={styles.calloutTitle} numberOfLines={2}>
+                      <AppText style={styles.calloutTitle}>
                         {alert.titulo}
                       </AppText>
                       <View style={styles.calloutDivider} />
@@ -270,7 +280,6 @@ const AlertDetailScreen = () => {
           )}
         </View>
 
-        {/* Botón para volver a la pantalla anterior con CustomButton */}
         <CustomButton
           title="Volver a la lista"
           onPress={() => router.back()}
@@ -285,135 +294,91 @@ const AlertDetailScreen = () => {
 
 export default AlertDetailScreen;
 
-// Estilos para los componentes de la pantalla
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   scrollContent: {
     padding: 20,
-    paddingBottom: 40,
+    paddingBottom: 50,
   },
-
-  // TITULO + SUBTITULO
   headerDetail: {
-    marginBottom: 24,
     marginTop: 20,
+    marginBottom: 24,
   },
   title: {
     fontSize: 26,
     fontWeight: fontWeightBold,
     color: '#1A1A1A',
     letterSpacing: 0.3,
+    marginBottom: 8,
+  },
+  typeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E3F2FD',
+    borderRadius: 20,
+    alignSelf: 'flex-start',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderWidth: 1,
+    borderColor: '#BBDEFB',
+    gap: 6,
   },
   subtitle: {
     fontSize: 14,
-    color: Colors.secondary,
     fontWeight: fontWeightSemiBold,
-    backgroundColor: '#E3F2FD',
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 16,
-    alignSelf: 'flex-start',
-    marginTop: 8,
-    borderWidth: 1,
-    borderColor: '#BBDEFB',
+    color: Colors.secondary,
   },
-
-  // SECCIONES TIPO CARD
   card: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
+    backgroundColor: '#f4ecde',
+    borderRadius: 20,
     padding: 18,
     marginBottom: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
-    shadowRadius: 8,
+    shadowRadius: 6,
     elevation: 3,
   },
   sectionTitle: {
     fontWeight: fontWeightBold,
-    marginBottom: 14,
+    marginBottom: 12,
     fontSize: 17,
     color: '#1A1A1A',
-    letterSpacing: 0.3,
   },
   description: {
     fontSize: 15,
     color: '#444',
     lineHeight: 22,
   },
-
-  // INFO EXTRA
   infoContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
-  infoBox: {
+  infoItem: {
     flex: 1,
     alignItems: 'center',
-    padding: 12,
-    backgroundColor: '#FAFAFA',
-    borderRadius: 10,
-    marginHorizontal: 4,
+    gap: 4,
   },
   infoLabel: {
     fontSize: 11,
     color: '#888',
-    marginBottom: 6,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
   },
   infoValue: {
-    fontSize: 15,
-    fontWeight: fontWeightBold,
+    fontSize: 14,
+    fontWeight: fontWeightSemiBold,
     textAlign: 'center',
   },
-
-  // MAPA
   mapCard: {
     borderRadius: 16,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
     elevation: 4,
   },
   map: {
-    height: 280,
+    height: width * 0.65,
     width: '100%',
   },
-  noLocation: {
-    textAlign: 'center',
-    padding: 20,
-    color: '#666',
-    fontSize: 14,
-  },
-
-  // ESTADOS DE ERROR Y LOADING
-  center: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  errorText: {
-    color: '#E53935',
-    marginBottom: 16,
-    fontSize: 16,
-    textAlign: 'center',
-    fontWeight: fontWeightMedium,
-  },
-  loadingText: {
-    marginTop: 12,
-    color: Colors.secondary,
-    fontSize: 15,
-  },
-
-  // MARCADOR PERSONALIZADO - OPCIÓN 1: PIN MODERNO
-  customMarker: {
-    alignItems: 'center',
-  },
+  customMarker: { alignItems: 'center' },
   pinContainer: {
     width: 36,
     height: 36,
@@ -422,10 +387,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 3,
     borderColor: 'white',
-    shadowColor: '#000',
-    shadowOpacity: 0.4,
-    shadowOffset: { width: 0, height: 3 },
-    shadowRadius: 4,
     elevation: 6,
   },
   pinPoint: {
@@ -438,8 +399,6 @@ const styles = StyleSheet.create({
     borderRightColor: 'transparent',
     marginTop: -1,
   },
-
-  // CALLOUT PERSONALIZADO
   calloutContainer: {
     backgroundColor: 'white',
     borderRadius: 12,
@@ -460,7 +419,7 @@ const styles = StyleSheet.create({
   },
   calloutDivider: {
     height: 1,
-    backgroundColor: '#E0E0E0',
+    backgroundColor: '#f4ecde',
     marginBottom: 8,
   },
   calloutText: {
@@ -472,5 +431,27 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#888',
     marginTop: 6,
+  },
+  noLocation: {
+    textAlign: 'center',
+    padding: 20,
+    color: '#666',
+    fontSize: 14,
+  },
+  center: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 10,
+    color: Colors.secondary,
+    fontSize: 15,
+  },
+  errorText: {
+    color: '#E53935',
+    fontSize: 16,
+    textAlign: 'center',
+    fontWeight: fontWeightMedium,
   },
 });
