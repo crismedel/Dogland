@@ -90,3 +90,36 @@ export const getHeatmapData = async (req, res) => {
         res.status(500).json({ success: false, error: 'Error interno del servidor al obtener datos para el Mapa de Calor.' });
     }
 };
+export const getUserImpact = async (req, res) => {
+    const userId = req.user?.id || req.query.userId;
+
+    if (!userId) {
+        return res.status(400).json({ success: false, message: 'ID de usuario no proporcionado.' });
+    }
+
+    try {
+        const result = await pool.query(`
+            SELECT
+                (SELECT COUNT(*)::int FROM avistamiento WHERE id_usuario = $1) AS mis_reportes,
+                (SELECT COUNT(*)::int FROM avistamiento WHERE id_usuario = $1 AND id_estado_avistamiento = 2) AS mis_resueltos,
+                (SELECT COUNT(*)::int FROM avistamiento) AS total_global
+        `, [userId]);
+
+        const stats = result.rows[0];
+        const rawPercentage = (stats.mis_reportes / stats.total_global) * 100;
+        // Evitar división por cero si no hay reportes globales
+        const contributionPercentage = stats.total_global > 0 ? rawPercentage.toFixed(1) : 0;
+
+        res.status(200).json({
+            success: true,
+            data: {
+                myReports: stats.mis_reportes,
+                myResolved: stats.mis_resueltos,
+                contributionPercentage: contributionPercentage
+            }
+        });
+    } catch (error) {
+        console.error('Error al obtener impacto del usuario:', error);
+        res.status(500).json({ success: false, error: 'Error al obtener estadísticas personales.' });
+    }
+};
