@@ -1,24 +1,22 @@
-import React, { useState, useEffect, useCallback } from 'react';
 import {
-  View,
-  StyleSheet,
-  ScrollView,
-  ActivityIndicator,
-  Dimensions,
-  TouchableOpacity,
-  Image,
-} from 'react-native';
-import { useRouter } from 'expo-router';
-import { BarChart, PieChart } from 'react-native-chart-kit';
-import apiClient from '../../src/api/client';
+  AppText,
+  fontWeightBold
+} from '@/src/components/AppText';
 import CustomHeader from '@/src/components/UI/CustomHeader';
 import { Colors } from '@/src/constants/colors';
+import { useRouter } from 'expo-router';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
-  fontWeightBold,
-  fontWeightSemiBold,
-  fontWeightMedium,
-  AppText,
-} from '@/src/components/AppText';
+  ActivityIndicator,
+  Dimensions,
+  Image,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { BarChart, PieChart } from 'react-native-chart-kit';
+import apiClient from '../../src/api/client';
 
 const { width } = Dimensions.get('window');
 
@@ -38,31 +36,46 @@ interface SpeciesStats {
   total: string;
 }
 
+// Nueva interfaz para las estadísticas de impacto del usuario
+interface UserImpactStats {
+  myReports: number;
+  myResolved: number;
+  contributionPercentage: string;
+}
+
 const StatsScreen = () => {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [summary, setSummary] = useState<SummaryStats | null>(null);
   const [healthStates, setHealthStates] = useState<HealthStateStats[]>([]);
   const [species, setSpecies] = useState<SpeciesStats[]>([]);
+  // Nuevo estado para el impacto del usuario
+  const [userImpact, setUserImpact] = useState<UserImpactStats | null>(null);
+
+  // ⚠️ REEMPLAZAR CON EL ID REAL DEL USUARIO AUTENTICADO
+  const currentUserId = 1;
 
   const fetchStats = useCallback(async () => {
     setLoading(true);
     try {
-      const [summaryRes, healthRes, speciesRes] = await Promise.all([
+      // Se añade la llamada al nuevo endpoint de impacto de usuario
+      const [summaryRes, healthRes, speciesRes, userImpactRes] = await Promise.all([
         apiClient.get('/stats/summary'),
         apiClient.get('/stats/health-states'),
         apiClient.get('/stats/species'),
+        apiClient.get(`/stats/user-impact?userId=${currentUserId}`),
       ]);
 
       setSummary(summaryRes.data.data);
       setHealthStates(healthRes.data.data);
       setSpecies(speciesRes.data.data);
+      setUserImpact(userImpactRes.data.data);
     } catch (error) {
       console.error('Error al obtener estadísticas:', error);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [currentUserId]);
 
   useEffect(() => {
     fetchStats();
@@ -136,7 +149,6 @@ const StatsScreen = () => {
             </AppText>
             <AppText style={styles.summaryLabel}>Reportes Críticos</AppText>
           </View>
-          {/* ✅ Se utiliza el valor de `activeReports` desde el objeto de resumen */}
           <View style={[styles.summaryCard, { borderColor: Colors.success }]}>
             <AppText style={[styles.summaryValue, { color: Colors.success }]}>
               {summary?.activeReports || 0}
@@ -144,6 +156,28 @@ const StatsScreen = () => {
             <AppText style={styles.summaryLabel}>Reportes Activos</AppText>
           </View>
         </View>
+
+        {/* --- NUEVA SECCIÓN: MI IMPACTO --- */}
+        <AppText style={styles.sectionTitle}>Mi Impacto en la Comunidad</AppText>
+        <View style={styles.impactContainer}>
+          <View style={styles.impactCard}>
+            <AppText style={styles.impactValue}>{userImpact?.myReports || 0}</AppText>
+            <AppText style={styles.impactLabel}>Mis Reportes</AppText>
+          </View>
+          <View style={styles.impactCard}>
+            <AppText style={[styles.impactValue, { color: Colors.primary }]}>
+              {userImpact?.contributionPercentage || 0}%
+            </AppText>
+            <AppText style={styles.impactLabel}>Contribución Total</AppText>
+          </View>
+          <View style={styles.impactCard}>
+            <AppText style={[styles.impactValue, { color: Colors.success }]}>
+              {userImpact?.myResolved || 0}
+            </AppText>
+            <AppText style={styles.impactLabel}>Casos Resueltos</AppText>
+          </View>
+        </View>
+        {/* ------------------------------------ */}
 
         <AppText style={styles.sectionTitle}>Avistamientos por Especie</AppText>
         <View style={styles.chartContainer}>
@@ -181,7 +215,6 @@ const StatsScreen = () => {
               data={healthStatesPieData}
               width={width - 40}
               height={220}
-              yAxisSuffix=""
               chartConfig={{
                 backgroundColor: Colors.lightText,
                 backgroundGradientFrom: Colors.lightText,
@@ -247,6 +280,38 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 5,
   },
+  // --- NUEVOS ESTILOS PARA MI IMPACTO ---
+  impactContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 10,
+    marginBottom: 10,
+  },
+  impactCard: {
+    flex: 1,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    paddingVertical: 15,
+    paddingHorizontal: 5,
+    alignItems: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  impactValue: {
+    fontSize: 24,
+    fontWeight: fontWeightBold,
+    color: Colors.text,
+  },
+  impactLabel: {
+    fontSize: 12,
+    color: Colors.gray,
+    textAlign: 'center',
+    marginTop: 4,
+  },
+  // --------------------------------------
   chartContainer: {
     backgroundColor: Colors.lightText,
     borderRadius: 16,
