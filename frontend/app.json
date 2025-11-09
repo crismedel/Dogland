@@ -1,12 +1,12 @@
 {
   "expo": {
     "name": "Dogland",
-    "slug": "dogland",
+    "slug": "Dogland",
     "owner": "dogland-1",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "dogland",
+    "scheme": "Dogland",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
@@ -15,13 +15,35 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#FFFFFF"
-      }
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true
     },
     "web": {
+      "bundler": "metro",
+      "output": "static",
       "favicon": "./assets/images/favicon.png"
     },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#ffffff"
+        }
+      ],
+      "expo-font",
+      "expo-web-browser",
+      "expo-secure-store"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
     "extra": {
+      "router": {},
       "eas": {
         "projectId": "9f56dfdf-8256-47eb-86ba-e9111abffd16"
       }
