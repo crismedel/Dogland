@@ -1,6 +1,6 @@
 import {
   AppText,
-  fontWeightBold
+  fontWeightBold,
 } from '@/src/components/AppText';
 import CustomHeader from '@/src/components/UI/CustomHeader';
 import { Colors } from '@/src/constants/colors';
@@ -15,7 +15,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { BarChart, PieChart } from 'react-native-chart-kit';
+import { BarChart, LineChart, PieChart } from 'react-native-chart-kit';
 import apiClient from '../../src/api/client';
 
 const { width } = Dimensions.get('window');
@@ -36,11 +36,15 @@ interface SpeciesStats {
   total: string;
 }
 
-// Nueva interfaz para las estadísticas de impacto del usuario
 interface UserImpactStats {
   myReports: number;
   myResolved: number;
   contributionPercentage: string;
+}
+
+interface TrendStats {
+  labels: string[];
+  data: number[];
 }
 
 const StatsScreen = () => {
@@ -49,33 +53,31 @@ const StatsScreen = () => {
   const [summary, setSummary] = useState<SummaryStats | null>(null);
   const [healthStates, setHealthStates] = useState<HealthStateStats[]>([]);
   const [species, setSpecies] = useState<SpeciesStats[]>([]);
-  // Nuevo estado para el impacto del usuario
   const [userImpact, setUserImpact] = useState<UserImpactStats | null>(null);
-
-  // ⚠️ REEMPLAZAR CON EL ID REAL DEL USUARIO AUTENTICADO
-  const currentUserId = 1;
+  const [trend, setTrend] = useState<TrendStats | null>(null);
 
   const fetchStats = useCallback(async () => {
     setLoading(true);
     try {
-      // Se añade la llamada al nuevo endpoint de impacto de usuario
-      const [summaryRes, healthRes, speciesRes, userImpactRes] = await Promise.all([
+      const [summaryRes, healthRes, speciesRes, userImpactRes, trendRes] = await Promise.all([
         apiClient.get('/stats/summary'),
         apiClient.get('/stats/health-states'),
         apiClient.get('/stats/species'),
-        apiClient.get(`/stats/user-impact?userId=${currentUserId}`),
+        apiClient.get('/stats/user-impact'), // Ya no enviamos userId por parámetro
+        apiClient.get('/stats/trend'),
       ]);
 
       setSummary(summaryRes.data.data);
       setHealthStates(healthRes.data.data);
       setSpecies(speciesRes.data.data);
       setUserImpact(userImpactRes.data.data);
+      setTrend(trendRes.data.data);
     } catch (error) {
       console.error('Error al obtener estadísticas:', error);
     } finally {
       setLoading(false);
     }
-  }, [currentUserId]);
+  }, []);
 
   useEffect(() => {
     fetchStats();
@@ -135,6 +137,7 @@ const StatsScreen = () => {
         }
       />
       <ScrollView contentContainerStyle={styles.scrollContent}>
+        {/* --- RESUMEN GENERAL --- */}
         <AppText style={styles.sectionTitle}>Resumen General</AppText>
         <View style={styles.summaryContainer}>
           <View style={styles.summaryCard}>
@@ -157,7 +160,7 @@ const StatsScreen = () => {
           </View>
         </View>
 
-        {/* --- NUEVA SECCIÓN: MI IMPACTO --- */}
+        {/* --- MI IMPACTO --- */}
         <AppText style={styles.sectionTitle}>Mi Impacto en la Comunidad</AppText>
         <View style={styles.impactContainer}>
           <View style={styles.impactCard}>
@@ -177,8 +180,45 @@ const StatsScreen = () => {
             <AppText style={styles.impactLabel}>Casos Resueltos</AppText>
           </View>
         </View>
-        {/* ------------------------------------ */}
 
+        {/* --- TENDENCIA SEMANAL --- */}
+        <AppText style={styles.sectionTitle}>Tendencia (Últimos 7 días)</AppText>
+        <View style={styles.chartContainer}>
+          {trend && trend.labels.length > 0 ? (
+            <LineChart
+              data={{
+                labels: trend.labels,
+                datasets: [{ data: trend.data }],
+              }}
+              width={width - 40}
+              height={220}
+              yAxisLabel=""
+              yAxisSuffix=""
+              chartConfig={{
+                backgroundColor: Colors.lightText,
+                backgroundGradientFrom: Colors.lightText,
+                backgroundGradientTo: Colors.lightText,
+                decimalPlaces: 0,
+                color: (opacity = 1) => `rgba(255, 99, 71, ${opacity})`,
+                labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+                style: { borderRadius: 16 },
+                propsForDots: {
+                  r: '5',
+                  strokeWidth: '2',
+                  stroke: Colors.primary,
+                },
+              }}
+              bezier
+              style={styles.chart}
+            />
+          ) : (
+            <AppText style={styles.noDataText}>
+              No hay suficientes datos de tendencia.
+            </AppText>
+          )}
+        </View>
+
+        {/* --- CHART ESPECIES --- */}
         <AppText style={styles.sectionTitle}>Avistamientos por Especie</AppText>
         <View style={styles.chartContainer}>
           {speciesChartData.labels.length > 0 ? (
@@ -206,6 +246,7 @@ const StatsScreen = () => {
           )}
         </View>
 
+        {/* --- CHART ESTADO SALUD --- */}
         <AppText style={styles.sectionTitle}>
           Avistamientos por Estado de Salud
         </AppText>
@@ -241,13 +282,13 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background || '#F0F4F7' },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   loadingText: { marginTop: 10, fontSize: 16, color: Colors.primary },
-  scrollContent: { padding: 20 },
+  scrollContent: { padding: 20, paddingBottom: 40 },
   sectionTitle: {
     fontSize: 20,
     fontWeight: fontWeightBold,
     color: Colors.text,
     marginBottom: 15,
-    marginTop: 20,
+    marginTop: 25,
   },
   summaryContainer: {
     flexDirection: 'row',
@@ -280,12 +321,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 5,
   },
-  // --- NUEVOS ESTILOS PARA MI IMPACTO ---
   impactContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     gap: 10,
-    marginBottom: 10,
   },
   impactCard: {
     flex: 1,
@@ -311,7 +350,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 4,
   },
-  // --------------------------------------
   chartContainer: {
     backgroundColor: Colors.lightText,
     borderRadius: 16,
