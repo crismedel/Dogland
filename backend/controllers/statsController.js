@@ -123,3 +123,31 @@ export const getUserImpact = async (req, res) => {
         res.status(500).json({ success: false, error: 'Error al obtener estadísticas personales.' });
     }
 };
+
+export const getReportsTrend = async (req, res) => {
+    try {
+        // Esta consulta usa 'generate_series' de PostgreSQL para asegurar
+        // que siempre tengamos los últimos 7 días, incluso si tienen 0 reportes.
+        const result = await pool.query(`
+            SELECT
+                to_char(d.day, 'DD/MM') as fecha,
+                COUNT(a.id_avistamiento)::int as total
+            FROM (
+                SELECT generate_series(CURRENT_DATE - INTERVAL '6 days', CURRENT_DATE, '1 day')::date AS day
+            ) d
+            LEFT JOIN avistamiento a ON a.fecha_creacion::date = d.day
+            GROUP BY d.day
+            ORDER BY d.day ASC;
+        `);
+        const labels = result.rows.map(row => row.fecha);
+        const data = result.rows.map(row => row.total);
+
+        res.status(200).json({
+            success: true,
+            data: { labels, data }
+        });
+    } catch (error) {
+        console.error('Error al obtener tendencia de reportes:', error);
+        res.status(500).json({ success: false, error: 'Error al obtener tendencia.' });
+    }
+};
