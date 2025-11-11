@@ -66,12 +66,11 @@ const userBaseSchema = z.object({
     .max(255, 'La contraseña no puede exceder los 255 caracteres'),
 
   id_ciudad: z
-    .number({
-      required_error: 'La ciudad es obligatoria',
-      invalid_type_error: 'El ID de ciudad debe ser un número'
-    })
-    .int('El ID de ciudad debe ser un número entero')
-    .positive('El ID de ciudad debe ser un número positivo'),
+    .number()
+    .int()
+    .positive()
+    .nullable()
+    .optional(),
 
   id_organizacion: z
     .number({
@@ -214,7 +213,7 @@ export const savePushTokenSchema = z.object({
   })
 });
 
-/** 
+/**
  * Esquema de validacion para login de usuario
  */
 export const loginSchema = z.object({
@@ -230,4 +229,78 @@ export const loginSchema = z.object({
       })
       .min(1, 'La contraseña no puede estar vacía')
   })
+});
+
+/**
+ * Esquema de validacion para actualizar perfil propio
+ * Permite actualizar solo ciertos campos seguros del usuario
+ */
+export const updateOwnProfileSchema = z.object({
+  body: z.object({
+    nombre_usuario: z
+      .string()
+      .min(1, 'El nombre de usuario no puede estar vacío')
+      .max(50, 'El nombre de usuario no puede exceder los 50 caracteres')
+      .trim()
+      .optional(),
+
+    apellido_paterno: z
+      .string()
+      .min(1, 'El apellido paterno no puede estar vacío')
+      .max(30, 'El apellido paterno no puede exceder los 30 caracteres')
+      .trim()
+      .optional(),
+
+    apellido_materno: z
+      .string()
+      .max(30, 'El apellido materno no puede exceder los 30 caracteres')
+      .trim()
+      .optional()
+      .nullable(),
+
+    telefono: z
+      .string()
+      .min(9, 'El teléfono debe tener al menos 9 dígitos')
+      .max(20, 'El teléfono no puede tener más de 20 dígitos')
+      .regex(/^[+]?[\d\s()-]+$/, 'Formato de teléfono inválido')
+      .trim()
+      .optional()
+      .nullable(),
+
+    email: z
+      .email('Formato de email inválido')
+      .max(100, 'El email no puede exceder los 100 caracteres')
+      .toLowerCase()
+      .trim()
+      .optional(),
+
+    password_hash: z
+      .string()
+      .min(6, 'La contraseña debe tener al menos 6 caracteres')
+      .max(255, 'La contraseña no puede exceder los 255 caracteres')
+      .optional(),
+
+    fecha_nacimiento: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, 'Fecha de nacimiento inválida, debe ser YYYY-MM-DD')
+      .optional(),
+
+    id_sexo: z
+      .number()
+      .int('El ID del sexo debe ser un número entero')
+      .positive('El ID del sexo debe ser un número positivo')
+      .optional(),
+
+    id_ciudad: z
+      .union([
+        z.number().int().positive(),
+        z.null()
+      ])
+      .optional()
+  }).refine(
+    (data) => Object.keys(data).length > 0,
+    {
+      message: 'Debe proporcionar al menos un campo para actualizar'
+    }
+  )
 });
