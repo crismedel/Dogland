@@ -14,6 +14,7 @@ import {
   fontWeightMedium,
   AppText,
 } from '@/src/components/AppText';
+import { Colors } from '@/src/constants/colors';
 
 interface Animal {
   id: string;
@@ -30,6 +31,7 @@ interface Animal {
 
 interface Props {
   animal: Animal;
+  currentPage: number;
 }
 
 const healthColor = (estado?: number, health?: Animal['health']) => {
@@ -43,7 +45,7 @@ const healthColor = (estado?: number, health?: Animal['health']) => {
 const fallbackImage =
   'https://placehold.co/600x400?text=Animal&font=montserrat';
 
-const AnimalCard: React.FC<Props> = ({ animal }) => {
+const AnimalCard: React.FC<Props> = ({ animal, currentPage }) => {
   const router = useRouter();
 
   const handlePress = () => {
@@ -55,11 +57,12 @@ const AnimalCard: React.FC<Props> = ({ animal }) => {
         breed: animal.breed,
         age: String(animal.age),
         imageUrl: animal.imageUrl,
-        estadoMedico: animal.estadoMedico, // 👈 agregar este campo
-        descripcionMedica: animal.descripcionMedica, // 👈 y este también
+        estadoMedico: animal.estadoMedico,
+        descripcionMedica: animal.descripcionMedica,
         size: animal.size,
         species: animal.species,
         health: animal.health,
+        currentPage: currentPage.toString(),
       },
     });
   };
@@ -164,8 +167,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f4ecde',
     borderRadius: 14,
-    margin: 8,
-    elevation: 4, // sombra Android
+    margin: 2,
+    borderColor: Colors.secondary,
+    borderWidth: 1,
+    elevation: 4,
     overflow: 'hidden',
     ...Platform.select({
       android: { elevation: 3 },

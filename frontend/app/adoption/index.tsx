@@ -1,13 +1,13 @@
 import {
   AppText,
   fontWeightBold,
-  fontWeightSemiBold
+  fontWeightSemiBold,
 } from '@/src/components/AppText';
 import CustomHeader from '@/src/components/UI/CustomHeader';
 import { Colors } from '@/src/constants/colors';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import {
   ActivityIndicator,
   Dimensions,
@@ -19,79 +19,13 @@ import {
 } from 'react-native';
 import AnimalCard from './component/card';
 import FiltroCan from './component/filtroCan';
+import Pagination from './component/Pagination';
+import { mockAnimals } from './component/mockAnimals';
 
 const { width } = Dimensions.get('window');
 const SPACING = 10;
 const NUM_COLUMNS = 2;
-
-const mockAnimals = [
-  {
-    id: '1',
-    name: 'Mascullo',
-    breed: 'Pastor Alemán',
-    age: 18,
-    size: 'Grande',
-    species: 'Perro',
-    health: 'Sano',
-    imageUrl:
-      'https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&w=900&q=60',
-  },
-  {
-    id: '2',
-    name: 'Luna',
-    breed: 'Labrador',
-    age: 14,
-    size: 'Mediano',
-    species: 'Perro',
-    health: 'En tratamiento',
-    imageUrl:
-      'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?auto=format&fit=crop&w=900&q=60',
-  },
-  {
-    id: '3',
-    name: 'Thor',
-    breed: 'Husky Siberiano',
-    age: 72,
-    size: 'Grande',
-    species: 'Perro',
-    health: 'Sano',
-    imageUrl:
-      'https://images.unsplash.com/photo-1560807707-8cc77767d783?auto=format&fit=crop&w=900&q=60',
-  },
-  {
-    id: '4',
-    name: 'Mishi',
-    breed: 'Siames',
-    age: 24,
-    size: 'Pequeño',
-    species: 'Gato',
-    health: 'Sano',
-    imageUrl:
-      'https://images.unsplash.com/photo-1601758125946-6ec2ef642b1a?auto=format&fit=crop&w=900&q=60',
-  },
-  {
-    id: '5',
-    name: 'Rex',
-    breed: 'Bulldog',
-    age: 36,
-    size: 'Mediano',
-    species: 'Perro',
-    health: 'Discapacitado',
-    imageUrl:
-      'https://images.unsplash.com/photo-1517423447168-cb804aafa6e0?auto=format&fit=crop&w=900&q=60',
-  },
-  {
-    id: '6',
-    name: 'Bella',
-    breed: 'Poodle',
-    age: 12,
-    size: 'Pequeño',
-    species: 'Perro',
-    health: 'Sano',
-    imageUrl:
-      'https://images.unsplash.com/photo-1517849845537-4d257902454a?auto=format&fit=crop&w=900&q=60',
-  },
-];
+const ITEMS_PER_PAGE = 8;
 
 const Index = () => {
   const [animals, setAnimals] = useState<any[]>([]);
@@ -99,7 +33,22 @@ const Index = () => {
   const [loading, setLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const params = useLocalSearchParams();
   const router = useRouter();
+  const listRef = useRef<FlatList<any> | null>(null);
+
+  // 🔹 Restaurar página al volver desde el perfil
+  useFocusEffect(
+    useCallback(() => {
+      if (params.currentPage) {
+        const page = parseInt(params.currentPage as string, 10);
+        if (!isNaN(page)) {
+          setCurrentPage(page);
+        }
+      }
+    }, [params.currentPage]),
+  );
 
   useEffect(() => {
     const fetchAnimals = async () => {
@@ -154,11 +103,51 @@ const Index = () => {
       active.push('edad');
     }
     setActiveFilters(active);
+
+    // Reset a primera página
+    setCurrentPage(1);
+    setTimeout(
+      () => listRef.current?.scrollToOffset({ offset: 0, animated: true }),
+      50,
+    );
   };
 
   const handleClearFilters = () => {
     setFilteredAnimals(animals);
     setActiveFilters([]);
+    setCurrentPage(1);
+    setTimeout(
+      () => listRef.current?.scrollToOffset({ offset: 0, animated: true }),
+      50,
+    );
+  };
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredAnimals.length / ITEMS_PER_PAGE),
+  );
+
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages);
+    if (currentPage < 1) setCurrentPage(1);
+  }, [filteredAnimals.length, totalPages]);
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      listRef.current?.scrollToOffset({ offset: 0, animated: true });
+    }, 50);
+    return () => clearTimeout(t);
+  }, [currentPage]);
+
+  const getPagedData = () => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    return filteredAnimals.slice(startIndex, endIndex);
+  };
+
+  const handlePageChange = (page: number) => {
+    const validPage = Math.max(1, Math.min(totalPages, page));
+    setCurrentPage(validPage);
   };
 
   if (loading) {
@@ -168,6 +157,8 @@ const Index = () => {
       </View>
     );
   }
+
+  const pagedAnimals = getPagedData();
 
   return (
     <View style={styles.container}>
@@ -190,13 +181,7 @@ const Index = () => {
       />
 
       {/* 🔹 Botón para ver historiales médicos */}
-      <View
-        style={{
-          flexDirection: 'row',
-          justifyContent: 'center',
-          gap: 10,
-        }}
-      >
+      <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 10 }}>
         <TouchableOpacity
           style={styles.medicalButton}
           onPress={() => router.push('/adoption/historialMedico')}
@@ -249,16 +234,30 @@ const Index = () => {
           animals={animals}
         />
 
-        {/* Lista de animales */}
+        {/* 🔹 FlatList con currentPage pasado a AnimalCard */}
         <FlatList
-          data={filteredAnimals}
-          renderItem={({ item }) => <AnimalCard animal={item} />}
+          ref={listRef}
+          data={pagedAnimals}
+          renderItem={({ item }) => (
+            <AnimalCard animal={item} currentPage={currentPage} />
+          )}
           keyExtractor={(item) => item.id}
           numColumns={NUM_COLUMNS}
           contentContainerStyle={styles.listContent}
           columnWrapperStyle={{ gap: SPACING }}
           ItemSeparatorComponent={() => <View style={{ height: SPACING }} />}
           showsVerticalScrollIndicator={true}
+          ListFooterComponent={() =>
+            filteredAnimals.length > 0 ? (
+              <View style={styles.footerPagination}>
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={handlePageChange}
+                />
+              </View>
+            ) : null
+          }
         />
 
         {filteredAnimals.length === 0 && (
@@ -277,11 +276,9 @@ const Index = () => {
   );
 };
 
+// 🔹 Estilos (idénticos a los que ya tenías)
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors?.background ?? '#F4F6F9',
-  },
+  container: { flex: 1, backgroundColor: Colors?.background ?? '#F4F6F9' },
   // 🔹 Estilo del botón de historial médico
   medicalButton: {
     flexDirection: 'row',
@@ -298,7 +295,6 @@ const styles = StyleSheet.create({
     fontWeight: fontWeightBold,
     fontSize: 12,
   },
-
   // 🔹 Estilo del nuevo botón temporal
   addButton: {
     flexDirection: 'row',
@@ -315,7 +311,6 @@ const styles = StyleSheet.create({
     fontWeight: fontWeightBold,
     fontSize: 12,
   },
-
   activeFiltersContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -338,10 +333,11 @@ const styles = StyleSheet.create({
     color: '#f44336',
     fontWeight: fontWeightSemiBold,
   },
-  listContent: {
-    paddingHorizontal: 16,
-    paddingBottom: 24,
-    paddingTop: 6,
+  listContent: { paddingHorizontal: 16, paddingBottom: 10, paddingTop: 6 },
+  footerPagination: {
+    paddingVertical: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   noResults: {
     position: 'absolute',
