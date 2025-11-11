@@ -1,24 +1,63 @@
 import express from 'express';
-import { 
+import {
   createMedicalHistory,
   deleteMedicalHistory,
   getAllMedicalHistory,
-  getAnimalMedicalHistory, 
+  getAnimalMedicalHistory,
   getMedicalHistoryDetail,
   updateMedicalHistory
 } from '../controllers/medicalHistoryController.js';
+import { authenticateToken } from '../middlewares/auth.js';
+import { validateSchema } from '../middlewares/validateSchema.js';
+import {
+  createMedicalHistorySchema,
+  updateMedicalHistorySchema,
+  getMedicalHistoryByAnimalSchema,
+  getMedicalHistoryDetailSchema,
+  deleteMedicalHistorySchema,
+  getAllMedicalHistorySchema,
+} from '../schemas/medicalHistory.js';
 
 const router = express.Router();
 
 // Rutas generales para administrador
-router.get('/medicalHistory', getAllMedicalHistory);
-router.get('/medicalHistory/:animalId', getAnimalMedicalHistory);
-router.get('/medicalHistory/:animalId/:historyId', getMedicalHistoryDetail);
+router.get(
+  '/medicalHistory',
+  validateSchema(getAllMedicalHistorySchema),
+  getAllMedicalHistory
+);
 
-router.post('/medicalHistory/:animalId', createMedicalHistory);
+router.get(
+  '/medicalHistory/:animalId',
+  validateSchema(getMedicalHistoryByAnimalSchema),
+  getAnimalMedicalHistory
+);
 
-router.put('/medicalHistory/:animalId/:historyId', updateMedicalHistory);
+router.get(
+  '/medicalHistory/:animalId/:historyId',
+  validateSchema(getMedicalHistoryDetailSchema),
+  getMedicalHistoryDetail
+);
 
-router.delete('/medicalHistory/:animalId/:historyId', deleteMedicalHistory);
+router.post(
+  '/medicalHistory/:animalId',
+  authenticateToken,
+  validateSchema(createMedicalHistorySchema),
+  createMedicalHistory
+);
+
+router.put(
+  '/medicalHistory/:animalId/:historyId',
+  authenticateToken,
+  validateSchema(updateMedicalHistorySchema),
+  updateMedicalHistory
+);
+
+router.delete(
+  '/medicalHistory/:animalId/:historyId',
+  authenticateToken,
+  validateSchema(deleteMedicalHistorySchema),
+  deleteMedicalHistory
+);
 
 export default router;

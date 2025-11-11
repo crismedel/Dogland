@@ -8,6 +8,7 @@ import {
   deleteUserSchema,
   getAllUsersSchema,
   savePushTokenSchema,
+  updateOwnProfileSchema,
 } from '../schemas/user.js';
 import * as usersController from '../controllers/usersController.js';
 
@@ -31,9 +32,14 @@ router.get(
  */
 router.get('/users/profile', authenticateToken, usersController.getUserProfile);
 
+/**
+ * PUT /api/users/profile - Actualizar perfil propio
+ * Requiere autenticacion
+ */
 router.put(
   '/users/profile',
   authenticateToken,
+  validateSchema(updateOwnProfileSchema),
   usersController.updateOwnProfile,
 );
 

@@ -1,5 +1,17 @@
 import express from 'express';
 import { authenticateToken } from '../middlewares/auth.js';
+import { validateSchema } from '../middlewares/validateSchema.js';
+import {
+  markNotificationReadSchema,
+  deleteNotificationSchema,
+  updateAlertStatusSchema,
+  updateTokenPreferencesSchema,
+  registerPushTokenSchema,
+  deletePushTokenSchema,
+  sendTestNotificationSchema,
+  sendNotificationToUserSchema,
+  getNotificationHistorySchema,
+} from '../schemas/notification.js';
 import {
   registrarPushToken,
   eliminarPushToken,
@@ -20,51 +32,95 @@ import {
 const router = express.Router();
 
 // Gestión de tokens
-router.post('/token', authenticateToken, registrarPushToken);
-router.delete('/token', authenticateToken, eliminarPushToken);
+router.post(
+  '/token',
+  authenticateToken,
+  validateSchema(registerPushTokenSchema),
+  registrarPushToken
+);
+
+router.delete(
+  '/token',
+  authenticateToken,
+  validateSchema(deletePushTokenSchema),
+  eliminarPushToken
+);
 
 // Alertas
 router.get('/alertas', authenticateToken, obtenerAlertasActivas);
 router.get('/banners', authenticateToken, obtenerBannersActivos);
+
 router.patch(
   '/alertas/:id_alerta/estado',
   authenticateToken,
-  actualizarEstadoAlerta,
+  validateSchema(updateAlertStatusSchema),
+  actualizarEstadoAlerta
 );
+
 router.post(
   '/alertas/:id_alerta/reportar',
   authenticateToken,
-  incrementarReportes,
+  incrementarReportes
 );
 
 // Historial y estadísticas
-router.get('/historial', authenticateToken, obtenerHistorialNotificaciones);
+router.get(
+  '/historial',
+  authenticateToken,
+  validateSchema(getNotificationHistorySchema),
+  obtenerHistorialNotificaciones
+);
+
 router.get(
   '/estadisticas',
   authenticateToken,
-  obtenerEstadisticasNotificaciones,
+  obtenerEstadisticasNotificaciones
 );
 
 // DELETE /notifications/:id
-router.delete('/:id', authenticateToken, borrarNotificacion);
+router.delete(
+  '/:id',
+  authenticateToken,
+  validateSchema(deleteNotificationSchema),
+  borrarNotificacion
+);
 
-// Marcar una notificación como leída (corregida)
-router.patch('/:id/read', authenticateToken, marcarNotificacionLeida);
+// Marcar una notificación como leída
+router.patch(
+  '/:id/read',
+  authenticateToken,
+  validateSchema(markNotificationReadSchema),
+  marcarNotificacionLeida
+);
 
-// Marcar todas como leídas (ruta relativa al router)
+// Marcar todas como leídas
 router.patch('/read-all', authenticateToken, marcarTodasLeidas);
 
 router.patch('/notifications/read-all', authenticateToken, marcarTodasLeidas);
+
 // Testing
-router.post('/test', authenticateToken, enviarNotificacionPrueba);
+router.post(
+  '/test',
+  authenticateToken,
+  validateSchema(sendTestNotificationSchema),
+  enviarNotificacionPrueba
+);
 
 // Actualizar preferencias de notificación
 router.patch(
   '/token/preferences',
   authenticateToken,
-  actualizarPreferenciasToken,
+  validateSchema(updateTokenPreferencesSchema),
+  actualizarPreferenciasToken
 );
-// Nuevo endpoint para enviar notificaciones a usuarios específicos
-router.post('/send-to-user', authenticateToken, enviarNotificacionUsuario); // Agregar
+
+// Enviar notificaciones a usuarios específicos
+router.post(
+  '/send-to-user',
+  authenticateToken,
+  validateSchema(sendNotificationToUserSchema),
+  //validateSchema(registerPushTokenSchema), 
+  enviarNotificacionUsuario
+);
 
 export default router;
