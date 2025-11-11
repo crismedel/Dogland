@@ -34,7 +34,7 @@ describe('Endpoints de manejo de Usuarios protegidos con JWT', () => {
   // Crear admin y usuario normal solo para esta suite
   beforeAll(async () => {
     // Limpiar usuarios usados en esta suite
-    await pool.query("DELETE FROM usuario WHERE email IN ($1, $2)", ['admin@test.com', 'normal@test.com']);
+    await pool.query("DELETE FROM usuario WHERE email IN ($1, $2, $3)", ['admin@test.com', 'normal@test.com', 'update@test.com']);
 
     // Crear admin
     await request(app)
@@ -86,7 +86,7 @@ describe('Endpoints de manejo de Usuarios protegidos con JWT', () => {
 
   // Limpiar usuarios creados por la suite
   afterAll(async () => {
-    await pool.query("DELETE FROM usuario WHERE email IN ($1, $2, $3)", ['admin@test.com', 'normal@test.com', 'createuser@test.com']);
+    await pool.query("DELETE FROM usuario WHERE email IN ($1, $2, $3, $4)", ['admin@test.com', 'normal@test.com', 'createuser@test.com', 'update@test.com']);
   });
 
 
@@ -160,9 +160,137 @@ describe('Endpoints de manejo de Usuarios protegidos con JWT', () => {
       expect(res.statusCode).toBe(200);
       expect(res.body.success).toBe(true);
     });
+  });
+
+  // -------------------- PUT /api/users/profile --------------------
+  describe('PUT /api/users/profile', () => {
+    test('debería validar que al menos un campo esté presente', async () => {
+      const res = await request(app)
+        .put('/api/users/profile')
+        .set('Authorization', `Bearer ${global.jwtNormal}`)
+        .send({});
+
+      expect(res.statusCode).toBe(400);
+      expect(res.body.success).toBe(false);
+      expect(res.body.errors[0].message).toMatch(/al menos un campo/i);
+    });
+
+    test('debería validar longitud mínima de nombre_usuario', async () => {
+      const res = await request(app)
+        .put('/api/users/profile')
+        .set('Authorization', `Bearer ${global.jwtNormal}`)
+        .send({ nombre_usuario: '' });
+
+      expect(res.statusCode).toBe(400);
+      expect(res.body.success).toBe(false);
+    });
+
+    test('debería validar longitud máxima de nombre_usuario', async () => {
+      const res = await request(app)
+        .put('/api/users/profile')
+        .set('Authorization', `Bearer ${global.jwtNormal}`)
+        .send({ nombre_usuario: 'a'.repeat(51) });
+
+      expect(res.statusCode).toBe(400);
+      expect(res.body.success).toBe(false);
+    });
+
+    test('debería validar longitud máxima de apellido_paterno', async () => {
+      const res = await request(app)
+        .put('/api/users/profile')
+        .set('Authorization', `Bearer ${global.jwtNormal}`)
+        .send({ apellido_paterno: 'a'.repeat(31) });
+
+      expect(res.statusCode).toBe(400);
+      expect(res.body.success).toBe(false);
+    });
+
+    test('debería validar formato de email', async () => {
+      const res = await request(app)
+        .put('/api/users/profile')
+        .set('Authorization', `Bearer ${global.jwtNormal}`)
+        .send({ email: 'invalid-email' });
+
+      expect(res.statusCode).toBe(400);
+      expect(res.body.success).toBe(false);
+    });
+
+    test('debería validar formato de teléfono', async () => {
+      const res = await request(app)
+        .put('/api/users/profile')
+        .set('Authorization', `Bearer ${global.jwtNormal}`)
+        .send({ telefono: 'abc123xyz' });
+
+      expect(res.statusCode).toBe(400);
+      expect(res.body.success).toBe(false);
+    });
+
+    test('debería validar longitud mínima de password_hash', async () => {
+      const res = await request(app)
+        .put('/api/users/profile')
+        .set('Authorization', `Bearer ${global.jwtNormal}`)
+        .send({ password_hash: '12345' });
+
+      expect(res.statusCode).toBe(400);
+      expect(res.body.success).toBe(false);
+    });
+
+    test('debería validar formato de fecha_nacimiento', async () => {
+      const res = await request(app)
+        .put('/api/users/profile')
+        .set('Authorization', `Bearer ${global.jwtNormal}`)
+        .send({ fecha_nacimiento: 'invalid-date' });
+
+      expect(res.statusCode).toBe(400);
+      expect(res.body.success).toBe(false);
+    });
+
+    test('debería validar que id_sexo sea un número', async () => {
+      const res = await request(app)
+        .put('/api/users/profile')
+        .set('Authorization', `Bearer ${global.jwtNormal}`)
+        .send({ id_sexo: 'abc' });
+
+      expect(res.statusCode).toBe(400);
+      expect(res.body.success).toBe(false);
+    });
+
+    test('debería validar que id_ciudad sea un número', async () => {
+      const res = await request(app)
+        .put('/api/users/profile')
+        .set('Authorization', `Bearer ${global.jwtNormal}`)
+        .send({ id_ciudad: 'abc' });
+
+      expect(res.statusCode).toBe(400);
+      expect(res.body.success).toBe(false);
+    });
+
+    test('debería actualizar perfil correctamente', async () => {
+      const res = await request(app)
+        .put('/api/users/profile')
+        .set('Authorization', `Bearer ${global.jwtNormal}`)
+        .send({
+          nombre_usuario: 'Updated Name',
+          telefono: '987654321'
+        });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.nombre_usuario).toBe('Updated Name');
+    });
+
+    test('debería requerir autenticación', async () => {
+      const res = await request(app)
+        .put('/api/users/profile')
+        .send({ nombre_usuario: 'Test' });
+
+      expect(res.statusCode).toBe(401);
+      expect(res.body.error).toMatch(/token/i);
+    });
+  });
 
   // -------------------- GET /api/users/:id ------------------------
-
+  describe('GET /api/users/:id', () => {
     test('debería obtener usuario por id', async () => {
       const res = await request(app)
         .get(`/api/users/${createdUserId}`)

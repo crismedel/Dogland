@@ -83,17 +83,16 @@ describe('Endpoints del Formulario de Adopción (animal_form)', () => {
     await pool.query("DELETE FROM raza WHERE id_raza = $1", [testRazaId]);
     await pool.query("DELETE FROM estado_salud WHERE id_estado_salud = $1", [testHealthStateId]);
     await pool.query('DELETE FROM password_reset WHERE id_usuario = $1', [testUserId]);
-    await pool.query('DELETE FROM dispositivo WHERE id_usuario = $1', [testUserId]);
     await pool.query('DELETE FROM usuario WHERE id_usuario = $1', [testUserId]);
   });
 
 
-  // --- Pruebas para GET /api/races (de races_form.js) ---
-  describe('GET /api/races', () => {
+  // --- Pruebas para GET /api/razas (de races_form.js) ---
+  describe('GET /api/razas', () => {
     test('debería obtener la lista de razas', async () => {
       const res = await request(app)
-        .get('/api/races')
-        .set('Authorization', `Bearer ${jwtToken}`); 
+        .get('/api/razas')
+        .set('Authorization', `Bearer ${jwtToken}`);
 
       expect(res.statusCode).toBe(200);
       expect(res.body.success).toBe(true);

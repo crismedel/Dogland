@@ -35,7 +35,6 @@ describe('Endpoints de Autenticación', () => {
 
         // Eliminar en orden de dependencias
         await pool.query('DELETE FROM password_reset WHERE id_usuario = $1', [userId]);
-        await pool.query('DELETE FROM dispositivo WHERE id_usuario = $1', [userId]);
         await pool.query('DELETE FROM audit_logs WHERE id_audit_log = $1 AND table_name = $2', [userId, 'usuario']);
         await pool.query('DELETE FROM usuario WHERE id_usuario = $1', [userId]);
       }
