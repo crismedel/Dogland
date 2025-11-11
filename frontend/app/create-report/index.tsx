@@ -1,34 +1,37 @@
-import React, { useState, useEffect } from 'react';
 import {
-  View,
+  AppText,
+  fontWeightMedium
+} from '@/src/components/AppText';
+import { useNotification } from '@/src/components/notifications';
+import CustomButton from '@/src/components/UI/CustomButton';
+import CustomHeader from '@/src/components/UI/CustomHeader';
+import { Colors } from '@/src/constants/colors';
+import { Ionicons } from '@expo/vector-icons';
+import * as Location from 'expo-location';
+import { useRouter } from 'expo-router';
+import React, { useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  Dimensions,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
-  Alert,
-  ScrollView,
-  Platform,
-  KeyboardAvoidingView,
-  Image,
-  Dimensions,
-  ActivityIndicator,
+  View,
 } from 'react-native';
 import DropDownPicker from 'react-native-dropdown-picker';
-import * as Location from 'expo-location';
 import MapView, { Marker } from 'react-native-maps';
-import { AxiosError } from 'axios';
-import { useNotification } from '@/src/components/notifications';
 import apiClient from '../../src/api/client';
-import { Colors } from '@/src/constants/colors';
-import CustomHeader from '@/src/components/UI/CustomHeader';
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import CustomButton from '@/src/components/UI/CustomButton';
-import {
-  fontWeightBold,
-  fontWeightSemiBold,
-  fontWeightMedium,
-  AppText,
-} from '@/src/components/AppText';
+
+// --- INICIO DE IMPORTACIONES OFFLINE ---
+import { useNetInfo } from '@react-native-community/netinfo';
+import { useReportSync } from '../../src/hooks/useReportSync'; // Ajusta la ruta si es necesario
+import { saveReportOffline } from '../../src/utils/offlineStorage'; // Ajusta la ruta si es necesario
+// --- FIN DE IMPORTACIONES OFFLINE ---
 
 const { width } = Dimensions.get('window');
 
@@ -41,13 +44,19 @@ const CreateReportScreen = () => {
   const router = useRouter();
   const { showError, showSuccess, showInfo } = useNotification();
 
+  // --- HOOKS OFFLINE ---
+  const netInfo = useNetInfo();
+  // Llamamos a useReportSync() aquí para activar el listener de conexión
+  // que subirá los reportes pendientes automáticamente.
+  useReportSync();
+  // --- FIN HOOKS OFFLINE ---
+
   // ESTADOS DEL FORMULARIO
   const [descripcion, setDescripcion] = useState('');
   const [titulo, setTitulo] = useState('');
   const [imageUrl, setImageUrl] = useState('');
 
-  // 🚨 CAMBIO CLAVE: Eliminamos el estado del usuario. El ID se obtiene del token en el backend.
-  const [loading, setLoading] = useState(false); // Nuevo estado para el loading del botón
+  const [loading, setLoading] = useState(false);
 
   // ESTADOS DE DROPDOWN
   const [especie, setEspecie] = useState<number | null>(null);
@@ -86,8 +95,7 @@ const CreateReportScreen = () => {
   } | null>(null);
   const [mostrarMapa, setMostrarMapa] = useState(false);
 
-  // Ya no necesitamos la lógica de `useEffect` para `fetchUsers`. La eliminamos.
-
+  // --- LÓGICA DE UBICACIÓN (sin cambios) ---
   const obtenerUbicacionActual = async () => {
     let { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== 'granted') {
@@ -111,6 +119,19 @@ const CreateReportScreen = () => {
     setMostrarMapa(false);
   };
 
+  // --- FUNCIÓN PARA LIMPIAR EL FORMULARIO ---
+  const resetForm = () => {
+    setDescripcion('');
+    setTitulo('');
+    setImageUrl('');
+    setEspecie(null);
+    setEstadoSalud(null);
+    setEstadoAvistamiento(null);
+    setUbicacion(null);
+    setLoading(false);
+  };
+
+  // --- FUNCIÓN DE ENVÍO (MODIFICADA PARA OFFLINE) ---
   const handleCreateReport = async () => {
     // 1. Validaciones
     if (
@@ -128,9 +149,9 @@ const CreateReportScreen = () => {
       return;
     }
 
-    setLoading(true); // Se activa el estado de carga
+    setLoading(true);
 
-    // 2. Pre-procesamiento de la URL de la foto
+    // 2. Pre-procesamiento de la URL
     const finalImageUrl =
       imageUrl && imageUrl.startsWith('http') ? imageUrl : null;
     if (imageUrl && !finalImageUrl) {
@@ -140,8 +161,7 @@ const CreateReportScreen = () => {
       );
     }
 
-    // 🚨 CAMBIO CLAVE: reportData ya NO contiene id_usuario
-    // El backend lo obtendrá del token JWT.
+    // 3. Preparar los datos del reporte
     const reportData = {
       id_estado_avistamiento: estadoAvistamiento,
       id_estado_salud: estadoSalud,
@@ -156,45 +176,55 @@ const CreateReportScreen = () => {
       url: finalImageUrl,
     };
 
-    // 3. Petición a la API y manejo de errores
-    try {
-      const response = await apiClient.post('/sightings', reportData);
+    // 4. Lógica Offline/Online
+    const isOnline = netInfo.isConnected && netInfo.isInternetReachable;
 
-      if (response.status === 201) {
-        showSuccess('Éxito', 'Reporte creado con éxito.');
-        setDescripcion('');
-        setTitulo('');
-        setImageUrl('');
-        setEspecie(null);
-        setEstadoSalud(null);
-        setEstadoAvistamiento(null);
-        setUbicacion(null);
-      } else {
-        showError('Error', 'Hubo un problema al crear el reporte.');
-      }
-    } catch (error) {
-      const isAxiosError = (err: any): err is AxiosError<ErrorData> => {
-        return err && err.isAxiosError === true;
-      };
-
-      if (isAxiosError(error)) {
-        console.error(
-          'Error al enviar el reporte (Axios):',
-          error.response?.data || error.message,
+    if (isOnline) {
+      // --- INTENTO DE ENVÍO ONLINE ---
+      try {
+        const response = await apiClient.post('/sightings', reportData);
+        if (response.status === 201) {
+          showSuccess('Éxito', 'Reporte creado con éxito.');
+          resetForm();
+          router.back();
+        } else {
+          showError('Error', 'Hubo un problema al crear el reporte.');
+          setLoading(false);
+        }
+      } catch (error) {
+        // El envío online falló (ej. 500 o error de red)
+        console.error('Error al enviar online, preguntando para guardar offline:', error);
+        setLoading(false);
+        Alert.alert(
+          'Error de Envío',
+          'No pudimos subir el reporte. ¿Quieres guardarlo para intentarlo más tarde?',
+          [
+            { text: 'Cancelar', style: 'cancel' },
+            {
+              text: 'Guardar Offline',
+              onPress: async () => {
+                await saveReportOffline(reportData);
+                resetForm();
+                router.back();
+              },
+            },
+          ],
         );
-        const errorData = error.response?.data;
-        const errorResponse = errorData?.error || errorData?.message;
-        const errorMessage =
-          typeof errorResponse === 'string'
-            ? errorResponse
-            : 'No se pudo conectar con el servidor o hubo un error desconocido.';
-        showError('Error', errorMessage);
-      } else {
-        console.error('Error inesperado (no-Axios):', error);
-        showError('Error', 'Ocurrió un error inesperado.');
       }
-    } finally {
-      setLoading(false); // Se desactiva el estado de carga
+    } else {
+      // --- MODO OFFLINE (SIN CONEXIÓN) ---
+      try {
+        await saveReportOffline(reportData);
+        showSuccess(
+          'Guardado Offline',
+          'Reporte guardado. Se subirá automáticamente cuando recuperes la conexión.',
+        );
+        resetForm();
+        router.back();
+      } catch (saveError) {
+        showError('Error', 'No se pudo guardar el reporte localmente.');
+        setLoading(false);
+      }
     }
   };
 
@@ -414,8 +444,8 @@ const CreateReportScreen = () => {
   );
 };
 
+// --- ESTILOS (sin cambios, excepto por un scroll más grande) ---
 const styles = StyleSheet.create({
-  // ... (tus estilos)
   container: {
     flex: 1,
     backgroundColor: Colors.lightText,
