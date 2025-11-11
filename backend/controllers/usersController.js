@@ -211,7 +211,8 @@ export const updateUser = async (req, res, next) => {
 
     // Usar helper para sanitizar
     const oldUserSafe = sanitizeForAudit('usuario', oldUser);
-    await auditUpdate(req, 'usuario', oldUserSafe);
+    const newUserSafe = sanitizeForAudit('usuario', updatedUser);
+    await auditUpdate(req, 'usuario', id, oldUserSafe, newUserSafe);
 
     res.json({
       success: true,
@@ -266,13 +267,10 @@ export const updateOwnProfile = async (req, res, next) => {
 
     const updatedUser = result.rows[0];
 
-    // Crear un objeto req temporal con params.id
+    // Usar helper para sanitizar
     const oldUserSafe = sanitizeForAudit('usuario', oldUser);
-    const reqWithParams = {
-      ...req,
-      params: { id: userId }, // Agregar params.id para que auditUpdate funcione
-    };
-    await auditUpdate(reqWithParams, 'usuario', oldUserSafe);
+    const newUserSafe = sanitizeForAudit('usuario', updatedUser);
+    await auditUpdate(req, 'usuario', userId, oldUserSafe, newUserSafe);
 
     res.json({
       success: true,
@@ -313,7 +311,7 @@ export const deleteUser = async (req, res, next) => {
 
       // Usar helper para sanitizar
       const oldUserSafe = sanitizeForAudit('usuario', oldUser);
-      await auditDelete(req, 'usuario', oldUserSafe);
+      await auditDelete(req, 'usuario', id, oldUserSafe);
 
       await client.query('COMMIT');
 
@@ -360,7 +358,7 @@ export const deactivateUser = async (req, res, next) => {
 
     // Usar helper para sanitizar
     const oldUserSafe = sanitizeForAudit('usuario', oldUser);
-    await auditDelete(req, 'usuario', oldUserSafe);
+    await auditDelete(req, 'usuario', id, oldUserSafe);
 
     res.json({
       success: true,

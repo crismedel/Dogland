@@ -383,12 +383,13 @@ export const updateAlert = async (req, res, next) => {
         req.params.id,
       ],
     );
+    const updatedAlert = result.rows[0];
 
     // Auditar actualizacion
-    await auditUpdate(req, 'alerta', oldAlert);
+    await auditUpdate(req, 'alerta', req.params.id, oldAlert, updatedAlert);
 
     // Devuelve la alerta actualizada
-    res.json({ success: true, data: result.rows[0] });
+    res.json({ success: true, data: updatedAlert });
   } catch (error) {
     next(error);
   }
@@ -416,7 +417,7 @@ export const deleteAlert = async (req, res, next) => {
     );
 
     // Auditar eliminacion
-    await auditDelete(req, 'alerta', oldAlert);
+    await auditDelete(req, 'alerta', req.params.id, oldAlert);
 
     // Confirma la eliminación exitosa
     res.json({ success: true, message: 'Alerta eliminada correctamente' });

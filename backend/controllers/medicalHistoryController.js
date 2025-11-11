@@ -172,6 +172,14 @@ export const updateMedicalHistory = async (req, res, next) => {
       animalId
     ]);
 
+    if (result.rowCount === 0) {
+      // Se ejecuta si el checkQuery no funciono
+      return res.status(404).json({
+        success: false,
+        message: 'Evento médico no encontrado durante la actualización'
+      });
+    }
+
     const updatedRecord = result.rows[0];
 
     // Auditar Actualizacion

@@ -454,7 +454,7 @@ export const updateAdoptionRequest = async (req, res, next) => {
     }
 
     // Auditar actualización
-    await auditUpdate(req, 'solicitud_adopcion', oldRequest);
+    await auditUpdate(req, 'solicitud_adopcion', req.params.id, oldRequest, updatedRequest);
 
     // ✅ Enviar respuesta solo una vez
     res.json({
@@ -495,7 +495,7 @@ export const deleteAdoptionRequest = async (req, res, next) => {
     }
 
     // Auditar eliminación
-    await auditDelete(req, 'solicitud_adopcion', oldRequest);
+    await auditDelete(req, 'solicitud_adopcion', req.params.id, oldRequest);
 
     res.json({ success: true, message: 'Solicitud eliminada correctamente' });
   } catch (error) {

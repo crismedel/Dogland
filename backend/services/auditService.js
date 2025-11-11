@@ -40,14 +40,14 @@ export const auditCreate = async (req, tableName, recordId, newValues) => {
  * @param {string} tableName - Nombre de la tabla
  * @param {Object} oldValues - Valores antes de actualizar
  */
-export const auditUpdate = async (req, tableName, oldValues) => {
+export const auditUpdate = async (req, tableName, recordId, oldValues, newValues) => {
   await createAuditLog({
     userId: req.user.id,
     action: 'UPDATE',
     tableName,
-    recordId: req.params.id,
+    recordId: recordId,
     oldValues,
-    newValues: req.body,
+    newValues: newValues || req.body,
     ipAddress: req.ip
   });
 };
@@ -58,12 +58,12 @@ export const auditUpdate = async (req, tableName, oldValues) => {
  * @param {string} tableName - Nombre de la tabla
  * @param {Object} oldValues - Valores antes de eliminar
  */
-export const auditDelete = async (req, tableName, oldValues) => {
+export const auditDelete = async (req, tableName, recordId, oldValues) => {
   await createAuditLog({
     userId: req.user.id,
     action: 'DELETE',
     tableName,
-    recordId: req.params.id,
+    recordId: recordId, // <-- USA EL ARGUMENTO
     oldValues,
     newValues: null,
     ipAddress: req.ip
