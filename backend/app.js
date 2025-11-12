@@ -28,6 +28,7 @@ import statRoutes from './routes/stats.js';
 import infoCompAnimales from './routes/infoCompAnimales.js'; //info de animales completa (en teoria)
 import notificationsRoutes from './routes/notifications.js';
 import userPhotoRouter from './routes/userPhoto.js';
+import favoritesRouter from './routes/favorites.js';
 
 //-------------------------apartado de agregar perrito---------------------------------
 
@@ -37,7 +38,6 @@ import razasRoutes from './routes/razas.js'; // archivo para razas pagina adopta
 import estadosSaludRoutes from './routes/estadosSalud.js'; // pagina adoptar
 
 //-------------------------fin apartado de agregar perrito------------------------------
-
 
 const app = express();
 
@@ -88,6 +88,7 @@ app.use('/api', medicalHistoryRouter);
 app.use('/api', infoCompAnimales);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api', userPhotoRouter);
+app.use('/api', favoritesRouter);
 
 //---------------NO TOCAR----------------------------
 app.use('/api', animalesRoutes);
