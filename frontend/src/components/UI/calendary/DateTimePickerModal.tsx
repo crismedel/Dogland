@@ -24,6 +24,7 @@ interface DateTimePickerModalProps {
   maxDate?: string; // YYYY-MM-DD
   theme?: 'light' | 'dark';
   minuteStep?: number; // default 5
+  mode?: 'date' | 'datetime'; // default 'datetime'
 }
 
 const pad2 = (n: number) => (n < 10 ? `0${n}` : `${n}`);
@@ -33,13 +34,15 @@ const DateTimePickerModal: React.FC<DateTimePickerModalProps> = ({
   onClose,
   onConfirm,
   initialDateTime,
-  title = 'Seleccionar Fecha y Hora',
+  title,
   minDate,
   maxDate,
   theme = 'light',
   minuteStep = 5,
+  mode = 'datetime',
 }) => {
   const isDarkTheme = theme === 'dark';
+  const displayTitle = title || (mode === 'date' ? 'Seleccionar Fecha' : 'Seleccionar Fecha y Hora');
 
   const initial = React.useMemo(() => {
     const d =
@@ -77,7 +80,10 @@ const DateTimePickerModal: React.FC<DateTimePickerModalProps> = ({
 
   const handleConfirm = () => {
     const [y, m, d] = selectedDay.split('-').map(Number);
-    const finalDate = new Date(y, (m ?? 1) - 1, d ?? 1, hour, minute, 0, 0);
+    // If mode is 'date', set time to 00:00:00, otherwise use selected time
+    const finalHour = mode === 'date' ? 0 : hour;
+    const finalMinute = mode === 'date' ? 0 : minute;
+    const finalDate = new Date(y, (m ?? 1) - 1, d ?? 1, finalHour, finalMinute, 0, 0);
 
     if (minDate) {
       const [yMin, mMin, dMin] = minDate.split('-').map(Number);
@@ -138,7 +144,7 @@ const DateTimePickerModal: React.FC<DateTimePickerModalProps> = ({
                   { color: isDarkTheme ? '#F9FAFB' : Colors.text },
                 ]}
               >
-                {title}
+                {displayTitle}
               </AppText>
               <TouchableOpacity onPress={onClose}>
                 <Ionicons
@@ -166,48 +172,50 @@ const DateTimePickerModal: React.FC<DateTimePickerModalProps> = ({
               enableSwipeMonths
             />
 
-            {/* Time Picker inline */}
-            <View
-              style={[
-                styles.timeSection,
-                { borderTopColor: isDarkTheme ? Colors.text : '#E5E7EB' },
-              ]}
-            >
-              <AppText
+            {/* Time Picker inline - only show if mode is datetime */}
+            {mode === 'datetime' && (
+              <View
                 style={[
-                  styles.timeLabel,
-                  { color: isDarkTheme ? '#E5E7EB' : '#374151' },
+                  styles.timeSection,
+                  { borderTopColor: isDarkTheme ? Colors.text : '#E5E7EB' },
                 ]}
               >
-                Hora
-              </AppText>
+                <AppText
+                  style={[
+                    styles.timeLabel,
+                    { color: isDarkTheme ? '#E5E7EB' : '#374151' },
+                  ]}
+                >
+                  Hora
+                </AppText>
 
-              <View style={styles.timeRow}>
-                {/* Hour */}
-                <View style={styles.timeBox}>
-                  <TouchableOpacity onPress={incHour} style={styles.timeBtn}>
-                    <Ionicons name="chevron-up" size={20} color="#6B7280" />
-                  </TouchableOpacity>
-                  <AppText style={styles.timeValue}>{pad2(hour)}</AppText>
-                  <TouchableOpacity onPress={decHour} style={styles.timeBtn}>
-                    <Ionicons name="chevron-down" size={20} color="#6B7280" />
-                  </TouchableOpacity>
-                </View>
+                <View style={styles.timeRow}>
+                  {/* Hour */}
+                  <View style={styles.timeBox}>
+                    <TouchableOpacity onPress={incHour} style={styles.timeBtn}>
+                      <Ionicons name="chevron-up" size={20} color="#6B7280" />
+                    </TouchableOpacity>
+                    <AppText style={styles.timeValue}>{pad2(hour)}</AppText>
+                    <TouchableOpacity onPress={decHour} style={styles.timeBtn}>
+                      <Ionicons name="chevron-down" size={20} color="#6B7280" />
+                    </TouchableOpacity>
+                  </View>
 
-                <AppText style={styles.colon}>:</AppText>
+                  <AppText style={styles.colon}>:</AppText>
 
-                {/* Minute */}
-                <View style={styles.timeBox}>
-                  <TouchableOpacity onPress={incMinute} style={styles.timeBtn}>
-                    <Ionicons name="chevron-up" size={20} color="#6B7280" />
-                  </TouchableOpacity>
-                  <AppText style={styles.timeValue}>{pad2(minute)}</AppText>
-                  <TouchableOpacity onPress={decMinute} style={styles.timeBtn}>
-                    <Ionicons name="chevron-down" size={20} color="#6B7280" />
-                  </TouchableOpacity>
+                  {/* Minute */}
+                  <View style={styles.timeBox}>
+                    <TouchableOpacity onPress={incMinute} style={styles.timeBtn}>
+                      <Ionicons name="chevron-up" size={20} color="#6B7280" />
+                    </TouchableOpacity>
+                    <AppText style={styles.timeValue}>{pad2(minute)}</AppText>
+                    <TouchableOpacity onPress={decMinute} style={styles.timeBtn}>
+                      <Ionicons name="chevron-down" size={20} color="#6B7280" />
+                    </TouchableOpacity>
+                  </View>
                 </View>
               </View>
-            </View>
+            )}
 
             {/* Actions */}
             <View
