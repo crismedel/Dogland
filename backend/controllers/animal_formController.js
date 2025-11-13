@@ -1,3 +1,5 @@
+//este archivo es una prueba para subir la información a la base de datos
+
 import pool from '../db/db.js';
 
 export const createFullAnimal = async (req, res, next) => {
