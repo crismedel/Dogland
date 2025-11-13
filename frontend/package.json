@@ -1,7 +1,8 @@
 {
-  "name": "Dogland",
+  "name": "dogland",
   "main": "expo-router/entry",
   "version": "1.0.0",
+  "packageManager": "npm@11.6.2",
   "scripts": {
     "start": "expo start",
     "reset-project": "node ./scripts/reset-project.js",
