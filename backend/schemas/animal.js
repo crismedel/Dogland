@@ -1,145 +1,31 @@
-import { z } from 'zod';
+// backend/schemas/animal.js
+import Joi from 'joi';
 
-/**
- * Schema base reutilizable para animal
- * Contiene todos los campos comunes entre crear y actualizar
- */
-const animalBaseSchema = z.object({
-  nombre_animal: z
-    .string({
-      required_error: 'El nombre del animal es obligatorio',
-      invalid_type_error: 'El nombre debe ser texto'
-    })
-    .min(1, 'El nombre del animal no puede estar vacío')
-    .max(100, 'El nombre no puede exceder los 100 caracteres')
-    .trim(),
-
-  edad_animal: z
-    .union([
-      z.number().int().min(0).max(50),
-      z.null()
-    ])
-    .optional(),
-
-  edad_aproximada: z
-    .union([
-      z.string().max(20),
-      z.null()
-    ])
-    .optional(),
-
-  id_estado_salud: z
-    .number({
-      required_error: 'El estado de salud es obligatorio',
-      invalid_type_error: 'El ID de estado de salud debe ser un número'
-    })
-    .int('El ID de estado de salud debe ser un número entero')
-    .positive('El ID de estado de salud debe ser positivo'),
-
-  id_raza: z
-    .number({
-      required_error: 'La raza es obligatoria',
-      invalid_type_error: 'El ID de raza debe ser un número'
-    })
-    .int('El ID de raza debe ser un número entero')
-    .positive('El ID de raza debe ser positivo')
-});
-
-/**
- * Esquema de validacion para crear animal
- */
-export const createAnimalSchema = z.object({
-  body: animalBaseSchema
-});
-
-/**
- * Esquema de validacion para actualizar animal
- * Todos los campos son opcionales
- */
-export const updateAnimalSchema = z.object({
-  params: z.object({
-    id: z
-      .string()
-      .regex(/^\d+$/, 'El ID debe ser un número válido')
-      .transform(Number)
+// Esquema para validar la creación de un nuevo animal
+export const createAnimalSchema = Joi.object({
+  // --- Datos de dogland.animal ---
+  nombre_animal: Joi.string().min(2).max(50).required().messages({
+    'string.empty': 'El nombre es requerido',
+    'string.min': 'El nombre debe tener al menos 2 caracteres',
   }),
-  body: animalBaseSchema.partial().refine(
-    (data) => Object.keys(data).length > 0,
-    {
-      message: 'Debe proporcionar al menos un campo para actualizar'
-    }
-  )
-});
+  
+  edad_animal: Joi.number().integer().min(0).max(30).allow(null), // Opcional, edad exacta
+  
+  edad_aproximada: Joi.string().max(20).allow(null, ''), // Opcional, ej: "Cachorro", "Adulto"
 
-/**
- * Esquema de validacion para obtener animal por ID
- */
-export const getAnimalByIdSchema = z.object({
-  params: z.object({
-    id: z
-      .string()
-      .regex(/^\d+$/, 'El ID debe ser un número válido')
-      .transform(Number)
-  })
-});
+  id_estado_salud: Joi.number().integer().required().messages({
+    'number.base': 'Debe seleccionar un estado de salud',
+  }),
 
-/**
- * Esquema de validacion para eliminar animal
- */
-export const deleteAnimalSchema = z.object({
-  params: z.object({
-    id: z
-      .string()
-      .regex(/^\d+$/, 'El ID debe ser un número válido')
-      .transform(Number)
-  })
-});
+  id_raza: Joi.number().integer().allow(null), // Opcional
 
-/**
- * Esquema de validacion para listar animales
- */
-export const getAllAnimalsSchema = z.object({
-  query: z.object({
-    limit: z
-      .string()
-      .regex(/^\d+$/, 'El límite debe ser un número')
-      .transform(Number)
-      .refine((val) => val > 0 && val <= 100, {
-        message: 'El límite debe estar entre 1 y 100'
-      })
-      .optional(),
-
-    offset: z
-      .string()
-      .regex(/^\d+$/, 'El offset debe ser un número')
-      .transform(Number)
-      .refine((val) => val >= 0, {
-        message: 'El offset debe ser mayor o igual a 0'
-      })
-      .optional(),
-
-    id_estado_salud: z
-      .string()
-      .regex(/^\d+$/, 'El ID de estado de salud debe ser un número')
-      .transform(Number)
-      .optional(),
-
-    id_raza: z
-      .string()
-      .regex(/^\d+$/, 'El ID de raza debe ser un número')
-      .transform(Number)
-      .optional()
-  })
-});
-
-/**
- * Esquema de validacion para obtener animales por organización
- */
-export const getAnimalsByOrganizationSchema = z.object({
-  params: z.object({
-    id: z
-      .string()
-      .regex(/^\d+$/, 'El ID debe ser un número válido')
-      .transform(Number)
-  })
+  // --- Datos de dogland.animal_foto ---
+  fotos: Joi.array()
+    .items(Joi.string().uri()) // Esperamos un array de URLs de fotos
+    .min(1)
+    .optional()
+    .messages({
+      'array.min': 'Debe subir al menos una foto',
+      'string.uri': 'Las fotos deben ser URLs válidas',
+    }),
 });
