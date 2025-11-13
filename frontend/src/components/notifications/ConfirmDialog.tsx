@@ -78,11 +78,12 @@ const ConfirmDialog: React.FC<Props> = ({
 };
 
 const colors = {
-  surface: '#1F2937',
-  text: '#F9FAFB',
-  border: '#374151',
-  info: '#3B82F6',
-  error: '#EF4444',
+  surface: '#FAF7EF', // Fondo beige claro
+  text: '#2c3e50', // Texto oscuro
+  border: '#F2D8A7', // Borde beige
+  info: '#17a2b8', // Azul para información
+  error: '#dc3545', // Rojo para error
+  primary: '#CC5803', // Naranja primario
 };
 
 const styles = StyleSheet.create({
@@ -112,7 +113,7 @@ const styles = StyleSheet.create({
     fontWeight: fontWeightBold,
     fontSize: 18,
   },
-  dialogMessage: { color: '#D1D5DB', marginTop: 8, fontSize: 14 },
+  dialogMessage: { color: '#6B7280', marginTop: 8, fontSize: 14 },
   dialogActions: {
     marginTop: 16,
     flexDirection: 'row',
@@ -124,7 +125,7 @@ const styles = StyleSheet.create({
   btnDanger: { backgroundColor: colors.error },
   btnText: { color: 'white', fontWeight: fontWeightSemiBold },
   btnGhost: { backgroundColor: 'transparent' },
-  btnGhostText: { color: '#D1D5DB', fontWeight: '700' },
+  btnGhostText: { color: '#666666', fontWeight: '700' },
 });
 
 export default ConfirmDialog;

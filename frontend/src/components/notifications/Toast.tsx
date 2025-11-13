@@ -124,13 +124,13 @@ const Toast: React.FC<Props> = ({
 };
 
 const colors = {
-  surface: '#1F2937',
-  text: '#F9FAFB',
-  border: '#374151',
-  success: '#10B981',
-  error: '#EF4444',
-  info: '#3B82F6',
-  warning: '#F59E0B',
+  surface: '#FAF7EF', // Fondo beige claro
+  text: '#2c3e50', // Texto oscuro
+  border: '#F2D8A7', // Borde beige
+  success: '#28a745', // Verde para éxito
+  error: '#dc3545', // Rojo para error
+  info: '#17a2b8', // Azul para información
+  warning: '#ffc107', // Amarillo para advertencia
 };
 
 const styles = StyleSheet.create({
@@ -159,12 +159,12 @@ const styles = StyleSheet.create({
     fontWeight: fontWeightSemiBold,
     fontSize: 15,
   },
-  toastMessage: { color: '#D1D5DB', marginTop: 2, fontSize: 13 },
+  toastMessage: { color: '#6B7280', marginTop: 2, fontSize: 13 },
   toastActions: { flexDirection: 'row', alignItems: 'center' },
   toastActionBtn: { paddingHorizontal: 8, paddingVertical: 6 },
   toastActionText: { fontWeight: '700' },
   toastCloseBtn: { paddingHorizontal: 8, paddingVertical: 6 },
-  toastCloseText: { color: '#9CA3AF', fontSize: 16 },
+  toastCloseText: { color: '#666666', fontSize: 16 },
 });
 
 export default Toast;
