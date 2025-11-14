@@ -18,4 +18,3 @@ export const getAllHealthStates = async (req, res, next) => {
     next(error); // Pasa el error al middleware de errores
   }
 };
-
