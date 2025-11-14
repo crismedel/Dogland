@@ -28,7 +28,7 @@ import favoritesRouter from './routes/favorites.js';
 //import infoCompAnimales from './routes/infoCompAnimales.js'; //info de animales completa (en teoria)
 //------------------------------------------------------------------------------------------
 
-//import animalsRouter from './routes/animals.js';
+import animalsRouter from './routes/animals.js';
 import speciesRouter from './routes/species.js'; //  esta comentada por que lo cambie SMM, no la elimino por ahora
 import racesRouter from './routes/races.js';
 import healthRouter from './routes/health-states.js';
@@ -82,7 +82,7 @@ app.use('/api', userPhotoRouter);
 app.use('/api', favoritesRouter);
 
 //---------------NO TOCAR----------------------------
-//app.use('/api', animalsRouter);
+app.use('/api', animalsRouter); // lo usa bayron
 app.use('/api', speciesRouter);  
 app.use('/api', racesRouter);
 app.use('/api', healthRouter);
