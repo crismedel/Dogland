@@ -1,25 +1,109 @@
+import apiClient from '@/src/api/client';
 import {
-  Text,
-  View,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
+  AppText,
+  fontWeightMedium,
+  fontWeightSemiBold,
+} from '@/src/components/AppText';
+import { useNotification } from '@/src/components/notifications';
+import DynamicForm, { FormField } from '@/src/components/UI/DynamicForm';
+import { Colors } from '@/src/constants/colors';
+import { isAxiosError } from 'axios';
+import { router } from 'expo-router';
+import React, { useState } from 'react';
+import {
   Dimensions,
+  Image,
   KeyboardAvoidingView,
   Platform,
-  Image,
+  StyleSheet,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { router } from 'expo-router';
-import { Colors } from '@/src/constants/colors';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
 export default function Index() {
+  const [loading, setLoading] = useState(false);
+  const { showError, showSuccess, showWarning } = useNotification();
+
+  // 🔹 Estado para manejar los valores del formulario
+  const [formValues, setFormValues] = useState({
+    email: '',
+  });
+
+  // 🔹 Definición de los campos del formulario
+  const fields: FormField[] = [
+    {
+      name: 'email',
+      label: 'Correo',
+      placeholder: 'Ingresa tu correo',
+      keyboardType: 'email-address',
+      autoCapitalize: 'none',
+      icon: 'mail-outline',
+      type: 'email',
+    },
+  ];
+
+  // 🔹 Manejador de cambio de valor
+  const handleValueChange = (name: string, value: any) => {
+    setFormValues((prev) => ({ ...prev, [name]: value }));
+  };
+
+  // 🔹 Acción al enviar formulario
+  const handleSubmit = async () => {
+    const { email } = formValues;
+
+    if (!email) {
+      showWarning('Atención', 'Por favor, ingresa tu correo electrónico.');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      await apiClient.post('/auth/forgot-password', { email });
+
+      showSuccess(
+        'Correo enviado',
+        'Si el correo existe, recibirás las instrucciones para restablecer tu contraseña.',
+      );
+
+      // Limpiar el formulario
+      setFormValues({ email: '' });
+
+      // Redirigir a la pantalla de RESET PASSWORD (modo manual) después de 2 segundos
+      setTimeout(() => {
+        router.push('/auth/reset-password');
+      }, 2000);
+    } catch (error) {
+      let errorMessage = 'Ocurrió un error al enviar el correo.';
+
+      if (isAxiosError(error)) {
+        if (error.response) {
+          errorMessage =
+            error.response.data?.error ||
+            error.response.data?.message ||
+            errorMessage;
+        } else if (error.request) {
+          errorMessage =
+            'No se pudo conectar con el servidor. Revisa tu conexión a internet.';
+        }
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+
+      showError('Error', errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
+      {/* Botón volver */}
       <TouchableOpacity
         style={{ position: 'absolute', top: 50, left: 20, zIndex: 1 }}
         activeOpacity={0.8}
@@ -33,34 +117,28 @@ export default function Index() {
 
       <View style={styles.container}>
         <View style={styles.formContainer}>
-          {/* Welcome Title */}
-          <Text style={styles.welcomeTitle}>Recuperación de Contraseña</Text>
+          {/* Título */}
+          <AppText style={styles.welcomeTitle}>
+            Recuperación de Contraseña
+          </AppText>
 
-          {/* Email Input */}
-          <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Correo</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="Ingresa tu correo"
-              placeholderTextColor="#9CA3AF"
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-          </View>
+          {/* 🔹 Formulario dinámico */}
+          <DynamicForm
+            fields={fields}
+            onSubmit={handleSubmit}
+            buttonText="Enviar Código"
+            buttonIcon="send"
+            values={formValues}
+            onValueChange={handleValueChange}
+            loading={loading}
+          />
 
-          {/* Login Button */}
-          <TouchableOpacity style={styles.forgotpswdButton} activeOpacity={0.8}>
-            <Text style={styles.forgotpswdButtonText}>Envia Código</Text>
-          </TouchableOpacity>
-
-          {/* Register Link */}
-          <TouchableOpacity style={styles.registerContainer}>
-            <Text
-              style={styles.registerText}
-              onPress={() => router.push('/auth/register')}
-            >
-              Regístrate
-            </Text>
+          {/* 🔹 Enlace a registro */}
+          <TouchableOpacity
+            style={styles.registerContainer}
+            onPress={() => router.push('/auth/register')}
+          >
+            <AppText style={styles.registerText}>Regístrate</AppText>
           </TouchableOpacity>
         </View>
       </View>
@@ -82,69 +160,20 @@ const styles = StyleSheet.create({
   },
   welcomeTitle: {
     fontSize: 28,
-    fontWeight: '700',
+    fontWeight: fontWeightSemiBold,
     color: '#1F2937',
     textAlign: 'center',
     marginBottom: 40,
     letterSpacing: 0.5,
   },
-  inputContainer: {
-    marginBottom: 20,
-  },
-  inputLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#374151',
-    marginBottom: 8,
-  },
-  textInput: {
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    borderRadius: 12,
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    fontSize: 16,
-    color: '#1F2937',
-    backgroundColor: '#F9FAFB',
-  },
-  forgotpswdButton: {
-    backgroundColor: Colors.background,
-    paddingVertical: 18,
-    borderRadius: 12,
-    marginTop: 20,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  forgotpswdButtonText: {
-    color: Colors.lightText,
-    fontSize: 18,
-    fontWeight: '700',
-    textAlign: 'center',
-    letterSpacing: 0.5,
-  },
-  forgotPasswordContainer: {
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  forgotPasswordText: {
-    color: '#6B7280',
-    fontSize: 14,
-    textDecorationLine: 'underline',
-  },
   registerContainer: {
     alignItems: 'center',
+    marginTop: 20,
   },
   registerText: {
-    color: Colors.background,
+    color: Colors.primary,
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: fontWeightMedium,
     textDecorationLine: 'underline',
   },
 });

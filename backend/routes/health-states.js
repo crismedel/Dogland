@@ -1,23 +1,15 @@
+// backend/routes/health-states.js
 import express from 'express';
-import pool from '../db/db.js'
+import { authenticateToken } from '../middlewares/auth.js';
+import { getAllHealthStates } from '../controllers/health-statesController.js'; //llamamos al controlador
 
 const router = express.Router();
 
-router.get('/health-states', async (req, res) => {
-  try {
-    const result = await pool.query(
-      `
-        SELECT 
-          id_estado_salud, estado_salud
-        FROM 
-          estado_salud
-      `
-    );
-    res.json({ success: true, data: result.rows, count: result.rowCount })
-  }
-  catch (error){
-    res.status(500).json({ success: false, error: error.message })
-  }
-});
+/**
+ * @route GET /api/health-states
+ * @desc Obtiene la lista de todos los estados de salud.
+ * @access Private
+ */
+router.get('/health-states', authenticateToken, getAllHealthStates);
 
 export default router;

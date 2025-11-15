@@ -1,30 +1,89 @@
 import express from 'express';
-import { getSightings, getSightingById, createSighting, updateSighting, deleteSighting, getSightingsByLocation, filterSightings, getEspecies, getEstadosSalud } from '../controllers/sightingsController.js';
-import { authenticateToken} from '../middlewares/auth.js'; // Importa el middleware de autenticación
+import { 
+  getSightings, 
+  getSightingById, 
+  createSighting, 
+  updateSighting, 
+  deleteSighting, 
+  getSightingsByLocation, 
+  filterSightings, 
+  getEspecies, 
+  getEstadosSalud, 
+  getMySightings, 
+  getEstadosAvistamiento 
+} from '../controllers/sightingsController.js';
+import { authenticateToken } from '../middlewares/auth.js';
+import { validateSchema } from '../middlewares/validateSchema.js';
+import {
+  createSightingSchema,
+  updateSightingSchema,
+  getSightingByIdSchema,
+  deleteSightingSchema,
+  getAllSightingsSchema,
+  getSightingsByLocationSchema,
+} from '../schemas/sighting.js';
 
 const router = express.Router();
 
-// --- Rutas de lectura (GET) - De más específicas a más generales ---
-
-// Rutas con nombres específicos (no son dinámicas)
-router.get('/sightings/location', getSightingsByLocation);
-router.get('/sightings/filter', filterSightings);
+// --- Rutas de lectura (GET) ---
+// TODO: Estas rutas deberían estar en otro router 
+// --- Rutas "extra" ---
 router.get('/especies', getEspecies); 
 router.get('/estados-salud', getEstadosSalud);
+router.get('/estados-avistamiento', getEstadosAvistamiento);
 
-// Rutas con IDs dinámicos
-router.get('/sightings/:id', getSightingById);
+// --- Rutas Especificas de SIGHTINGS ---
+router.get(
+  '/sightings/location',
+  validateSchema(getSightingsByLocationSchema),
+  getSightingsByLocation
+);
 
-// Rutas generales
-router.get('/sightings', getSightings);
+router.get(
+  '/sightings/filter',
+  filterSightings
+);
 
+router.get(
+  '/sightings/me',
+  authenticateToken,
+  getMySightings
+);
 
-// --- Rutas de escritura protegidas por autenticación ---
+// (Ruta: GET /api/sightings)
+router.get(
+  '/sightings',
+  validateSchema(getAllSightingsSchema),
+  getSightings
+);
 
-// Añade el middleware `authMiddleware` para proteger estas rutas
-router.post('/sightings', authenticateToken, createSighting);
-router.put('/sightings/:id', authenticateToken, updateSighting);
-router.delete('/sightings/:id', authenticateToken, deleteSighting);
+// (Ruta: GET /api/sightings/123)
+router.get(
+  '/sightings/:id',
+  validateSchema(getSightingByIdSchema),
+  getSightingById
+);
 
+// --- Rutas de Creación Actualización ---
+router.post(
+  '/sightings',
+  authenticateToken,
+  validateSchema(createSightingSchema),
+  createSighting
+);
+
+router.put(
+  '/sightings/:id',
+  authenticateToken,
+  validateSchema(updateSightingSchema),
+  updateSighting
+);
+
+router.delete(
+  '/sightings/:id',
+  authenticateToken,
+  validateSchema(deleteSightingSchema),
+  deleteSighting
+);
 
 export default router;

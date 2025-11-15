@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   ActivityIndicator,
   TouchableOpacity,
   ScrollView,
   Image,
+  Dimensions,
 } from 'react-native';
 import MapView, { Marker, Callout } from 'react-native-maps';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -16,6 +16,14 @@ import { Colors } from '@/src/constants/colors';
 import CustomHeader from '@/src/components/UI/CustomHeader';
 import CustomButton from '@/src/components/UI/CustomButton';
 import { Ionicons } from '@expo/vector-icons';
+import {
+  fontWeightBold,
+  fontWeightSemiBold,
+  fontWeightMedium,
+  AppText,
+} from '@/src/components/AppText';
+
+const { width } = Dimensions.get('window');
 
 const AlertDetailScreen = () => {
   // Hook para manejar la navegación
@@ -78,7 +86,7 @@ const AlertDetailScreen = () => {
         />
         <View style={styles.center}>
           <ActivityIndicator size="large" color={Colors.secondary} />
-          <Text style={styles.loadingText}>Cargando alerta...</Text>
+          <AppText style={styles.loadingText}>Cargando alerta...</AppText>
         </View>
       </View>
     );
@@ -100,9 +108,9 @@ const AlertDetailScreen = () => {
           }
         />
         <View style={styles.center}>
-          <Text style={styles.errorText}>
+          <AppText style={styles.errorText}>
             {error || 'Alerta no encontrada'}
-          </Text>
+          </AppText>
           <CustomButton
             title="Volver"
             onPress={() => router.back()}
@@ -117,6 +125,20 @@ const AlertDetailScreen = () => {
 
   // Obtener el color del marcador según el nivel de riesgo
   const markerColor = riskStyles[alert.nivel_riesgo].color;
+
+  // Función para obtener el ícono según el nivel de riesgo
+  const getMarkerIcon = (nivelRiesgo: string) => {
+    switch (nivelRiesgo.toLowerCase()) {
+      case 'bajo':
+        return 'alert-circle-outline';
+      case 'medio':
+        return 'warning-outline';
+      case 'alto':
+        return 'alert-circle';
+      default:
+        return 'alert-circle';
+    }
+  };
 
   // Renderizado principal con detalles de la alerta
   return (
@@ -144,49 +166,58 @@ const AlertDetailScreen = () => {
       />
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Encabezado con título y tipo de alerta */}
         <View style={styles.headerDetail}>
-          <Text style={styles.title}>{alert.titulo}</Text>
-          <Text style={styles.subtitle}>{alert.tipo}</Text>
+          <AppText style={styles.title}>{alert.titulo}</AppText>
+          <View style={styles.typeBadge}>
+            <Ionicons
+              name="megaphone-outline"
+              size={16}
+              color={Colors.secondary}
+            />
+            <AppText style={styles.subtitle}>{alert.tipo}</AppText>
+          </View>
         </View>
 
-        {/* Descripción de la alerta */}
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Descripción</Text>
-          <Text style={styles.description}>{alert.descripcion}</Text>
+          <AppText style={styles.sectionTitle}>Descripción</AppText>
+          <AppText style={styles.description}>{alert.descripcion}</AppText>
         </View>
 
-        {/* Información adicional: nivel de riesgo, creador y fecha */}
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Información adicional</Text>
+          <AppText style={styles.sectionTitle}>Información adicional</AppText>
           <View style={styles.infoContainer}>
-            <View style={styles.infoBox}>
-              <Text style={styles.infoLabel}>Nivel de Riesgo</Text>
-              <Text
-                style={[
-                  styles.infoValue,
-                  { color: riskStyles[alert.nivel_riesgo].color },
-                ]}
-              >
+            <View style={styles.infoItem}>
+              <Ionicons name="flame-outline" size={18} color={markerColor} />
+              <AppText style={styles.infoLabel}>Riesgo</AppText>
+              <AppText style={[styles.infoValue, { color: markerColor }]}>
                 {alert.nivel_riesgo}
-              </Text>
+              </AppText>
             </View>
-            <View style={styles.infoBox}>
-              <Text style={styles.infoLabel}>Creado por</Text>
-              <Text style={styles.infoValue}>{alert.creado_por}</Text>
+            <View style={styles.infoItem}>
+              <Ionicons
+                name="person-outline"
+                size={18}
+                color={Colors.secondary}
+              />
+              <AppText style={styles.infoLabel}>Creado por</AppText>
+              <AppText style={styles.infoValue}>{alert.creado_por}</AppText>
             </View>
-            <View style={styles.infoBox}>
-              <Text style={styles.infoLabel}>Fecha de creación</Text>
-              <Text style={styles.infoValue}>
-                {new Date(alert.fecha_creacion).toLocaleDateString()}
-              </Text>
+            <View style={styles.infoItem}>
+              <Ionicons
+                name="calendar-outline"
+                size={18}
+                color={Colors.secondary}
+              />
+              <AppText style={styles.infoLabel}>Fecha</AppText>
+              <AppText style={styles.infoValue}>
+                {new Date(alert.fecha_creacion).toLocaleDateString('es-ES')}
+              </AppText>
             </View>
           </View>
         </View>
 
-        {/* Ubicación */}
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Ubicación</Text>
+          <AppText style={styles.sectionTitle}>Ubicación</AppText>
           {location ? (
             <View style={styles.mapCard}>
               <MapView
@@ -199,61 +230,56 @@ const AlertDetailScreen = () => {
                 }}
               >
                 <Marker coordinate={location}>
-                  {/* Marcador personalizado estilo mapa comunitario */}
                   <View style={styles.customMarker}>
-                    {/* Círculo con color dinámico según nivel de riesgo */}
                     <View
                       style={[
-                        styles.markerCircle,
+                        styles.pinContainer,
                         { backgroundColor: markerColor },
                       ]}
                     >
-                      <Text style={styles.markerEmoji}>⚠️</Text>
+                      <Ionicons
+                        name={getMarkerIcon(alert.nivel_riesgo)}
+                        size={20}
+                        color="#fff"
+                      />
                     </View>
-                    {/* Triángulo apuntando hacia abajo */}
                     <View
-                      style={[
-                        styles.markerTriangle,
-                        { borderTopColor: markerColor },
-                      ]}
+                      style={[styles.pinPoint, { borderTopColor: markerColor }]}
                     />
                   </View>
 
-                  {/* Callout personalizado con información de la alerta */}
                   <Callout tooltip>
                     <View style={styles.calloutContainer}>
-                      <Text style={styles.calloutTitle} numberOfLines={2}>
+                      <AppText style={styles.calloutTitle}>
                         {alert.titulo}
-                      </Text>
+                      </AppText>
                       <View style={styles.calloutDivider} />
-                      <Text style={styles.calloutText}>📍 {alert.tipo}</Text>
-                      <Text
-                        style={[
-                          styles.calloutText,
-                          { color: markerColor, fontWeight: '600' },
-                        ]}
+                      <AppText style={styles.calloutText}>
+                        📍 {alert.tipo}
+                      </AppText>
+                      <AppText
+                        style={[styles.calloutText, { color: markerColor }]}
                       >
                         🚨 {alert.nivel_riesgo}
-                      </Text>
-                      <Text style={styles.calloutDate}>
+                      </AppText>
+                      <AppText style={styles.calloutDate}>
                         📅{' '}
                         {new Date(alert.fecha_creacion).toLocaleDateString(
                           'es-ES',
                         )}
-                      </Text>
+                      </AppText>
                     </View>
                   </Callout>
                 </Marker>
               </MapView>
             </View>
           ) : (
-            <Text style={styles.noLocation}>
+            <AppText style={styles.noLocation}>
               {alert.direccion || 'Ubicación no disponible'}
-            </Text>
+            </AppText>
           )}
         </View>
 
-        {/* Botón para volver a la pantalla anterior con CustomButton */}
         <CustomButton
           title="Volver a la lista"
           onPress={() => router.back()}
@@ -268,94 +294,164 @@ const AlertDetailScreen = () => {
 
 export default AlertDetailScreen;
 
-// Estilos para los componentes de la pantalla
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f0f2f5' },
-  scrollContent: { padding: 20 },
-  // TITULO + SUBTITULO
-  headerDetail: { marginBottom: 20, marginTop: 20 },
-  title: { fontSize: 24, fontWeight: 'bold', color: '#222' },
-  subtitle: {
-    fontSize: 16,
-    color: Colors.secondary,
-    fontWeight: '600',
-    backgroundColor: '#E3F2FD',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
-    alignSelf: 'flex-start',
+  container: { flex: 1, backgroundColor: Colors.background },
+  scrollContent: {
+    padding: 20,
+    paddingBottom: 50,
   },
-  // SECCIONES TIPO CARD
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 18,
+  headerDetail: {
+    marginTop: 20,
+    marginBottom: 24,
   },
-  sectionTitle: { fontWeight: '700', marginBottom: 12, fontSize: 16 },
-  description: { fontSize: 15, color: '#444' },
-  // INFO EXTRA
-  infoContainer: { flexDirection: 'row', justifyContent: 'space-between' },
-  infoBox: { flex: 1, alignItems: 'center', padding: 12 },
-  infoLabel: { fontSize: 12, color: '#777' },
-  infoValue: { fontSize: 14, fontWeight: '700' },
-  // MAPA
-  mapCard: { borderRadius: 12, overflow: 'hidden' },
-  map: { height: 250, width: '100%' },
-  noLocation: { textAlign: 'center', padding: 16, color: '#666' },
-  // ESTADOS DE ERROR Y LOADING
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  errorText: {
-    color: '#E53935',
-    marginBottom: 16,
-    fontSize: 16,
-    textAlign: 'center',
+  title: {
+    fontSize: 26,
+    fontWeight: fontWeightBold,
+    color: '#1A1A1A',
+    letterSpacing: 0.3,
+    marginBottom: 8,
   },
-  loadingText: { marginTop: 8, color: Colors.secondary },
-
-  // MARCADOR PERSONALIZADO (estilo mapa comunitario)
-  customMarker: { alignItems: 'center' },
-  markerCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
+  typeBadge: {
+    flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: 'white',
-    shadowColor: '#000',
-    shadowOpacity: 0.3,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 3,
-    elevation: 4,
+    backgroundColor: '#E3F2FD',
+    borderRadius: 20,
+    alignSelf: 'flex-start',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderWidth: 1,
+    borderColor: '#BBDEFB',
+    gap: 6,
   },
-  markerEmoji: { fontSize: 20 },
-  markerTriangle: {
-    width: 0,
-    height: 0,
-    borderStyle: 'solid',
-    borderLeftWidth: 8,
-    borderRightWidth: 8,
-    borderTopWidth: 10,
-    borderLeftColor: 'transparent',
-    borderRightColor: 'transparent',
-    marginTop: -2,
+  subtitle: {
+    fontSize: 14,
+    fontWeight: fontWeightSemiBold,
+    color: Colors.secondary,
   },
-
-  // CALLOUT PERSONALIZADO
-  calloutContainer: {
-    backgroundColor: 'white',
-    borderRadius: 10,
-    padding: 10,
-    minWidth: 160,
+  card: {
+    backgroundColor: '#f4ecde',
+    borderRadius: 20,
+    padding: 18,
+    marginBottom: 20,
     shadowColor: '#000',
-    shadowOpacity: 0.2,
     shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
     elevation: 3,
   },
-  calloutTitle: { fontWeight: '700', fontSize: 14, marginBottom: 6 },
-  calloutDivider: { height: 1, backgroundColor: '#ddd', marginBottom: 6 },
-  calloutText: { fontSize: 13, marginBottom: 3 },
-  calloutDate: { fontSize: 12, color: '#888', marginTop: 4 },
+  sectionTitle: {
+    fontWeight: fontWeightBold,
+    marginBottom: 12,
+    fontSize: 17,
+    color: '#1A1A1A',
+  },
+  description: {
+    fontSize: 15,
+    color: '#444',
+    lineHeight: 22,
+  },
+  infoContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  infoItem: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 4,
+  },
+  infoLabel: {
+    fontSize: 11,
+    color: '#888',
+    textTransform: 'uppercase',
+  },
+  infoValue: {
+    fontSize: 14,
+    fontWeight: fontWeightSemiBold,
+    textAlign: 'center',
+  },
+  mapCard: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    elevation: 4,
+  },
+  map: {
+    height: width * 0.65,
+    width: '100%',
+  },
+  customMarker: { alignItems: 'center' },
+  pinContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: 'white',
+    elevation: 6,
+  },
+  pinPoint: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: 6,
+    borderRightWidth: 6,
+    borderTopWidth: 8,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    marginTop: -1,
+  },
+  calloutContainer: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 14,
+    minWidth: 180,
+    maxWidth: 220,
+    shadowColor: '#000',
+    shadowOpacity: 0.25,
+    shadowOffset: { width: 0, height: 3 },
+    shadowRadius: 6,
+    elevation: 5,
+  },
+  calloutTitle: {
+    fontWeight: fontWeightBold,
+    fontSize: 15,
+    marginBottom: 8,
+    color: '#1A1A1A',
+  },
+  calloutDivider: {
+    height: 1,
+    backgroundColor: '#f4ecde',
+    marginBottom: 8,
+  },
+  calloutText: {
+    fontSize: 13,
+    marginBottom: 4,
+    color: '#444',
+  },
+  calloutDate: {
+    fontSize: 12,
+    color: '#888',
+    marginTop: 6,
+  },
+  noLocation: {
+    textAlign: 'center',
+    padding: 20,
+    color: '#666',
+    fontSize: 14,
+  },
+  center: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 10,
+    color: Colors.secondary,
+    fontSize: 15,
+  },
+  errorText: {
+    color: '#E53935',
+    fontSize: 16,
+    textAlign: 'center',
+    fontWeight: fontWeightMedium,
+  },
 });

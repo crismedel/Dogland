@@ -1,116 +1,266 @@
 import React, { useState } from 'react';
 import {
   View,
-  Text,
-  TextInput,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
   Image,
 } from 'react-native';
+import * as Location from 'expo-location';
+import { useNotification } from '@/src/components/notifications';
 import { useRouter } from 'expo-router';
-import { useForm, Controller } from 'react-hook-form';
-import DateTimePickerModal from 'react-native-modal-datetime-picker';
-import { Picker } from '@react-native-picker/picker';
 import { createAlert } from '../../src/api/alerts';
 import { Colors } from '@/src/constants/colors';
 import CustomHeader from '@/src/components/UI/CustomHeader';
-import CustomButton from '@/src/components/UI/CustomButton';
 import { Ionicons } from '@expo/vector-icons';
-
-type FormData = {
-  titulo: string;
-  descripcion: string;
-  tipoAlerta: number | null;
-  nivelRiesgo: number | null;
-  fechaExpiracion: Date | null;
-};
+import { useRefresh } from '@/src/contexts/RefreshContext';
+import { REFRESH_KEYS } from '@/src/constants/refreshKeys';
+import { fontWeightBold, AppText } from '@/src/components/AppText';
+import DynamicForm, { FormField } from '@/src/components/UI/DynamicForm';
 
 const MOCK_TIPOS_ALERTA = [
-  { id: 1, nombre: 'Jauria' },
-  { id: 2, nombre: 'Accidente' },
-  { id: 3, nombre: 'Robo' },
-  { id: 4, nombre: 'Animal Perdido' },
-  { id: 5, nombre: 'Otro' },
+  { label: '-- Selecciona un tipo --', value: null },
+  { label: 'Jauria', value: 1 },
+  { label: 'Accidente', value: 2 },
+  { label: 'Robo', value: 3 },
+  { label: 'Animal Perdido', value: 4 },
+  { label: 'Otro', value: 5 },
 ];
 
 const MOCK_NIVELES_RIESGO = [
-  { id: 1, nombre: 'Bajo' },
-  { id: 2, nombre: 'Medio' },
-  { id: 3, nombre: 'Alto' },
-  { id: 4, nombre: 'Crítico' },
+  { label: '-- Selecciona un nivel --', value: null },
+  { label: 'Bajo', value: 1 },
+  { label: 'Medio', value: 2 },
+  { label: 'Alto', value: 3 },
+  { label: 'Crítico', value: 4 },
 ];
 
 export default function CreateAlertScreen() {
+  const { showError, showSuccess } = useNotification();
   const router = useRouter();
-  const {
-    control,
-    handleSubmit,
-    reset,
-    setValue,
-    formState: { isSubmitting },
-  } = useForm<FormData>({
-    defaultValues: {
-      titulo: '',
-      descripcion: '',
-      tipoAlerta: null,
-      nivelRiesgo: null,
-      fechaExpiracion: null,
-    },
+  const { triggerRefresh } = useRefresh();
+
+  const [formValues, setFormValues] = useState({
+    titulo: '',
+    descripcion: '',
+    tipoAlerta: null as number | null,
+    nivelRiesgo: null as number | null,
+    fechaExpiracion: null as Date | string | null,
+    location: null as {
+      latitude: number;
+      longitude: number;
+      address: string;
+    } | null,
+    direccion: '',
   });
 
-  const [pickerVisible, setPickerVisible] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loadingFields, setLoadingFields] = useState<Record<string, boolean>>(
+    {},
+  );
 
-  const showDatePicker = () => setPickerVisible(true);
-  const hideDatePicker = () => setPickerVisible(false);
-
-  const onConfirmDate = (date: Date) => {
-    setValue('fechaExpiracion', date, {
-      shouldDirty: true,
-      shouldValidate: true,
-    });
-    hideDatePicker();
+  const handleValueChange = (name: string, value: any) => {
+    setFormValues((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
-  const onSubmit = async (data: FormData) => {
-    if (!data.tipoAlerta || !data.nivelRiesgo) {
-      alert('Debe seleccionar tipo de alerta y nivel de riesgo');
+  const obtenerUbicacionActual = async () => {
+    try {
+      setLoadingFields((prev) => ({ ...prev, location: true }));
+
+      // Solicitar permisos
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        showError('Error', 'Permiso de ubicación denegado');
+        return;
+      }
+
+      // Obtener ubicación actual
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High,
+      });
+
+      // Obtener dirección desde coordenadas (geocodificación inversa)
+      const [address] = await Location.reverseGeocodeAsync({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+      });
+
+      // Formatear dirección legible
+      const formattedAddress = address
+        ? `${address.street || ''} ${address.streetNumber || ''}, ${
+            address.city || ''
+          }, ${address.region || ''}`
+        : `${location.coords.latitude.toFixed(
+            6,
+          )}, ${location.coords.longitude.toFixed(6)}`;
+
+      const locationData = {
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+        address: formattedAddress.trim(),
+      };
+
+      // Actualizar tanto location como direccion
+      setFormValues((prev) => ({
+        ...prev,
+        location: locationData,
+        direccion: formattedAddress.trim(),
+      }));
+
+      showSuccess('Éxito', 'Ubicación actualizada');
+    } catch (error) {
+      console.error('Error obteniendo ubicación:', error);
+      showError('Error', 'No se pudo obtener la ubicación');
+    } finally {
+      setLoadingFields((prev) => ({ ...prev, location: false }));
+    }
+  };
+
+  const limpiarUbicacion = () => {
+    setFormValues((prev) => ({
+      ...prev,
+      location: null,
+      direccion: '',
+    }));
+    showSuccess('Éxito', 'Ubicación eliminada');
+  };
+
+  const formatUbicacion = (location: any) => {
+    if (!location) return null;
+    return location.address || `${location.latitude}, ${location.longitude}`;
+  };
+
+  const formFields: FormField[] = [
+    {
+      name: 'titulo',
+      label: 'Título de la Alerta *',
+      placeholder: 'Ej: Perro herido en la calle principal',
+      type: 'text',
+      icon: 'create-outline',
+      autoCapitalize: 'sentences',
+    },
+    {
+      name: 'descripcion',
+      label: 'Descripción *',
+      placeholder: 'Detalles de la situación, etc.',
+      type: 'text',
+      icon: 'document-text-outline',
+      multiline: true,
+      numberOfLines: 4,
+    },
+    {
+      name: 'tipoAlerta',
+      label: 'Tipo de Alerta *',
+      type: 'picker',
+      icon: 'alert-circle-outline',
+      options: MOCK_TIPOS_ALERTA,
+    },
+    {
+      name: 'nivelRiesgo',
+      label: 'Nivel de Riesgo *',
+      type: 'picker',
+      icon: 'warning-outline',
+      options: MOCK_NIVELES_RIESGO,
+    },
+    {
+      name: 'fechaExpiracion',
+      label: 'Fecha y Hora de Expiración (Opcional)',
+      type: 'date',
+      icon: 'calendar-outline',
+      placeholder: 'Toca para seleccionar fecha y hora',
+      dateMode: 'datetime',
+      timeStep: 5,
+      minDate: new Date().toISOString().split('T')[0],
+      calendarTheme: 'light',
+    },
+    {
+      name: 'location',
+      label: 'Ubicación (Opcional)',
+      type: 'location',
+      icon: 'location-outline',
+      placeholder: 'Toca para obtener tu ubicación actual',
+      onLocationPress: obtenerUbicacionActual,
+      onLocationClear: limpiarUbicacion,
+      formatLocation: formatUbicacion,
+    },
+    {
+      name: 'direccion',
+      label: 'Dirección (opcional)',
+      placeholder: 'Ej: Calle 123, Ciudad',
+      type: 'text',
+      icon: 'map-outline',
+    },
+  ];
+
+  const handleSubmit = async (values: Record<string, any>) => {
+    if (!values.tipoAlerta || !values.nivelRiesgo) {
+      showError('Error', 'Debe seleccionar tipo de alerta y nivel de riesgo');
+      return;
+    }
+
+    if (!values.titulo?.trim() || values.titulo.trim().length < 3) {
+      showError('Error', 'El título debe tener al menos 3 caracteres');
+      return;
+    }
+
+    if (!values.descripcion?.trim() || values.descripcion.trim().length < 5) {
+      showError('Error', 'La descripción debe tener al menos 5 caracteres');
       return;
     }
 
     const payload = {
-      titulo: data.titulo.trim(),
-      descripcion: data.descripcion.trim(),
-      id_tipo_alerta: data.tipoAlerta,
-      id_nivel_riesgo: data.nivelRiesgo,
-      fecha_expiracion: data.fechaExpiracion
-        ? data.fechaExpiracion.toISOString()
+      titulo: values.titulo.trim(),
+      descripcion: values.descripcion.trim(),
+      id_tipo_alerta: values.tipoAlerta,
+      id_nivel_riesgo: values.nivelRiesgo,
+      fecha_expiracion: values.fechaExpiracion
+        ? new Date(values.fechaExpiracion).toISOString()
         : null,
-      id_usuario: 1, // TODO: reemplazar por ID real del usuario autenticado
-      latitude: null, // TODO: integrar ubicación real
-      longitude: null,
-      direccion: '',
+      latitude: values.location ? values.location.latitude : null,
+      longitude: values.location ? values.location.longitude : null,
+      direccion: values.location?.address || values.direccion || '',
     };
 
+    setIsSubmitting(true);
     try {
       const newAlert = await createAlert(payload);
       console.log('CreateAlertScreen: Alerta creada con éxito:', newAlert);
-      alert('Alerta creada con éxito!');
-      reset(); // limpia formulario
-      // router.back(); // o navegar a la lista de alertas
+      showSuccess('Éxito', 'Alerta creada con éxito!');
+
+      triggerRefresh(REFRESH_KEYS.ALERTS);
+
+      // Resetear formulario
+      setFormValues({
+        titulo: '',
+        descripcion: '',
+        tipoAlerta: null,
+        nivelRiesgo: null,
+        fechaExpiracion: null,
+        location: null,
+        direccion: '',
+      });
+
+      setTimeout(() => {
+        router.back();
+      }, 500);
     } catch (error: any) {
       console.error('CreateAlertScreen: Error al crear alerta:', error);
-      alert(
+      showError(
+        'Error',
         `Error al crear alerta: ${
           error?.response?.data?.error || 'Inténtalo de nuevo.'
         }`,
       );
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
     <View style={styles.container}>
-      {/* Header con back + título + acción enviar */}
       <CustomHeader
         title="Crear Alerta"
         leftComponent={
@@ -123,7 +273,7 @@ export default function CreateAlertScreen() {
         }
         rightComponent={
           <TouchableOpacity
-            onPress={handleSubmit(onSubmit)}
+            onPress={() => handleSubmit(formValues)}
             disabled={isSubmitting}
           >
             <Ionicons name="checkmark-done-outline" size={22} color="#fff" />
@@ -137,324 +287,33 @@ export default function CreateAlertScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* Datos básicos */}
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Información básica</Text>
+        <View>
+          <AppText style={styles.sectionTitle}>Información básica</AppText>
 
-          <Text style={styles.label}>Título de la Alerta *</Text>
-          <Controller
-            control={control}
-            name="titulo"
-            rules={{
-              required: 'El título es obligatorio.',
-              minLength: { value: 3, message: 'Mínimo 3 caracteres.' },
-            }}
-            render={({ field: { onChange, value }, fieldState: { error } }) => (
-              <>
-                <TextInput
-                  style={[styles.input, error ? styles.inputError : null]}
-                  placeholder="Ej: Perro herido en la calle principal"
-                  value={value}
-                  onChangeText={onChange}
-                />
-                {error && <Text style={styles.errorText}>{error.message}</Text>}
-              </>
-            )}
-          />
-
-          <Text style={styles.label}>Descripción *</Text>
-          <Controller
-            control={control}
-            name="descripcion"
-            rules={{
-              required: 'La descripción es obligatoria.',
-              minLength: { value: 5, message: 'Mínimo 5 caracteres.' },
-            }}
-            render={({ field: { onChange, value }, fieldState: { error } }) => (
-              <>
-                <TextInput
-                  style={[
-                    styles.input,
-                    styles.textarea,
-                    error ? styles.inputError : null,
-                  ]}
-                  placeholder="Detalles de la situación, etc."
-                  multiline
-                  numberOfLines={4}
-                  value={value}
-                  onChangeText={onChange}
-                />
-                {error && <Text style={styles.errorText}>{error.message}</Text>}
-              </>
-            )}
+          <DynamicForm
+            fields={formFields}
+            values={formValues}
+            onValueChange={handleValueChange}
+            onSubmit={handleSubmit}
+            loading={isSubmitting}
+            buttonText="Crear Alerta"
+            buttonIcon="checkmark-done-outline"
+            loadingFields={loadingFields}
           />
         </View>
-
-        {/* Configuración de la alerta */}
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Configuración de la alerta</Text>
-
-          <Text style={styles.label}>Tipo de Alerta *</Text>
-          <Controller
-            control={control}
-            name="tipoAlerta"
-            rules={{ required: 'Selecciona un tipo de alerta.' }}
-            render={({ field: { onChange, value }, fieldState: { error } }) => (
-              <>
-                <View
-                  style={[
-                    styles.pickerContainer,
-                    error ? styles.inputError : null,
-                  ]}
-                >
-                  <Picker
-                    selectedValue={value}
-                    onValueChange={onChange}
-                    style={styles.picker}
-                  >
-                    <Picker.Item
-                      label="-- Selecciona un tipo --"
-                      value={null}
-                    />
-                    {MOCK_TIPOS_ALERTA.map((tipo) => (
-                      <Picker.Item
-                        key={tipo.id}
-                        label={tipo.nombre}
-                        value={tipo.id}
-                      />
-                    ))}
-                  </Picker>
-                </View>
-                {error && <Text style={styles.errorText}>{error.message}</Text>}
-              </>
-            )}
-          />
-
-          <Text style={styles.label}>Nivel de Riesgo *</Text>
-          <Controller
-            control={control}
-            name="nivelRiesgo"
-            rules={{ required: 'Selecciona un nivel de riesgo.' }}
-            render={({ field: { onChange, value }, fieldState: { error } }) => (
-              <>
-                <View
-                  style={[
-                    styles.pickerContainer,
-                    error ? styles.inputError : null,
-                  ]}
-                >
-                  <Picker
-                    selectedValue={value}
-                    onValueChange={onChange}
-                    style={styles.picker}
-                  >
-                    <Picker.Item
-                      label="-- Selecciona un nivel --"
-                      value={null}
-                    />
-                    {MOCK_NIVELES_RIESGO.map((nivel) => (
-                      <Picker.Item
-                        key={nivel.id}
-                        label={nivel.nombre}
-                        value={nivel.id}
-                      />
-                    ))}
-                  </Picker>
-                </View>
-                {error && <Text style={styles.errorText}>{error.message}</Text>}
-              </>
-            )}
-          />
-
-          <Text style={styles.label}>
-            Fecha y Hora de Expiración (Opcional)
-          </Text>
-          <Controller
-            control={control}
-            name="fechaExpiracion"
-            render={({ field: { value } }) => (
-              <>
-                <TouchableOpacity
-                  onPress={showDatePicker}
-                  style={styles.dateButton}
-                >
-                  <Text style={styles.dateButtonText}>
-                    {value
-                      ? value.toLocaleString()
-                      : 'Toca para seleccionar fecha y hora'}
-                  </Text>
-                </TouchableOpacity>
-              </>
-            )}
-          />
-        </View>
-
-        {/* Ubicación */}
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Ubicación</Text>
-
-          <TouchableOpacity
-            style={styles.locationButton}
-            onPress={() => alert('Funcionalidad de ubicación deshabilitada')}
-          >
-            <Text style={styles.locationButtonText}>
-              Obtener mi ubicación actual
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.clearLocationButton}
-            onPress={() => alert('Funcionalidad de ubicación deshabilitada')}
-          >
-            <Text style={styles.clearLocationButtonText}>
-              Limpiar ubicación
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Botón principal con CustomButton */}
-        <CustomButton
-          title="Crear Alerta"
-          onPress={handleSubmit(onSubmit)}
-          variant="primary"
-          icon="checkmark-done-outline"
-          loading={isSubmitting}
-          disabled={isSubmitting}
-          style={{ marginTop: 10, paddingVertical: 14 }}
-        />
-
-        <DateTimePickerModal
-          isVisible={pickerVisible}
-          mode="datetime"
-          onConfirm={onConfirmDate}
-          onCancel={hideDatePicker}
-          date={new Date()}
-          minimumDate={new Date()}
-        />
       </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f0f2f5' },
+  container: { flex: 1, backgroundColor: Colors.background },
   scrollContainer: { flex: 1 },
   contentContainer: { padding: 20 },
-
-  // Card styles
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-
   sectionTitle: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: fontWeightBold,
     marginBottom: 12,
     color: '#333',
-  },
-
-  // Form styles
-  label: {
-    fontWeight: '600',
-    marginTop: 10,
-    marginBottom: 6,
-    color: '#444',
-    fontSize: 14,
-  },
-
-  input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    backgroundColor: '#f9f9f9',
-    padding: 12,
-    borderRadius: 10,
-    fontSize: 14,
-    marginBottom: 8,
-    color: '#333',
-  },
-
-  inputError: {
-    borderColor: Colors.danger,
-    borderWidth: 2,
-    backgroundColor: '#fff5f5',
-  },
-
-  textarea: { minHeight: 90, textAlignVertical: 'top' },
-
-  pickerContainer: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 10,
-    backgroundColor: '#f9f9f9',
-    marginBottom: 8,
-    overflow: 'hidden',
-  },
-
-  picker: { height: 50, width: '100%' },
-
-  dateButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    backgroundColor: '#f9f9f9',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    marginBottom: 12,
-    alignItems: 'flex-start',
-  },
-  dateButtonText: { color: '#555', fontSize: 14 },
-
-  locationButton: {
-    backgroundColor: '#e3f2fd',
-    borderWidth: 1,
-    borderColor: '#90caf9',
-    borderRadius: 10,
-    paddingVertical: 12,
-    paddingHorizontal: 15,
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  locationButtonText: { fontSize: 14, color: '#1976d2', fontWeight: '500' },
-
-  clearLocationButton: {
-    alignSelf: 'flex-end',
-    marginBottom: 15,
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-  },
-  clearLocationButtonText: {
-    color: Colors.danger,
-    fontSize: 12,
-    textDecorationLine: 'underline',
-  },
-
-  submitButton: {
-    backgroundColor: Colors.background,
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginTop: 20,
-    marginBottom: 30,
-    shadowColor: Colors.secondary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  submitButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
-
-  errorText: {
-    color: Colors.danger,
-    fontSize: 12,
-    marginBottom: 8,
-    marginLeft: 4,
-    fontStyle: 'italic',
   },
 });

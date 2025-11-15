@@ -1,13 +1,27 @@
 // app/adoption/misPostulaciones.tsx
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, ActivityIndicator, TouchableOpacity, Image, Alert } from 'react-native';
+import {
+  View,
+  FlatList,
+  StyleSheet,
+  ActivityIndicator,
+  TouchableOpacity,
+  Image,
+  Alert,
+} from 'react-native';
 import { useRouter } from 'expo-router';
+import {
+  fontWeightBold,
+  fontWeightSemiBold,
+  fontWeightMedium,
+  AppText,
+} from '@/src/components/AppText';
 
 const mockPostulaciones = [
   { id: '1', animal: 'Luna', estado: 'pendiente', fecha: '2025-09-20' },
   { id: '2', animal: 'Thor', estado: 'aprobada', fecha: '2025-09-18' },
 ];
- 
+
 const MisPostulaciones = () => {
   const [postulaciones, setPostulaciones] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,13 +44,13 @@ const MisPostulaciones = () => {
   // 🔹 Cancelar postulación
   const handleCancelar = async (id: string) => {
     Alert.alert(
-      "Cancelar solicitud",
-      "¿Estás seguro de que quieres cancelar esta solicitud?",
+      'Cancelar solicitud',
+      '¿Estás seguro de que quieres cancelar esta solicitud?',
       [
-        { text: "No", style: "cancel" },
+        { text: 'No', style: 'cancel' },
         {
-          text: "Sí, cancelar",
-          style: "destructive",
+          text: 'Sí, cancelar',
+          style: 'destructive',
           onPress: async () => {
             try {
               // Llamada real (cuando tengas el backend listo):
@@ -45,12 +59,12 @@ const MisPostulaciones = () => {
               // Simulación en mock: quitar de la lista
               setPostulaciones((prev) => prev.filter((p) => p.id !== id));
             } catch (error) {
-              console.error("Error cancelando postulación:", error);
-              Alert.alert("Error", "No se pudo cancelar la solicitud.");
+              console.error('Error cancelando postulación:', error);
+              Alert.alert('Error', 'No se pudo cancelar la solicitud.');
             }
-          }
-        }
-      ]
+          },
+        },
+      ],
     );
   };
 
@@ -72,7 +86,9 @@ const MisPostulaciones = () => {
             style={styles.backIconHeader}
           />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Mis Postulaciones ({postulaciones.length})</Text>
+        <AppText style={styles.headerTitle}>
+          Mis Postulaciones ({postulaciones.length})
+        </AppText>
       </View>
 
       {/* Lista */}
@@ -81,16 +97,16 @@ const MisPostulaciones = () => {
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>{item.animal}</Text>
-            <Text>Estado: {item.estado}</Text>
-            <Text>Fecha: {item.fecha}</Text>
+            <AppText style={styles.cardTitle}>{item.animal}</AppText>
+            <AppText>Estado: {item.estado}</AppText>
+            <AppText>Fecha: {item.fecha}</AppText>
 
             {item.estado.toLowerCase() === 'pendiente' && (
               <TouchableOpacity
                 style={styles.cancelButton}
                 onPress={() => handleCancelar(item.id)}
               >
-                <Text style={styles.cancelButtonText}>Cancelar</Text>
+                <AppText style={styles.cancelButtonText}>Cancelar</AppText>
               </TouchableOpacity>
             )}
           </View>
@@ -110,7 +126,12 @@ const styles = StyleSheet.create({
     padding: 12,
     marginTop: 20,
   },
-  headerTitle: { fontSize: 18, fontWeight: 'bold', color: '#fff', marginLeft: 16 },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: fontWeightBold,
+    color: '#fff',
+    marginLeft: 16,
+  },
   backIconHeader: { width: 24, height: 24, tintColor: '#fff' },
   card: {
     backgroundColor: '#fff',
@@ -119,7 +140,11 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     elevation: 2,
   },
-  cardTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 5 },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: fontWeightBold,
+    marginBottom: 5,
+  },
   cancelButton: {
     marginTop: 10,
     padding: 10,
@@ -127,7 +152,10 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     alignItems: 'center',
   },
-  cancelButtonText: { color: '#fff', fontWeight: 'bold' },
+  cancelButtonText: {
+    color: '#fff',
+    fontWeight: fontWeightBold,
+  },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 });
 

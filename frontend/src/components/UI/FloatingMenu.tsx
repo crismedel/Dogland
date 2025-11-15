@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import {
   View,
-  Text,
   TouchableOpacity,
   StyleSheet,
   Animated,
@@ -9,6 +8,12 @@ import {
   Platform,
 } from 'react-native';
 import { Colors } from '@/src/constants/colors';
+import {
+  fontWeightBold,
+  fontWeightSemiBold,
+  fontWeightMedium,
+  AppText,
+} from '@/src/components/AppText';
 
 type FloatingAction = {
   key: string;
@@ -177,9 +182,9 @@ const FloatingSpeedDial: React.FC<FloatingSpeedDialProps> = ({
                         accessible
                         accessibilityRole="text"
                       >
-                        <Text numberOfLines={2} style={styles.tooltipText}>
+                        <AppText numberOfLines={2} style={styles.tooltipText}>
                           {action.label}
-                        </Text>
+                        </AppText>
                       </View>
                     )}
 
@@ -198,7 +203,7 @@ const FloatingSpeedDial: React.FC<FloatingSpeedDialProps> = ({
                       {action.icon ? (
                         action.icon
                       ) : (
-                        <Text style={styles.actionIcon}>•</Text>
+                        <AppText style={styles.actionIcon}>•</AppText>
                       )}
                     </TouchableOpacity>
 
@@ -209,9 +214,9 @@ const FloatingSpeedDial: React.FC<FloatingSpeedDialProps> = ({
                           { marginLeft: 10, maxWidth: labelMaxWidth },
                         ]}
                       >
-                        <Text numberOfLines={2} style={styles.tooltipText}>
+                        <AppText numberOfLines={2} style={styles.tooltipText}>
                           {action.label}
-                        </Text>
+                        </AppText>
                       </View>
                     )}
                   </View>
@@ -230,7 +235,7 @@ const FloatingSpeedDial: React.FC<FloatingSpeedDialProps> = ({
         accessibilityRole="button"
         accessibilityLabel={visible ? 'Cerrar menú' : 'Abrir menú'}
       >
-        <Text style={styles.fabText}>{visible ? '×' : '+'}</Text>
+        <AppText style={styles.fabText}>{visible ? '×' : '+'}</AppText>
       </TouchableOpacity>
     </>
   );
@@ -259,7 +264,7 @@ const styles = StyleSheet.create({
   fabText: {
     color: Colors.lightText,
     fontSize: 26,
-    fontWeight: '700',
+    fontWeight: fontWeightSemiBold,
     marginTop: Platform.OS === 'ios' ? -2 : 0,
   },
 
@@ -293,7 +298,7 @@ const styles = StyleSheet.create({
   actionIcon: {
     color: Colors.secondary,
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: fontWeightSemiBold,
   },
 
   tooltip: {
@@ -311,6 +316,6 @@ const styles = StyleSheet.create({
   tooltipText: {
     color: '#fff',
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: fontWeightMedium,
   },
 });

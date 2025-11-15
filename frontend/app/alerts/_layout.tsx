@@ -4,7 +4,7 @@ import { Stack } from 'expo-router';
 export default function AlertsLayout() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      {/* Todas las pantallas de (alerts) van sin header */}
+      {/* Todas las pantallas de (perfil) van sin header */}
     </Stack>
   );
 }

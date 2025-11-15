@@ -1,57 +1,87 @@
-import { Stack, useRouter, usePathname } from 'expo-router';
-import { View, StyleSheet, Platform } from 'react-native';
-import { useEffect, useState } from 'react';
+// app/_layout.tsx
+import { Stack, router, usePathname } from 'expo-router';
+import {
+  View,
+  StyleSheet,
+  Platform,
+  ActivityIndicator,
+  LogBox,
+} from 'react-native';
+import { useEffect } from 'react';
+
+import { useCustomFonts } from '@/src/constants/fontFamily';
 import { Colors } from '@/src/constants/colors';
-import { NotificationProvider } from '@/src/components/notifications/NotificationContext';
+import { NotificationProvider } from '@/src/components/notifications';
+import { AuthProvider, useAuth } from '@/src/contexts/AuthContext';
 import BottomNavBar from '@/src/components/UI/TabBar';
+import { RefreshProvider } from '@/src/contexts/RefreshContext';
 
-export default function RootLayout() {
-  const router = useRouter();
+// Silenciar warning específico de expo-notifications (si aparece)
+LogBox.ignoreLogs(['expo-notifications was removed', 'Notifications']);
+
+function AppContent() {
+  const fontsLoaded = useCustomFonts();
   const pathname = usePathname();
-  const [isReady, setIsReady] = useState(false);
+  const { isAuthenticated, isLoading } = useAuth();
 
   useEffect(() => {
-    // Marca el componente como listo una vez que ha terminado de montar
-    setIsReady(true);
-  }, []);
+    if (!fontsLoaded || isLoading) return;
 
-  useEffect(() => {
-    // Realiza la redirección solo después de que el layout esté listo
-    if (isReady) {
-      router.replace('/auth');
+    if (!isAuthenticated) {
+      if (pathname !== '/auth' && !pathname?.startsWith('/auth')) {
+        router.replace('/auth');
+      }
+    } else {
+      if (pathname === '/auth' || pathname?.startsWith('/auth')) {
+        router.replace('/home');
+      }
     }
-  }, [isReady]);
+  }, [fontsLoaded, isAuthenticated, isLoading, pathname]);
+
+  if (!fontsLoaded || isLoading) {
+    return (
+      <View style={[styles.background, styles.loadingContainer]}>
+        <ActivityIndicator size="large" color={Colors.primary} />
+      </View>
+    );
+  }
 
   const showTabBar = pathname && !pathname.startsWith('/auth');
 
   return (
-    <NotificationProvider>
-      <View style={styles.background}>
-        <Stack
-          screenOptions={{
-            contentStyle: { backgroundColor: 'transparent' },
-            // iOS slide por defecto para pushes internos
-            animation: Platform.select({ ios: 'default', android: 'fade' }),
-          }}
-        >
-          <Stack.Screen name="auth" options={{ headerShown: false }} />
+    <View style={styles.background}>
+      <Stack
+        screenOptions={{
+          contentStyle: { backgroundColor: 'transparent' },
+          animation: Platform.select({ ios: 'default', android: 'fade' }),
+        }}
+      >
+        <Stack.Screen name="auth" options={{ headerShown: false }} />
+        <Stack.Screen name="home" options={{ headerShown: false }} />
+        <Stack.Screen name="alerts" options={{ headerShown: false }} />
+        <Stack.Screen name="adoption" options={{ headerShown: false }} />
+        <Stack.Screen name="community_maps" options={{ headerShown: false }} />
+        <Stack.Screen name="profile" options={{ headerShown: false }} />
+        <Stack.Screen name="settings" options={{ headerShown: false }} />
+        <Stack.Screen name="create-report" options={{ headerShown: false }} />
+        <Stack.Screen name="sightings" options={{ headerShown: false }} />
+        <Stack.Screen name="notifications" options={{ headerShown: false }} />
+      </Stack>
 
-          {/* Secciones principales sin header */}
-          <Stack.Screen name="home" options={{ headerShown: false }} />
-          <Stack.Screen name="alerts" options={{ headerShown: false }} />
-          <Stack.Screen name="adoption" options={{ headerShown: false }} />
-          <Stack.Screen
-            name="community_maps"
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen name="profile" options={{ headerShown: false }} />
-          <Stack.Screen name="settings" options={{ headerShown: false }} />
-          <Stack.Screen name="create-report" options={{ headerShown: false }} />
-        </Stack>
+      {showTabBar && <BottomNavBar />}
+    </View>
+  );
+}
 
-        {showTabBar && <BottomNavBar />}
-      </View>
-    </NotificationProvider>
+export default function RootLayout() {
+  return (
+    <AuthProvider>
+      <RefreshProvider>
+        <NotificationProvider>
+          <AppContent />
+        </NotificationProvider>
+      </RefreshProvider>
+    </AuthProvider>
   );
 }
 
@@ -59,5 +89,9 @@ const styles = StyleSheet.create({
   background: {
     flex: 1,
     backgroundColor: Colors.background,
+  },
+  loadingContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

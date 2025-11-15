@@ -1,68 +1,105 @@
-import { useNotification } from '@/src/components/notifications/NotificationContext';
-import { Colors } from '@/src/constants/colors';
-import { router } from 'expo-router';
-import React, { useEffect, useMemo, useState } from 'react';
+// ProfileScreen.tsx
+import React, { useMemo, useState, useCallback } from 'react';
 import {
   ActivityIndicator,
-  Image,
   ScrollView,
   StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
+  View,
+  Modal,
+  Animated,
+  Dimensions,
+  TouchableWithoutFeedback,
+  Pressable,
+  useColorScheme,
 } from 'react-native';
 import { fetchUserProfile } from '../../src/api/users';
 import CustomButton from '../../src/components/UI/CustomButton';
 import CustomHeader from '../../src/components/UI/CustomHeader';
 import { User } from '../../src/types/user';
+import { useAutoRefresh } from '@/src/utils/useAutoRefresh';
+import { REFRESH_KEYS } from '@/src/constants/refreshKeys';
+import { useAuth } from '@/src/contexts/AuthContext';
+import ProfileImagePicker from '@/src/components/profile/ProfileImagePicker';
+import { useProfilePhoto } from '@/src/utils/useProfilePhoto';
+import { Ionicons } from '@expo/vector-icons';
+import { Colors } from '@/src/constants/colors';
+import {
+  fontWeightBold,
+  fontWeightSemiBold,
+  fontWeightMedium,
+  AppText,
+} from '@/src/components/AppText';
+import { router } from 'expo-router';
+import { useNotification } from '@/src/components/notifications';
+import BottomSheetModal from '@/src/components/profile/BottomSheetModal';
+import ProfileCard from '@/src/components/profile/ProfileCard';
+import ContactInfo from '@/src/components/profile/ContactInfo';
+import AdditionalInfo from '@/src/components/profile/AdditionalInfo';
 
-const AVATAR = 'https://placehold.co/200x200/png?text=Avatar';
+const AVATAR_PLACEHOLDER = 'https://placehold.co/200x200/png?text=Avatar';
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 export default function ProfileScreen() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showImagePicker, setShowImagePicker] = useState(false);
   const { showInfo } = useNotification();
+  const { isAuthenticated } = useAuth();
 
-  useEffect(() => {
-  fetchUserProfile()
-    .then((userData) => setUser(userData))
-    .catch((err) => console.error('Error cargando usuario:', err))
-    .finally(() => setLoading(false));
-  }, []);
+  const { photoUrl, uploading, fetchPhoto } = useProfilePhoto(
+    user?.id_usuario || 0,
+  );
 
-  const onEditProfile = () => console.log('Edit profile');
-  const onOpenSettings = () => router.push('/settings');
-  const onEditPhoto = () => console.log('Edit photo');
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'dark';
 
-  // Helpers
-  const calcularEdad = (fechaNacimiento: string) => {
-    const hoy = new Date();
-    const nacimiento = new Date(fechaNacimiento);
-    let edad = hoy.getFullYear() - nacimiento.getFullYear();
-    const mes = hoy.getMonth() - nacimiento.getMonth();
-    if (mes < 0 || (mes === 0 && hoy.getDate() < nacimiento.getDate())) edad--;
-    return edad;
-  };
-
-  const formatDate = (dateStr: string, opts?: Intl.DateTimeFormatOptions) =>
-    new Intl.DateTimeFormat('es-CL', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-      ...opts,
-    }).format(new Date(dateStr));
-
-  const formatPhone = (value?: string | number) => {
-    if (!value) return '-';
-    const digits = String(value).replace(/\D/g, '');
-    if (digits.length >= 11) {
-      return `+${digits.slice(0, 2)} ${digits.slice(2, 3)} ${digits.slice(
-        3,
-        7,
-      )} ${digits.slice(7, 11)}`;
+  const refreshPhoto = useCallback(async () => {
+    if (user?.id_usuario) {
+      try {
+        await fetchPhoto();
+      } catch (err) {
+        console.error('Error refrescando foto:', err);
+      }
     }
-    return digits.replace(/(\d{3})(\d{3})(\d{3,4})/, '$1 $2 $3');
-  };
+  }, [user?.id_usuario, fetchPhoto]);
+
+  const loadUserData = useCallback(async () => {
+    if (!isAuthenticated) {
+      setLoading(false);
+      router.replace('/auth');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const userData = await fetchUserProfile();
+      setUser(userData);
+    } catch (err) {
+      console.error('Error cargando usuario:', err);
+      router.replace('/auth');
+    } finally {
+      setLoading(false);
+    }
+  }, [isAuthenticated]);
+
+  useAutoRefresh({
+    key: REFRESH_KEYS.USER,
+    onRefresh: loadUserData,
+    refreshOnFocus: true,
+    refreshOnMount: true,
+  });
+
+  useAutoRefresh({
+    key: REFRESH_KEYS.USER_PHOTO,
+    onRefresh: refreshPhoto,
+    refreshOnFocus: false,
+    refreshOnMount: false,
+  });
+
+  const onEditProfile = () => router.push('/profile/edit-form');
+  const onOpenSettings = () => router.push('/settings');
+  const onEditPhoto = () => setShowImagePicker(true);
+  const closeBottomSheet = () => setShowImagePicker(false);
 
   const fullName = useMemo(() => {
     if (!user) return '';
@@ -76,20 +113,14 @@ export default function ProfileScreen() {
     [user],
   );
 
-  const edad = useMemo(
-    () => (user ? calcularEdad(user.fecha_nacimiento) : 0),
-    [user],
-  );
-
-  const fechaCreacion = useMemo(
-    () => (user ? formatDate(user.fecha_creacion) : ''),
-    [user],
-  );
+  const displayAvatar = useMemo(() => {
+    return photoUrl || AVATAR_PLACEHOLDER;
+  }, [photoUrl]);
 
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#CC5803" />
+        <ActivityIndicator size="large" color={Colors.secondary} />
       </View>
     );
   }
@@ -97,15 +128,10 @@ export default function ProfileScreen() {
   if (!user) {
     return (
       <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>No se pudo cargar el perfil</Text>
+        <AppText style={styles.errorText}>No se pudo cargar el perfil</AppText>
         <CustomButton
           title="Reintentar"
-          onPress={() => {
-            setLoading(true);
-            fetchUserProfile()
-              .then((userData) => setUser(userData))
-              .finally(() => setLoading(false));
-          }}
+          onPress={loadUserData}
           variant="primary"
           style={{ marginTop: 24 }}
         />
@@ -114,292 +140,60 @@ export default function ProfileScreen() {
   }
 
   return (
-    <ScrollView
-      style={styles.scrollView}
-      contentContainerStyle={styles.container}
-    >
-      <CustomHeader
-        title="Perfil"
-        // Sin botón de cerrar sesión aquí
-        rightComponent={null}
-      />
+    <>
+      <ScrollView
+        style={[styles.scrollView, { backgroundColor: Colors.background }]}
+        contentContainerStyle={styles.container}
+      >
+        <CustomHeader title="Perfil" rightComponent={null} />
+        <ProfileCard
+          user={user}
+          fullName={fullName}
+          handle={handle}
+          displayAvatar={displayAvatar}
+          uploading={uploading}
+          onEditPhoto={onEditPhoto}
+          onEditProfile={onEditProfile}
+          onOpenSettings={onOpenSettings}
+        />
+        <ContactInfo user={user} showInfo={showInfo} />
+        <AdditionalInfo user={user} />
+      </ScrollView>
 
-      {/* Profile Card */}
-      <View style={styles.profileCard}>
-        <View style={{ alignItems: 'center' }}>
-          <View style={{ position: 'relative' }}>
-            <Image source={{ uri: AVATAR }} style={styles.avatar} />
-            <TouchableOpacity
-              onPress={onEditPhoto}
-              style={styles.editBadge}
-              accessibilityLabel="Editar foto de perfil"
-            >
-              <Text style={styles.editBadgeText}>✎</Text>
-            </TouchableOpacity>
-          </View>
-
-          <Text style={styles.name}>{fullName}</Text>
-          <Text style={styles.username}>@{handle}</Text>
-
-          <View
-            style={[
-              styles.statusBadge,
-              { backgroundColor: user.activo ? '#16A34A' : '#DC2626' },
-            ]}
-          >
-            <Text style={styles.statusText}>
-              {user.activo ? '✓ Activo' : '✗ Inactivo'}
-            </Text>
-          </View>
-
-          {/* Acciones */}
-          <View style={styles.actionsRow}>
-            <CustomButton
-              title="Editar perfil"
-              onPress={onEditProfile}
-              variant="primary"
-              icon="create-outline"
-              style={styles.customButtonStyle}
-            />
-            <CustomButton
-              title="Ajustes"
-              onPress={onOpenSettings}
-              variant="secondary"
-              icon="settings-outline"
-              style={styles.customButtonStyle}
-            />
-          </View>
-        </View>
-      </View>
-
-      {/* Stats */}
-      <View style={styles.statsGrid}>
-        <View style={styles.statCard}>
-          <Text style={styles.statValue}>{edad}</Text>
-          <Text style={styles.statLabel}>Años</Text>
-        </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statValue}>{user.nombre_rol}</Text>
-          <Text style={styles.statLabel}>Rol</Text>
-        </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statValue}>{user.sexo}</Text>
-          <Text style={styles.statLabel}>Sexo</Text>
-        </View>
-      </View>
-
-      {/* Información de Contacto */}
-      <View style={styles.card}>
-        <Text style={styles.sectionTitle}>Información de Contacto</Text>
-
-        <View style={{ marginBottom: 16 }}>
-          <Text style={styles.infoLabel}>Email</Text>
-          <View style={styles.infoValueWrap}>
-            <Text numberOfLines={2} style={styles.infoValue}>
-              {user.email}
-            </Text>
-            <TouchableOpacity
-              onPress={() => showInfo('Copiado', user.email)}
-              accessibilityLabel="Copiar Email"
-              style={styles.copyPill}
-            >
-              <Text style={styles.copyPillText}>Copiar</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        <View style={styles.divider} />
-
-        <View style={{ marginBottom: 16 }}>
-          <Text style={styles.infoLabel}>Teléfono</Text>
-          <View style={styles.infoValueWrap}>
-            <Text numberOfLines={1} style={styles.infoValue}>
-              {formatPhone(user.telefono)}
-            </Text>
-            <TouchableOpacity
-              onPress={() => showInfo('Copiado', String(user.telefono))}
-              accessibilityLabel="Copiar Teléfono"
-              style={styles.copyPill}
-            >
-              <Text style={styles.copyPillText}>Copiar</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        <View style={styles.divider} />
-
-        <View>
-          <Text style={styles.infoLabel}>Ciudad</Text>
-          <View style={styles.infoValueWrap}>
-            <Text numberOfLines={1} style={styles.infoValue}>
-              {user.nombre_ciudad}
-            </Text>
-          </View>
-        </View>
-      </View>
-
-      {/* Información Adicional */}
-      <View style={styles.card}>
-        <Text style={styles.sectionTitle}>Información Adicional</Text>
-
-        <View style={{ marginBottom: 16 }}>
-          <Text style={styles.infoLabel}>Fecha de nacimiento</Text>
-          <View style={styles.infoValueWrap}>
-            <Text style={styles.infoValue}>
-              {formatDate(user.fecha_nacimiento)}
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.divider} />
-
-        <View style={{ marginBottom: user.nombre_organizacion ? 16 : 0 }}>
-          <Text style={styles.infoLabel}>Miembro desde</Text>
-          <View style={styles.infoValueWrap}>
-            <Text style={styles.infoValue}>{fechaCreacion}</Text>
-          </View>
-        </View>
-
-        {user.nombre_organizacion ? (
-          <>
-            <View style={styles.divider} />
-            <View>
-              <Text style={styles.infoLabel}>Organización</Text>
-              <View style={styles.infoValueWrap}>
-                <Text numberOfLines={2} style={styles.infoValue}>
-                  {user.nombre_organizacion}
-                </Text>
-              </View>
-            </View>
-          </>
-        ) : null}
-      </View>
-    </ScrollView>
+      <BottomSheetModal
+        visible={showImagePicker}
+        onClose={closeBottomSheet}
+        title="Cambiar foto de perfil"
+      >
+        {user && (
+          <ProfileImagePicker
+            userId={user.id_usuario}
+            onUploadSuccess={() => {
+              closeBottomSheet();
+              void fetchPhoto();
+            }}
+          />
+        )}
+      </BottomSheetModal>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
-  scrollView: { flex: 1, backgroundColor: '#FAF7EF' },
+  scrollView: { flex: 1, backgroundColor: Colors.background },
   container: { padding: 16, paddingBottom: 32 },
-
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#FAF7EF',
+    backgroundColor: Colors.background,
     justifyContent: 'center',
     alignItems: 'center',
   },
   errorContainer: {
     flex: 1,
-    backgroundColor: '#FAF7EF',
+    backgroundColor: Colors.background,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,
   },
-  errorText: { color: '#CC5803', fontSize: 14 },
-
-  profileCard: {
-    backgroundColor: Colors.lightText,
-    borderRadius: 16,
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    marginTop: 16,
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
-    overflow: 'hidden',
-  },
-  avatar: { width: 112, height: 112, borderRadius: 56, marginBottom: 16 },
-  editBadge: {
-    position: 'absolute',
-    right: 4,
-    bottom: 8,
-    backgroundColor: '#CC5803',
-    borderRadius: 999,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-  },
-  editBadgeText: { color: '#fff', fontWeight: '700', fontSize: 12 },
-
-  name: {
-    color: '#1F2937',
-    fontSize: 20,
-    fontWeight: '800',
-    textAlign: 'center',
-  },
-  username: { color: '#6B7280', marginTop: 2, textAlign: 'center' },
-  statusBadge: {
-    alignSelf: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 999,
-    marginTop: 8,
-  },
-  statusText: { color: '#FFF', fontSize: 12, fontWeight: '700' },
-
-  statsGrid: { flexDirection: 'row', gap: 12, marginTop: 16 },
-  statCard: {
-    flex: 1,
-    backgroundColor: Colors.lightText,
-    borderRadius: 12,
-    paddingVertical: 12,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#F2D8A7',
-  },
-  statValue: {
-    color: '#CC5803',
-    fontSize: 20,
-    fontWeight: '800',
-    textAlign: 'center',
-  },
-  statLabel: { color: '#6B7280', marginTop: 4, fontSize: 12 },
-
-  card: {
-    backgroundColor: '#FFFDF4',
-    borderRadius: 12,
-    padding: 16,
-    marginTop: 16,
-    borderWidth: 1,
-    borderColor: '#F2D8A7',
-  },
-  sectionTitle: {
-    color: '#CC5803',
-    fontSize: 18,
-    fontWeight: '700',
-    marginBottom: 16,
-  },
-
-  infoLabel: {
-    color: '#6B7280',
-    fontWeight: '600',
-    fontSize: 12,
-    marginBottom: 4,
-  },
-  infoValueWrap: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  infoValue: { color: '#1F2937', fontSize: 14, flexShrink: 1 },
-  copyPill: {
-    backgroundColor: Colors.lightText,
-    borderWidth: 1,
-    borderColor: '#F2D8A7',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 999,
-  },
-  copyPillText: { color: '#1F2937', fontSize: 12 },
-  divider: { height: 1, backgroundColor: '#F2EFE6', marginVertical: 8 },
-
-  actionsRow: {
-    marginTop: 24,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  customButtonStyle: {
-    paddingVertical: 10,
-    paddingHorizontal: 30,
-    minWidth: 50,
-  },
+  errorText: { color: Colors.secondary, fontSize: 14 },
 });

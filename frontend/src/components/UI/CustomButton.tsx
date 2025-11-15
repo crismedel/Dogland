@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import {
   Pressable,
-  Text,
   StyleSheet,
   ActivityIndicator,
   StyleProp,
@@ -12,6 +11,12 @@ import {
   Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import {
+  fontWeightBold,
+  fontWeightSemiBold,
+  fontWeightMedium,
+  AppText,
+} from '@/src/components/AppText';
 
 type ButtonVariant = 'primary' | 'secondary' | 'outline';
 
@@ -90,9 +95,9 @@ const CustomButton: React.FC<CustomButtonProps> = ({
                 style={{ marginRight: 6 }}
               />
             )}
-            <Text style={[styles.text, styles[`${variant}Text`], textStyle]}>
+            <AppText style={[styles.text, styles[`${variant}Text`], textStyle]}>
               {title}
-            </Text>
+            </AppText>
           </View>
         )}
       </Pressable>
@@ -108,7 +113,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 48,
-    minWidth: 180, // ancho uniforme
+    minWidth: 180,
     alignSelf: 'center',
   },
 
@@ -123,10 +128,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#f7b500',
     borderWidth: 2,
     borderColor: '#2c3e50',
+    fontFamily: 'Chewy-Regular',
   },
   primaryText: {
     color: '#2c3e50',
-    fontWeight: '800',
+    fontWeight: fontWeightBold,
     fontSize: 16,
     textAlign: 'center',
   },
@@ -138,7 +144,7 @@ const styles = StyleSheet.create({
   },
   secondaryText: {
     color: '#f2e2c4',
-    fontWeight: '800',
+    fontWeight: fontWeightBold,
     fontSize: 16,
     textAlign: 'center',
   },
@@ -150,7 +156,7 @@ const styles = StyleSheet.create({
   },
   outlineText: {
     color: '#f7b500',
-    fontWeight: '800',
+    fontWeight: fontWeightBold,
     fontSize: 16,
     textAlign: 'center',
   },

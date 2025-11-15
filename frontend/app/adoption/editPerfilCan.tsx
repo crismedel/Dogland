@@ -1,18 +1,23 @@
 import React, { useState } from 'react';
 import {
   View,
-  Text,
   TextInput,
   TouchableOpacity,
   StyleSheet,
   Alert,
   ActivityIndicator,
   KeyboardAvoidingView,
-  Platform
+  Platform,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { updateAnimal } from '../../src/api/animals';
 import { Ionicons } from '@expo/vector-icons';
+import {
+  fontWeightBold,
+  fontWeightSemiBold,
+  fontWeightMedium,
+  AppText,
+} from '@/src/components/AppText';
 
 const EditarPerfilCan = () => {
   const { id, name, breed, age } = useLocalSearchParams();
@@ -33,9 +38,9 @@ const EditarPerfilCan = () => {
     const updatedData = {
       nombre_animal: nombre,
       edad_animal: Number(edad),
-      edad_aproximada: String(edad+" meses"),
+      edad_aproximada: String(edad + ' meses'),
       id_estado_salud: 1,
-      id_raza: Number(raza)
+      id_raza: Number(raza),
     };
 
     console.log('Actualizar animal ID:', id);
@@ -68,20 +73,22 @@ const EditarPerfilCan = () => {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-
       <View style={styles.container}>
         {/* Barra superior */}
         <View style={styles.topBar}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={styles.backButton}
+          >
             <Ionicons name="arrow-back" size={26} color="#333" />
           </TouchableOpacity>
-          <Text style={styles.title}>Editar Perfil</Text>
+          <AppText style={styles.title}>Editar Perfil</AppText>
           <View style={{ width: 40 }} /> {/* Espaciador simétrico */}
         </View>
 
         {/* Campos del formulario */}
         <View style={styles.form}>
-          <Text style={styles.label}>Nombre</Text>
+          <AppText style={styles.label}>Nombre</AppText>
           <TextInput
             style={styles.input}
             value={nombre}
@@ -89,7 +96,7 @@ const EditarPerfilCan = () => {
             placeholder="Nombre del animal"
           />
 
-          <Text style={styles.label}>Raza</Text>
+          <AppText style={styles.label}>Raza</AppText>
           <TextInput
             style={styles.input}
             value={raza}
@@ -97,7 +104,7 @@ const EditarPerfilCan = () => {
             placeholder="Raza"
           />
 
-          <Text style={styles.label}>Edad (meses)</Text>
+          <AppText style={styles.label}>Edad (meses)</AppText>
           <TextInput
             style={styles.input}
             value={edad}
@@ -108,9 +115,17 @@ const EditarPerfilCan = () => {
         </View>
 
         {/* Botón de guardar */}
-        <TouchableOpacity style={styles.saveButton} onPress={handleGuardarCambios}>
-          <Ionicons name="save-outline" size={22} color="#fff" style={{ marginRight: 8 }} />
-          <Text style={styles.saveButtonText}>Guardar Cambios</Text>
+        <TouchableOpacity
+          style={styles.saveButton}
+          onPress={handleGuardarCambios}
+        >
+          <Ionicons
+            name="save-outline"
+            size={22}
+            color="#fff"
+            style={{ marginRight: 8 }}
+          />
+          <AppText style={styles.saveButtonText}>Guardar Cambios</AppText>
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
@@ -137,7 +152,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: fontWeightBold,
     color: '#4A90E2',
   },
   image: {
@@ -163,7 +178,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     color: '#333',
-    fontWeight: '600',
+    fontWeight: fontWeightMedium,
     marginTop: 10,
   },
   input: {
@@ -188,7 +203,7 @@ const styles = StyleSheet.create({
   },
   saveButtonText: {
     color: '#fff',
-    fontWeight: 'bold',
+    fontWeight: fontWeightBold,
     fontSize: 16,
   },
 });

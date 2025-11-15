@@ -1,15 +1,26 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import {
   View,
-  Text,
   Image,
   StyleSheet,
   TouchableOpacity,
   ScrollView,
+  Platform,
+  Share,
+  Animated,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import CustomHeader from '@/src/components/UI/CustomHeader';
 import TarjetaMedica from './component/terjetasMedicas';
+import { Colors } from '@/src/constants/colors';
+import CustomButton from '@/src/components/UI/CustomButton';
+import {
+  fontWeightBold,
+  fontWeightSemiBold,
+  fontWeightMedium,
+  AppText,
+} from '@/src/components/AppText';
 
 const PerfilCan = () => {
   const {
@@ -20,6 +31,9 @@ const PerfilCan = () => {
     imageUrl,
     estadoMedico,
     descripcionMedica,
+    health,
+    size,
+    species,
   } = useLocalSearchParams();
   const router = useRouter();
 
@@ -30,179 +44,440 @@ const PerfilCan = () => {
     });
   };
 
+  const handleShare = async () => {
+    try {
+      await Share.share({
+        title: `Conoce a ${name}`,
+        message: `Conoce a ${name} (${breed}), ${age} meses. ¡Busca familia!`,
+      });
+    } catch {}
+  };
+
+  const estadoTexto =
+    (health as string) ||
+    (Number(estadoMedico) === 1
+      ? 'Sano'
+      : Number(estadoMedico) === 2
+      ? 'En tratamiento'
+      : Number(estadoMedico) === 3
+      ? 'Recuperado'
+      : 'Disponible para adopción');
+
+  const estadoColor =
+    estadoTexto === 'Sano'
+      ? '#2e7d32'
+      : estadoTexto === 'En tratamiento'
+      ? '#ef6c00'
+      : estadoTexto === 'Recuperado'
+      ? '#0288d1'
+      : '#455a64';
+
   return (
     <View style={styles.screen}>
-      {/* 🔹 Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButtonHeader}
-          onPress={() => router.back()}
-        >
-          <Image
-            source={require('../../assets/images/volver.png')}
-            style={styles.backIconHeader}
-          />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Perfil del Animal</Text>
-        <View style={{ width: 24 }} />
-      </View>
+      <CustomHeader
+        title="Perfil del Animal"
+        leftComponent={
+          <TouchableOpacity
+            onPress={() => router.back()}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Ionicons name="chevron-back" size={24} color="#fff" />
+          </TouchableOpacity>
+        }
+        rightComponent={
+          <TouchableOpacity
+            onPress={handleShare}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Ionicons name="share-social-outline" size={20} color="#fff" />
+          </TouchableOpacity>
+        }
+      />
 
-      {/* 🔹 Contenido con scroll */}
-      <ScrollView contentContainerStyle={styles.container}>
-        {/* Imagen y datos principales */}
-        <Image source={{ uri: imageUrl as string }} style={styles.image} />
-        <Text style={styles.name}>{name}</Text>
-        <Text style={styles.breed}>{breed}</Text>
-        <Text style={styles.age}>{age} meses</Text>
+      <ScrollView
+        contentContainerStyle={styles.container}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Contenedor 3D tipo card para la imagen */}
+        <View style={styles.neuImageWrapper}>
+          <View style={styles.imageWrap}>
+            <Image source={{ uri: imageUrl as string }} style={styles.image} />
 
-        {/* Información adicional del animal */}
-        <View style={styles.infoSection}>
-          <Text style={styles.sectionTitle}>Información del Animal</Text>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Edad:</Text>
-            <Text style={styles.infoValue}>{age} meses</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Raza:</Text>
-            <Text style={styles.infoValue}>{breed}</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Estado:</Text>
-            <Text style={styles.infoValue}>Disponible para adopción</Text>
+            {/* Badge de estado */}
+            <View
+              style={[
+                styles.estadoBadge,
+                { backgroundColor: estadoColor + 'dd' },
+              ]}
+            >
+              <AppText style={styles.estadoText}>{estadoTexto}</AppText>
+            </View>
+
+            {/* Sombra interna inferior para profundidad */}
+            <View style={styles.innerShadowBottom} />
           </View>
         </View>
 
-        {/* Requisitos de adopción */}
-        <View style={styles.requirementsSection}>
-          <Text style={styles.sectionTitle}>Requisitos de Adopción</Text>
-          <Text style={styles.requirementText}>
-            • Compromiso de cuidado responsable
-          </Text>
-          <Text style={styles.requirementText}>• Vivienda adecuada</Text>
-          <Text style={styles.requirementText}>• Tiempo para dedicarle</Text>
-          <Text style={styles.requirementText}>
-            • Compromiso de esterilización
-          </Text>
+        {/* Identidad */}
+        <AppText numberOfLines={1} style={styles.name}>
+          {String(name)}
+        </AppText>
+        <AppText numberOfLines={1} style={styles.subtle}>
+          {String(breed)}
+        </AppText>
+        <AppText style={styles.subtle}>{age} meses</AppText>
+
+        {/* Chips */}
+        <View style={styles.pillsRow}>
+          {species ? (
+            <View style={styles.pill}>
+              <Ionicons name="paw-outline" size={14} color="#1565c0" />
+              <AppText numberOfLines={1} style={styles.pillText}>
+                {String(species)}
+              </AppText>
+            </View>
+          ) : null}
+          {size ? (
+            <View style={styles.pillLight}>
+              <Ionicons name="resize-outline" size={14} color={Colors.text} />
+              <AppText numberOfLines={1} style={styles.pillTextDark}>
+                {String(size)}
+              </AppText>
+            </View>
+          ) : null}
         </View>
 
-        {/* 🩺 Información médica del animal */}
-        <View style={styles.infoSection}>
-          <Text style={styles.sectionTitle}>Estado de Salud</Text>
+        {/* Cards 3D: neumorfismo sutil */}
+        <NeumorphCard title="Información del Animal">
+          <Row label="Edad" value={`${age} meses`} />
+          <Divider />
+          <Row label="Raza" value={String(breed)} truncate />
+          <Divider />
+          <Row label="Estado" value={estadoTexto} valueColor={estadoColor} />
+        </NeumorphCard>
+
+        <NeumorphCard title="Requisitos de Adopción">
+          {[
+            'Compromiso de cuidado responsable',
+            'Vivienda adecuada',
+            'Tiempo para dedicarle',
+            'Compromiso de esterilización',
+          ].map((txt, idx) => (
+            <View key={idx} style={styles.bulletRow}>
+              <View style={styles.bulletDot} />
+              <AppText style={styles.bulletText}>{txt}</AppText>
+            </View>
+          ))}
+        </NeumorphCard>
+
+        <NeumorphCard title="Estado de Salud">
           <TarjetaMedica
             estadoMedico={Number(estadoMedico)}
-            descripcion={descripcionMedica as string}
+            descripcion={
+              (descripcionMedica as string) || 'Sin detalles adicionales'
+            }
           />
-        </View>
+        </NeumorphCard>
 
-
-        {/* Botón de solicitar adopción */}
-        <TouchableOpacity
-          style={styles.adoptionButton}
-          onPress={handleSolicitarAdopcion}
-        >
-          <Text style={styles.adoptionButtonText}>Solicitar Adopción</Text>
-          <Ionicons name="heart" size={20} color="#fff" />
-        </TouchableOpacity>
+        <View style={{ height: 92 }} />
       </ScrollView>
+
+      <View style={styles.ctaWrap}>
+        <CustomButton
+          title="Solicitar Adopción"
+          onPress={handleSolicitarAdopcion}
+          variant="primary"
+          icon="heart"
+        />
+      </View>
     </View>
   );
 };
 
+// ---------- Subcomponentes UI ----------
+
+const Row = ({
+  label,
+  value,
+  truncate,
+  valueColor,
+}: {
+  label: string;
+  value: string;
+  truncate?: boolean;
+  valueColor?: string;
+}) => (
+  <View style={styles.row}>
+    <AppText style={styles.rowLabel}>{label}</AppText>
+    <AppText
+      numberOfLines={truncate ? 1 : undefined}
+      ellipsizeMode={truncate ? 'tail' : undefined}
+      style={[styles.rowValue, valueColor ? { color: valueColor } : null]}
+    >
+      {value}
+    </AppText>
+  </View>
+);
+
+const Divider = () => <View style={styles.separator} />;
+
+const NeumorphCard: React.FC<{ title: string; children: React.ReactNode }> = ({
+  title,
+  children,
+}) => {
+  const scale = useRef(new Animated.Value(1)).current;
+  const onPressIn = () =>
+    Animated.spring(scale, {
+      toValue: 0.995,
+      useNativeDriver: true,
+      speed: 20,
+      bounciness: 6,
+    }).start();
+  const onPressOut = () =>
+    Animated.spring(scale, {
+      toValue: 1,
+      useNativeDriver: true,
+      speed: 20,
+      bounciness: 6,
+    }).start();
+
+  return (
+    <Animated.View style={[styles.neuWrapper, { transform: [{ scale }] }]}>
+      <TouchableOpacity
+        activeOpacity={0.98}
+        onPressIn={onPressIn}
+        onPressOut={onPressOut}
+      >
+        <View style={styles.cardNeu}>
+          <AppText style={styles.cardTitle}>{title}</AppText>
+          {children}
+        </View>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+};
+
+// ---------- Estilos ----------
+
+const PERF_RADIUS = 18;
+
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#dbe8d3' },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#4A90E2',
+  screen: { flex: 1, backgroundColor: Colors.background },
+
+  container: {
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 8,
-    marginTop: 20,
-    marginBottom: 10,
-  },
-  backButtonHeader: { padding: 6 },
-  backIconHeader: { width: 24, height: 24, tintColor: '#fff' },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#fff',
-    textAlign: 'center',
-    flex: 1,
-  },
-  container: { padding: 20, alignItems: 'center' },
-  image: {
-    width: 250,
-    height: 250,
-    borderRadius: 16,
-    marginBottom: 20,
-    borderWidth: 3,
-    borderColor: '#4A90E2',
-  },
-  name: { fontSize: 28, fontWeight: 'bold', marginBottom: 10, color: '#333' },
-  breed: { fontSize: 20, color: '#666', marginBottom: 8 },
-  age: { fontSize: 18, color: '#999', marginBottom: 20 },
-  infoSection: {
-    backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 15,
-    width: '100%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  requirementsSection: {
-    backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 10,
-    width: '100%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
-    marginBottom: 30,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    color: '#4A90E2',
-  },
-  infoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  infoLabel: { fontSize: 14, fontWeight: 'bold', color: '#333' },
-  infoValue: { fontSize: 14, color: '#666' },
-  requirementText: {
-    fontSize: 14,
-    color: '#333',
-    marginBottom: 5,
-    marginLeft: 10,
-  },
-  adoptionButton: {
-    flexDirection: 'row',
-    backgroundColor: '#4A90E2',
-    paddingVertical: 15,
-    paddingHorizontal: 25,
-    borderRadius: 25,
+    paddingTop: 16,
+    paddingBottom: 0,
     alignItems: 'center',
-    marginTop: 30,
-    marginBottom: 40,
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowOffset: { width: 0, height: 2 },
   },
-  adoptionButtonText: {
+
+  // Contenedor 3D de la imagen (neumórfico como las cards)
+  neuImageWrapper: {
+    width: '100%',
+    borderRadius: PERF_RADIUS,
+    backgroundColor: Colors.background,
+    padding: 6, // borde suave alrededor de la imagen
+    marginBottom: 6,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOpacity: 0.1,
+        shadowRadius: 20,
+        shadowOffset: { width: 10, height: 10 }, // sombra oscura
+      },
+      android: { elevation: 6 },
+    }),
+  },
+  imageWrap: {
+    width: '100%',
+    height: 260,
+    borderRadius: PERF_RADIUS,
+    overflow: 'hidden',
+    backgroundColor: '#e0e6eb',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOpacity: 0.06,
+        shadowRadius: 14,
+        shadowOffset: { width: -6, height: -6 }, // contrasombra (realce)
+      },
+      android: { elevation: 2 },
+    }),
+  },
+  image: {
+    width: '100%',
+    height: '100%',
+  },
+  // Sombra interna inferior para dar profundidad
+  innerShadowBottom: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 80,
+    backgroundColor: 'rgba(0,0,0,0.12)',
+  },
+  estadoBadge: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 18,
+  },
+  estadoText: {
     color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginRight: 10,
+    fontSize: 12,
+    fontWeight: fontWeightSemiBold,
+    letterSpacing: 0.2,
+  },
+
+  // Identidad
+  name: {
+    marginTop: 16,
+    fontSize: 26,
+    fontWeight: fontWeightBold,
+    color: Colors.text,
+    textAlign: 'center',
+  },
+  subtle: {
+    fontSize: 14,
+    color: Colors.text,
+    textAlign: 'center',
+    marginTop: 2,
+  },
+
+  // Pills/chips
+  pillsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 10,
+    marginBottom: 6,
+  },
+  pill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#e3f2fd',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 14,
+  },
+  pillLight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#eceff1',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 14,
+  },
+  pillText: {
+    fontSize: 12,
+    color: Colors.secondary,
+    fontWeight: fontWeightSemiBold,
+  },
+  pillTextDark: {
+    fontSize: 12,
+    color: '#546e7a',
+    fontWeight: fontWeightSemiBold,
+  },
+
+  // Card estilo neumórfico (3D suave)
+  neuWrapper: {
+    width: '100%',
+    marginTop: 16,
+    borderRadius: PERF_RADIUS,
+    backgroundColor: Colors.background,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOpacity: 0.08,
+        shadowRadius: 20,
+        shadowOffset: { width: 12, height: 12 }, // sombra oscura
+      },
+      android: { elevation: 4 },
+    }),
+  },
+  cardNeu: {
+    borderRadius: PERF_RADIUS,
+    backgroundColor: '#fff',
+    padding: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#e6ebf0',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOpacity: 0.06,
+        shadowRadius: 14,
+        shadowOffset: { width: -6, height: -6 }, // contrasombra
+      },
+      android: { elevation: 2 },
+    }),
+  },
+
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: fontWeightBold,
+    color: Colors.secondary,
+    marginBottom: 10,
+    letterSpacing: 0.2,
+  },
+
+  // Filas de información
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 6,
+  },
+  rowLabel: {
+    fontSize: 13,
+    color: '#607d8b',
+    fontWeight: fontWeightSemiBold,
+    letterSpacing: 0.2,
+    textTransform: 'uppercase',
+  },
+  rowValue: {
+    fontSize: 14,
+    color: Colors.text,
+    maxWidth: '60%',
+    textAlign: 'right',
+  },
+  separator: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: '#eef2f6',
+    marginVertical: 6,
+  },
+
+  // Bullets
+  bulletRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    paddingVertical: 4,
+  },
+  bulletDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#90a4ae',
+    marginTop: 6,
+  },
+  bulletText: {
+    flex: 1,
+    color: '#455a64',
+    fontSize: 14,
+    lineHeight: 20,
+  },
+
+  // CTA sticky
+  ctaWrap: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 10,
+    margin: 10,
   },
 });
 

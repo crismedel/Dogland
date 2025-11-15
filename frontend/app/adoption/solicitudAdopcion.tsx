@@ -1,8 +1,16 @@
-// /app/adoption/solicitudAdopcion.tsx
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Alert, TouchableOpacity, Image, Text } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  Alert,
+  TouchableOpacity,
+  Image,
+  AppText,
+} from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import TarjetaSoli from './component/tarjetaSoli';
+import CustomHeader from '@/src/components/UI/CustomHeader';
+import { Colors } from '@/src/constants/colors';
 
 const SolicitudAdopcion = () => {
   const router = useRouter();
@@ -30,7 +38,7 @@ const SolicitudAdopcion = () => {
 
   useEffect(() => {
     // Simulación de carga de datos del usuario autenticado
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       nombreSolicitante: '',
       email: '',
@@ -38,7 +46,7 @@ const SolicitudAdopcion = () => {
   }, []);
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       [field]: value,
     }));
@@ -58,14 +66,17 @@ const SolicitudAdopcion = () => {
 
     setLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000)); // simulación API
+      await new Promise((resolve) => setTimeout(resolve, 2000)); // simulación API
       Alert.alert(
         '¡Solicitud Enviada!',
         `Tu solicitud para adoptar a ${formData.nombreAnimal} ha sido enviada correctamente.`,
-        [{ text: 'OK', onPress: () => router.back() }]
+        [{ text: 'OK', onPress: () => router.back() }],
       );
     } catch {
-      Alert.alert('Error', 'No se pudo enviar la solicitud. Intenta nuevamente.');
+      Alert.alert(
+        'Error',
+        'No se pudo enviar la solicitud. Intenta nuevamente.',
+      );
     } finally {
       setLoading(false);
     }
@@ -73,17 +84,18 @@ const SolicitudAdopcion = () => {
 
   return (
     <View style={styles.screen}>
-      {/* Header con estilo igual que index.tsx */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButtonHeader} onPress={() => router.back()}>
-          <Image source={require('../../assets/images/volver.png')} style={styles.backIconHeader} />
-        </TouchableOpacity>
-
-        <Text style={styles.headerTitle}>Solicitud de Adopción</Text>
-
-        {/* Espaciador para centrar título */}
-        <View style={{ width: 24 }} />
-      </View>
+      {/* Header */}
+      <CustomHeader
+        title="Solicitud de Adopción"
+        leftComponent={
+          <TouchableOpacity onPress={() => router.back()}>
+            <Image
+              source={require('../../assets/images/volver.png')}
+              style={{ width: 24, height: 24, tintColor: '#fff' }}
+            />
+          </TouchableOpacity>
+        }
+      />
 
       {/* Tarjeta con formulario (componente separado) */}
       <TarjetaSoli
@@ -100,22 +112,8 @@ const SolicitudAdopcion = () => {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#dbe8d3',
+    backgroundColor: Colors.background,
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#4A90E2',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 8,
-    marginBottom: 10,
-    marginTop: 20,
-  },
-  backButtonHeader: { padding: 6 },
-  backIconHeader: { width: 24, height: 24, tintColor: '#fff' },
-  headerTitle: { fontSize: 18, fontWeight: 'bold', color: '#fff', textAlign: 'center', flex: 1 },
 });
 
 export default SolicitudAdopcion;

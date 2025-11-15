@@ -1,0 +1,277 @@
+<html><head><meta charset="utf-8"/><title>Reporte de Tests - Backend</title><style type="text/css">:root {
+  --text-primary: #111;
+  --text-secondary: #4f4f4f;
+  --success: #006633;
+  --success-bright: #80ffbf;
+  --danger: #cc071e;
+  --danger-bright: #fbdfe0;
+  --warning: #995c00;
+  --warning-bright: #ffeea8;
+  --panel: #eee;
+  --border: #949494;
+  --disabled: #6b6b6b;
+}
+
+html,
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 16px;
+  margin: 0;
+  padding: 0;
+  color: var(--text-primary);
+}
+body {
+  padding: 2rem 1rem;
+}
+.jesthtml-content {
+  margin: 0 auto;
+  max-width: 70rem;
+}
+header {
+  display: flex;
+  align-items: center;
+}
+#title {
+  margin: 0;
+  flex-grow: 1;
+}
+#logo {
+  height: 4rem;
+}
+#timestamp {
+  color: var(--text-secondary);
+  margin-top: 0.5rem;
+}
+
+#metadata-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.additional-information-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  color: var(--text-secondary);
+}
+
+/** SUMMARY */
+#summary {
+  color: var(--text-primary);
+  display: flex;
+  font-family: monospace;
+  font-size: 1rem;
+}
+#summary > div {
+  margin-right: 0.5rem;
+  background: var(--panel);
+  padding: 1rem;
+  min-width: 15rem;
+}
+#summary > div:last-child {
+  margin-right: 0;
+}
+@media only screen and (max-width: 720px) {
+  #summary {
+    flex-direction: column;
+  }
+  #summary > div {
+    margin-right: 0;
+    margin-top: 1rem;
+  }
+  #summary > div:first-child {
+    margin-top: 0;
+  }
+}
+
+.summary-total {
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+.summary-passed {
+  color: var(--success);
+  border-left: 0.4rem solid var(--success);
+  padding-left: 0.5rem;
+  margin-bottom: 0.15rem;
+}
+.summary-failed,
+.summary-obsolete-snapshots {
+  color: var(--danger);
+  border-left: 0.4rem solid var(--danger);
+  padding-left: 0.5rem;
+  margin-bottom: 0.15rem;
+}
+.summary-pending {
+  color: var(--warning);
+  border-left: 0.4rem solid var(--warning);
+  padding-left: 0.5rem;
+  margin-bottom: 0.15rem;
+}
+.summary-empty {
+  color: var(--disabled);
+  border-left: 0.4rem solid var(--disabled);
+  margin-bottom: 0.15rem;
+}
+
+.test-result {
+  padding: 1rem;
+  margin-bottom: 0.25rem;
+}
+.test-result:last-child {
+  border: 0;
+}
+.test-result.passed {
+  background-color: var(--success-bright);
+  color: var(--success);
+}
+.test-result.failed {
+  background-color: var(--danger-bright);
+  color: var(--danger);
+}
+.test-result.pending {
+  background-color: var(--warning-bright);
+  color: var(--warning);
+}
+
+.test-info {
+  display: flex;
+  justify-content: space-between;
+}
+.test-suitename {
+  width: 20%;
+  text-align: left;
+  font-weight: bold;
+  word-break: break-word;
+}
+.test-title {
+  width: 40%;
+  text-align: left;
+  font-style: italic;
+}
+.test-status {
+  width: 20%;
+  text-align: right;
+}
+.test-duration {
+  width: 10%;
+  text-align: right;
+  font-size: 0.85rem;
+}
+
+.failureMessages {
+  padding: 0 1rem;
+  margin-top: 1rem;
+  border-top: 1px dashed var(--danger);
+}
+.failureMessages.suiteFailure {
+  border-top: none;
+}
+.failureMsg {
+  white-space: pre-wrap;
+  white-space: -moz-pre-wrap;
+  white-space: -pre-wrap;
+  white-space: -o-pre-wrap;
+  word-wrap: break-word;
+}
+
+.suite-container {
+  margin-bottom: 1rem;
+}
+.suite-info {
+  padding: 1rem;
+  background-color: var(--panel);
+  color: var(--text-secondary);
+  border: 0.15rem solid;
+  border-color: var(--panel);
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.25rem;
+}
+.suite-info:hover {
+  border-color: var(--border);
+  cursor: pointer;
+}
+.suite-info .suite-path {
+  word-break: break-all;
+  flex-grow: 1;
+  font-family: monospace;
+  font-size: 1rem;
+}
+.suite-info .suite-time {
+  margin-left: 1rem;
+  padding: 0.2rem 0.3rem;
+  font-size: 0.85rem;
+}
+.suite-info .suite-time.warn {
+  background-color: var(--danger);
+  color: #fff;
+}
+.suite-info:before {
+  content: "\2303";
+  display: inline-block;
+  margin-right: 1rem;
+  transform: rotate(180deg) translateY(0.15rem);
+}
+.suite-container[open] .suite-info:before {
+  transform: rotate(0deg) translateY(0.15rem);
+}
+
+/* CONSOLE LOGS */
+.suite-consolelog {
+  margin-bottom: 0.25rem;
+  padding: 1rem;
+  background-color: var(--panel);
+}
+.suite-consolelog-header {
+  font-weight: bold;
+}
+.suite-consolelog-item {
+  padding: 0.5rem;
+}
+.suite-consolelog-item pre {
+  margin: 0.5rem 0;
+  white-space: pre-wrap;
+  white-space: -moz-pre-wrap;
+  white-space: -pre-wrap;
+  white-space: -o-pre-wrap;
+  word-wrap: break-word;
+}
+.suite-consolelog-item-origin {
+  color: var(--text-secondary);
+  font-weight: bold;
+}
+.suite-consolelog-item-message {
+  color: var(--text-primary);
+  font-size: 1rem;
+  padding: 0 0.5rem;
+}
+
+/* OBSOLETE SNAPSHOTS */
+.suite-obsolete-snapshots {
+  margin-bottom: 0.25rem;
+  padding: 1rem;
+  background-color: var(--danger-bright);
+  color: var(--danger);
+}
+.suite-obsolete-snapshots-header {
+  font-weight: bold;
+}
+.suite-obsolete-snapshots-item {
+  padding: 0.5rem;
+}
+.suite-obsolete-snapshots-item pre {
+  margin: 0.5rem 0;
+  white-space: pre-wrap;
+  white-space: -moz-pre-wrap;
+  white-space: -pre-wrap;
+  white-space: -o-pre-wrap;
+  word-wrap: break-word;
+}
+.suite-obsolete-snapshots-item-message {
+  color: var(--text-primary);
+  font-size: 1rem;
+  padding: 0 0.5rem;
+}
+</style></head><body><main class="jesthtml-content"><header><h1 id="title">Reporte de Tests - Backend</h1></header><section id="metadata-container"><div id="timestamp">Started: 2025-10-30 22:32:20</div><div id="summary"><div id="suite-summary"><div class="summary-total">Suites (5)</div><div class="summary-passed ">4 passed</div><div class="summary-failed ">1 failed</div><div class="summary-pending  summary-empty">0 pending</div></div><div id="test-summary"><div class="summary-total">Tests (78)</div><div class="summary-passed ">78 passed</div><div class="summary-failed  summary-empty">0 failed</div><div class="summary-pending  summary-empty">0 pending</div></div></div></section><details id="suite-1" class="suite-container" open=""><summary class="suite-info"><div class="suite-path">/home/sebastian/Escritorio/Dogland/backend/tests/integration/ingresar_perrito.test.js</div><div class="suite-time">0s</div></summary><div class="suite-tests"/></details><details id="suite-2" class="suite-container" open=""><summary class="suite-info"><div class="suite-path">/home/sebastian/Escritorio/Dogland/backend/tests/integration/alerts.test.js</div><div class="suite-time">3.209s</div></summary><div class="suite-tests"><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de Alertas</div><div class="test-title">crear alerta</div><div class="test-status">passed</div><div class="test-duration">0.157s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de Alertas</div><div class="test-title">listar alertas activas</div><div class="test-status">passed</div><div class="test-duration">0.027s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de Alertas</div><div class="test-title">obtener alerta específica</div><div class="test-status">passed</div><div class="test-duration">0.054s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de Alertas</div><div class="test-title">actualizar alerta</div><div class="test-status">passed</div><div class="test-duration">0.187s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de Alertas</div><div class="test-title">eliminar alerta</div><div class="test-status">passed</div><div class="test-duration">0.296s</div></div></div></div></details><details id="suite-3" class="suite-container" open=""><summary class="suite-info"><div class="suite-path">/home/sebastian/Escritorio/Dogland/backend/tests/integration/auth.test.js</div><div class="suite-time">3.977s</div></summary><div class="suite-tests"><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de Autenticación &gt; POST /api/auth/register</div><div class="test-title">debería registrar un nuevo usuario correctamente</div><div class="test-status">passed</div><div class="test-duration">0.193s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de Autenticación &gt; POST /api/auth/register</div><div class="test-title">debería fallar si el usuario ya existe</div><div class="test-status">passed</div><div class="test-duration">0.048s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de Autenticación &gt; POST /api/auth/register</div><div class="test-title">debería fallar si faltan campos obligatorios</div><div class="test-status">passed</div><div class="test-duration">0.008s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de Autenticación &gt; POST /api/auth/register</div><div class="test-title">debería fallar con email inválido</div><div class="test-status">passed</div><div class="test-duration">0.006s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de Autenticación &gt; POST /api/auth/register</div><div class="test-title">debería fallar con ciudad inexistente</div><div class="test-status">passed</div><div class="test-duration">0.024s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de Autenticación &gt; POST /api/auth/login</div><div class="test-title">debería iniciar sesión correctamente</div><div class="test-status">passed</div><div class="test-duration">0.124s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de Autenticación &gt; POST /api/auth/login</div><div class="test-title">debería fallar con credenciales incorrectas</div><div class="test-status">passed</div><div class="test-duration">0.105s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de Autenticación &gt; POST /api/auth/login</div><div class="test-title">debería fallar con email inexistente</div><div class="test-status">passed</div><div class="test-duration">0.02s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de Autenticación &gt; POST /api/auth/login</div><div class="test-title">debería fallar sin email</div><div class="test-status">passed</div><div class="test-duration">0.059s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de Autenticación &gt; POST /api/auth/login</div><div class="test-title">debería fallar sin password</div><div class="test-status">passed</div><div class="test-duration">0.113s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de Autenticación &gt; GET /api/auth/verify</div><div class="test-title">debería verificar un token válido</div><div class="test-status">passed</div><div class="test-duration">0.023s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de Autenticación &gt; GET /api/auth/verify</div><div class="test-title">debería fallar sin token</div><div class="test-status">passed</div><div class="test-duration">0.013s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de Autenticación &gt; GET /api/auth/verify</div><div class="test-title">debería fallar con token inválido</div><div class="test-status">passed</div><div class="test-duration">0.014s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de Autenticación &gt; GET /api/auth/verify</div><div class="test-title">debería fallar con token malformado</div><div class="test-status">passed</div><div class="test-duration">0.014s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de Autenticación &gt; POST /api/auth/logout</div><div class="test-title">debería cerrar sesión correctamente</div><div class="test-status">passed</div><div class="test-duration">0.011s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de Autenticación &gt; POST /api/auth/logout</div><div class="test-title">el token debería estar invalidado después del logout</div><div class="test-status">passed</div><div class="test-duration">0.008s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de Autenticación &gt; POST /api/auth/logout</div><div class="test-title">debería fallar sin token</div><div class="test-status">passed</div><div class="test-duration">0.006s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de Autenticación &gt; POST /api/auth/forgot-password</div><div class="test-title">debería procesar solicitud de recuperación para email existente</div><div class="test-status">passed</div><div class="test-duration">0.079s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de Autenticación &gt; POST /api/auth/forgot-password</div><div class="test-title">debería responder igual para email inexistente (seguridad)</div><div class="test-status">passed</div><div class="test-duration">0.025s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de Autenticación &gt; POST /api/auth/forgot-password</div><div class="test-title">debería fallar sin email</div><div class="test-status">passed</div><div class="test-duration">0.005s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de Autenticación &gt; POST /api/auth/reset-password</div><div class="test-title">debería resetear contraseña con token válido</div><div class="test-status">passed</div><div class="test-duration">0.306s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de Autenticación &gt; POST /api/auth/reset-password</div><div class="test-title">debería fallar al reutilizar token usado</div><div class="test-status">passed</div><div class="test-duration">0.051s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de Autenticación &gt; POST /api/auth/reset-password</div><div class="test-title">debería fallar con token inválido</div><div class="test-status">passed</div><div class="test-duration">0.057s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de Autenticación &gt; POST /api/auth/reset-password</div><div class="test-title">debería fallar con token expirado</div><div class="test-status">passed</div><div class="test-duration">0.089s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de Autenticación &gt; POST /api/auth/reset-password</div><div class="test-title">debería fallar sin token</div><div class="test-status">passed</div><div class="test-duration">0.004s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de Autenticación &gt; POST /api/auth/reset-password</div><div class="test-title">debería fallar sin nueva contraseña</div><div class="test-status">passed</div><div class="test-duration">0.002s</div></div></div></div></details><details id="suite-4" class="suite-container" open=""><summary class="suite-info"><div class="suite-path">/home/sebastian/Escritorio/Dogland/backend/tests/integration/organizations.test.js</div><div class="suite-time">4.314s</div></summary><div class="suite-tests"><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de manejo de Organizaciones &gt; GET /api/organizations</div><div class="test-title">debería listar organizaciones sin parámetros</div><div class="test-status">passed</div><div class="test-duration">0.094s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de manejo de Organizaciones &gt; GET /api/organizations</div><div class="test-title">debería aplicar paginación con limit y offset</div><div class="test-status">passed</div><div class="test-duration">0.048s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de manejo de Organizaciones &gt; GET /api/organizations</div><div class="test-title">debería validar que limit sea un número válido</div><div class="test-status">passed</div><div class="test-duration">0.011s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de manejo de Organizaciones &gt; GET /api/organizations</div><div class="test-title">debería validar que limit esté entre 1 y 100</div><div class="test-status">passed</div><div class="test-duration">0.005s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de manejo de Organizaciones &gt; GET /api/organizations</div><div class="test-title">debería validar que offset sea un número válido</div><div class="test-status">passed</div><div class="test-duration">0.004s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de manejo de Organizaciones &gt; GET /api/organizations</div><div class="test-title">debería buscar organizaciones por nombre</div><div class="test-status">passed</div><div class="test-duration">0.04s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de manejo de Organizaciones &gt; POST /api/organizations</div><div class="test-title">debería crear una organización correctamente</div><div class="test-status">passed</div><div class="test-duration">0.093s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de manejo de Organizaciones &gt; POST /api/organizations</div><div class="test-title">debería fallar si la organización ya existe (email duplicado)</div><div class="test-status">passed</div><div class="test-duration">0.124s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de manejo de Organizaciones &gt; POST /api/organizations</div><div class="test-title">debería validar que el nombre sea requerido</div><div class="test-status">passed</div><div class="test-duration">0.005s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de manejo de Organizaciones &gt; POST /api/organizations</div><div class="test-title">debería validar longitud mínima del nombre</div><div class="test-status">passed</div><div class="test-duration">0.006s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de manejo de Organizaciones &gt; POST /api/organizations</div><div class="test-title">debería validar formato de email</div><div class="test-status">passed</div><div class="test-duration">0.004s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de manejo de Organizaciones &gt; POST /api/organizations</div><div class="test-title">debería validar formato de teléfono</div><div class="test-status">passed</div><div class="test-duration">0.005s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de manejo de Organizaciones &gt; POST /api/organizations</div><div class="test-title">debería fallar si la ciudad no existe</div><div class="test-status">passed</div><div class="test-duration">0.026s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de manejo de Organizaciones &gt; GET /api/organizations/:id</div><div class="test-title">debería obtener organización por id</div><div class="test-status">passed</div><div class="test-duration">0.025s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de manejo de Organizaciones &gt; GET /api/organizations/:id</div><div class="test-title">debería fallar si la organización no existe</div><div class="test-status">passed</div><div class="test-duration">0.019s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de manejo de Organizaciones &gt; GET /api/organizations/:id</div><div class="test-title">debería validar que el id sea un número válido</div><div class="test-status">passed</div><div class="test-duration">0.003s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de manejo de Organizaciones &gt; PUT /api/organizations/:id</div><div class="test-title">debería actualizar una organización</div><div class="test-status">passed</div><div class="test-duration">0.072s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de manejo de Organizaciones &gt; PUT /api/organizations/:id</div><div class="test-title">debería validar que se proporcione al menos un campo</div><div class="test-status">passed</div><div class="test-duration">0.003s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de manejo de Organizaciones &gt; PUT /api/organizations/:id</div><div class="test-title">debería fallar si la organización no existe</div><div class="test-status">passed</div><div class="test-duration">0.021s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de manejo de Organizaciones &gt; PUT /api/organizations/:id</div><div class="test-title">debería fallar si la ciudad no existe</div><div class="test-status">passed</div><div class="test-duration">0.062s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de manejo de Organizaciones &gt; GET /api/organizations/:id/users</div><div class="test-title">debería obtener usuarios de la organización</div><div class="test-status">passed</div><div class="test-duration">0.025s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de manejo de Organizaciones &gt; GET /api/organizations/:id/users</div><div class="test-title">debería filtrar usuarios activos</div><div class="test-status">passed</div><div class="test-duration">0.026s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de manejo de Organizaciones &gt; GET /api/organizations/:id/users</div><div class="test-title">debería filtrar usuarios inactivos</div><div class="test-status">passed</div><div class="test-duration">0.026s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de manejo de Organizaciones &gt; GET /api/organizations/:id/users</div><div class="test-title">debería validar el parámetro activo</div><div class="test-status">passed</div><div class="test-duration">0.009s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de manejo de Organizaciones &gt; DELETE /api/organizations/:id</div><div class="test-title">debería fallar si la organización tiene usuarios asociados</div><div class="test-status">passed</div><div class="test-duration">0.235s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de manejo de Organizaciones &gt; DELETE /api/organizations/:id</div><div class="test-title">debería eliminar una organización sin usuarios</div><div class="test-status">passed</div><div class="test-duration">0.084s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de manejo de Organizaciones &gt; DELETE /api/organizations/:id</div><div class="test-title">organización inexistente debería retornar 404</div><div class="test-status">passed</div><div class="test-duration">0.02s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de manejo de Organizaciones &gt; DELETE /api/organizations/:id</div><div class="test-title">debería validar que el id sea un número válido</div><div class="test-status">passed</div><div class="test-duration">0.002s</div></div></div></div></details><details id="suite-5" class="suite-container" open=""><summary class="suite-info"><div class="suite-path">/home/sebastian/Escritorio/Dogland/backend/tests/integration/users.test.js</div><div class="suite-time warn">5.347s</div></summary><div class="suite-tests"><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de manejo de Usuarios protegidos con JWT &gt; GET /api/users</div><div class="test-title">requiere autenticación</div><div class="test-status">passed</div><div class="test-duration">0.042s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de manejo de Usuarios protegidos con JWT &gt; GET /api/users</div><div class="test-title">deberia fallar por permisos</div><div class="test-status">passed</div><div class="test-duration">0.018s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de manejo de Usuarios protegidos con JWT &gt; GET /api/users</div><div class="test-title">sin token debe fallar</div><div class="test-status">passed</div><div class="test-duration">0.011s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de manejo de Usuarios protegidos con JWT &gt; GET /api/users</div><div class="test-title">con token inválido debe fallar</div><div class="test-status">passed</div><div class="test-duration">0.01s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de manejo de Usuarios protegidos con JWT &gt; POST /api/users</div><div class="test-title">deberia crear un usuario correctamente</div><div class="test-status">passed</div><div class="test-duration">0.053s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de manejo de Usuarios protegidos con JWT &gt; POST /api/users</div><div class="test-title">deberia fallar si el usuario existe</div><div class="test-status">passed</div><div class="test-duration">0.047s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de manejo de Usuarios protegidos con JWT &gt; GET /api/users/profile</div><div class="test-title">deberia permitir ver perfil</div><div class="test-status">passed</div><div class="test-duration">0.199s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de manejo de Usuarios protegidos con JWT &gt; GET /api/users/profile</div><div class="test-title">debería obtener usuario por id</div><div class="test-status">passed</div><div class="test-duration">0.046s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de manejo de Usuarios protegidos con JWT &gt; GET /api/users/profile</div><div class="test-title">debería fallar si el usuario no existe</div><div class="test-status">passed</div><div class="test-duration">0.048s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de manejo de Usuarios protegidos con JWT &gt; PUT /api/users/:id</div><div class="test-title">debería actualizar un usuario</div><div class="test-status">passed</div><div class="test-duration">0.188s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de manejo de Usuarios protegidos con JWT &gt; PUT /api/users/:id</div><div class="test-title">debería fallar si la ciudad no existe</div><div class="test-status">passed</div><div class="test-duration">0.082s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de manejo de Usuarios protegidos con JWT &gt; PUT /api/users/:id</div><div class="test-title">debería fallar si el usuario no existe</div><div class="test-status">passed</div><div class="test-duration">0.045s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de manejo de Usuarios protegidos con JWT &gt; PATCH /api/users/:id/deactivate</div><div class="test-title">debería desactivar el usuario</div><div class="test-status">passed</div><div class="test-duration">0.299s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de manejo de Usuarios protegidos con JWT &gt; PATCH /api/users/:id/deactivate</div><div class="test-title">usuario ya desactivado debería retornar éxito</div><div class="test-status">passed</div><div class="test-duration">0.065s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de manejo de Usuarios protegidos con JWT &gt; PATCH /api/users/:id/deactivate</div><div class="test-title">deberia retornar usuario no encontrado</div><div class="test-status">passed</div><div class="test-duration">0.02s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de manejo de Usuarios protegidos con JWT &gt; PATCH /api/users/:id/activate</div><div class="test-title">debería activar el usuario</div><div class="test-status">passed</div><div class="test-duration">0.063s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de manejo de Usuarios protegidos con JWT &gt; PATCH /api/users/:id/activate</div><div class="test-title">deberia retornar usuario no encontrado</div><div class="test-status">passed</div><div class="test-duration">0.024s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de manejo de Usuarios protegidos con JWT &gt; DELETE /api/users/:id</div><div class="test-title">debería eliminar un usuario por id</div><div class="test-status">passed</div><div class="test-duration">0.124s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Endpoints de manejo de Usuarios protegidos con JWT &gt; DELETE /api/users/:id</div><div class="test-title">usuario inexistente debería retornar 404</div><div class="test-status">passed</div><div class="test-duration">0.071s</div></div></div></div></details></main></body></html>

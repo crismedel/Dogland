@@ -1,7 +1,13 @@
 import React from 'react';
-import { View, Text, StyleSheet, ViewStyle, Platform } from 'react-native';
+import { View, StyleSheet, ViewStyle, Platform } from 'react-native';
 import { Colors } from '@/src/constants/colors';
 import Animated, { FadeInDown } from 'react-native-reanimated';
+import {
+  fontWeightBold,
+  fontWeightSemiBold,
+  fontWeightMedium,
+  AppText,
+} from '@/src/components/AppText';
 
 interface CustomHeaderProps {
   /** Texto centrado del header */
@@ -27,9 +33,9 @@ const CustomHeader: React.FC<CustomHeaderProps> = ({
     >
       <View style={styles.container}>
         <View style={styles.side}>{leftComponent}</View>
-        <Text style={styles.title} numberOfLines={1}>
+        <AppText style={styles.title} numberOfLines={1}>
           {title}
-        </Text>
+        </AppText>
         <View style={styles.side}>{rightComponent}</View>
       </View>
     </Animated.View>
@@ -41,7 +47,7 @@ export default CustomHeader;
 const styles = StyleSheet.create({
   outerContainer: {
     marginHorizontal: 10,
-    marginTop: 30,
+    marginTop: 50,
     marginBottom: 16,
     // Sombra exterior para efecto 3D profundo
     shadowColor: '#000',
@@ -49,6 +55,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 12,
     elevation: 12,
+    zIndex: 1,
   },
   container: {
     flexDirection: 'row',
@@ -77,7 +84,7 @@ const styles = StyleSheet.create({
   title: {
     flex: 1,
     fontSize: 20,
-    fontWeight: '800',
+    fontWeight: fontWeightBold,
     color: '#fff',
     textAlign: 'center',
     letterSpacing: 0.5,

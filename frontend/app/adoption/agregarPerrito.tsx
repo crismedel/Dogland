@@ -1,8 +1,8 @@
 // app/adoption/agregarPerrito.tsx
-import React from 'react';
-import { View, TouchableOpacity, Image, StyleSheet } from 'react-native';
-import { useRouter } from 'expo-router';
 import CustomHeader from '@/src/components/UI/CustomHeader';
+import { useRouter } from 'expo-router';
+import React from 'react';
+import { Image, StyleSheet, TouchableOpacity, View } from 'react-native';
 import FormAgregarPerrito from './component/formAgregarPerrito';
 
 const AgregarPerrito = () => {
@@ -11,7 +11,7 @@ const AgregarPerrito = () => {
   return (
     <View style={styles.container}>
       <CustomHeader
-        title="Agregar Nuevo Perrito"
+        title="Agregar Nuevo Animal"
         leftComponent={
           <TouchableOpacity onPress={() => router.back()}>
             <Image
@@ -22,7 +22,8 @@ const AgregarPerrito = () => {
         }
       />
 
-      <FormAgregarPerrito />
+      {/* 👇 Aquí simplemente renderizamos el componente del formulario */}
+      <FormAgregarPerrito /> 
     </View>
   );
 };
@@ -30,7 +31,7 @@ const AgregarPerrito = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f4f6f9',
+    backgroundColor: '#f4f6f9', // Un color de fondo consistente
   },
 });
 

@@ -1,59 +1,44 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Modal,
-  ActivityIndicator,
-  Image,
-} from 'react-native';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
-import * as Location from 'expo-location';
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import apiClient from '../../src/api/client';
-import { useNotification } from '@/src/components/notifications/NotificationContext';
-import { ReporteMarker } from '../../src/components/report/ReporteMarker';
-import { ReporteDetails } from '../../src/components/report/ReporteDetails';
-import { Colors } from '../../src/constants/colors';
-import MapsFilterModal from '../../src/components/community_maps/MapsFilterModal';
+//Solo contiene la lógica de estado y pasa las props a los nuevos componentes.
+import { useNotification } from '@/src/components/notifications';
 import CustomHeader from '@/src/components/UI/CustomHeader';
 import FloatingSpeedDial from '@/src/components/UI/FloatingMenu';
-
-interface Reporte {
-  id_avistamiento: number;
-  descripcion: string;
-  direccion: string;
-  id_especie: number;
-  id_estado_salud: number;
-  id_estado_avistamiento: number;
-  fecha_creacion: string;
-  latitude: number;
-  longitude: number;
-}
-
-interface CurrentFilters {
-  especieId?: number | string;
-  estadoSaludId?: number | string;
-  zona?: string;
-}
+import { Ionicons } from '@expo/vector-icons';
+import * as Location from 'expo-location';
+import { useRouter } from 'expo-router';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Image, Modal, StyleSheet, TouchableOpacity, View } from 'react-native';
+import MapView, { Region } from 'react-native-maps';
+import apiClient from '../../src/api/client';
+import { CommunityMapView } from '../../src/components/community_maps/CommunityMapView';
+import { MapControlButtons } from '../../src/components/community_maps/MapControlButtons';
+import MapsFilterModal from '../../src/components/community_maps/MapsFilterModal';
+import { MapStatusOverlay } from '../../src/components/community_maps/MapStatusOverlay';
+import { CurrentFilters, HeatmapPoint, Reporte } from '../../src/components/community_maps/types';
+import { ReporteDetails } from '../../src/components/report/ReporteDetails';
+import { Colors } from '../../src/constants/colors';
+import { getHaversineDistance } from '../../src/utils/geo';
 
 const CommunityMapScreen = () => {
   const router = useRouter();
-  const mapRef = useRef<MapView>(null);
-  const { showError, showSuccess, confirm } = useNotification();
+  const mapRef = useRef<MapView | null>(null);
+  const { showError, showSuccess, confirm, showInfo } = useNotification(); 
 
+  // --- ESTADOS ---
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [currentFilters, setCurrentFilters] = useState<CurrentFilters>({});
   const [hasActiveFilters, setHasActiveFilters] = useState(false);
   const [loading, setLoading] = useState(false);
   const [hasSearchedWithFilters, setHasSearchedWithFilters] = useState(false);
-  const [location, setLocation] = useState<{
+
+
+  const [calculatedDistance, setCalculatedDistance] = useState<string | null>(null);
+  const [currentUserLocation, setCurrentUserLocation] = useState<{
     latitude: number;
     longitude: number;
   } | null>(null);
-  const [mapRegion, setMapRegion] = useState({
+  const [locationSubscription, setLocationSubscription] = useState<Location.LocationSubscription | null>(null);
+  
+  const [mapRegion, setMapRegion] = useState<Region>({
     latitude: -38.7369,
     longitude: -72.5994,
     latitudeDelta: 0.0922,
@@ -67,10 +52,14 @@ const CommunityMapScreen = () => {
   const [showCriticalReports, setShowCriticalReports] = useState(false);
   const [criticalReports, setCriticalReports] = useState<Reporte[]>([]);
   const [criticalLoading, setCriticalLoading] = useState(false);
-  //Usamos useRef para el conteo y evitar el re-renderizado
   const previousCriticalCount = useRef(0);
   const [criticalCountForBadge, setCriticalCountForBadge] = useState(0);
+  const [showHeatmap, setShowHeatmap] = useState(false);
+  const [heatmapData, setHeatmapData] = useState<HeatmapPoint[]>([]);
+  const [heatmapLoading, setHeatmapLoading] = useState(false);
+  const [initialZoomDone, setInitialZoomDone] = useState(false);
 
+  // --- LÓGICA DE DATOS ---
   useEffect(() => {
     const hasFilters =
       Object.keys(currentFilters).length > 0 &&
@@ -80,21 +69,47 @@ const CommunityMapScreen = () => {
     setHasActiveFilters(!!hasFilters);
   }, [currentFilters]);
 
-  const obtenerUbicacionActual = useCallback(async () => {
+
+  const startLocationTracking = useCallback(async () => {
     let { status } = await Location.requestForegroundPermissionsAsync();
-    if (status === 'granted') {
-      let loc = await Location.getCurrentPositionAsync({});
-      setLocation(loc.coords);
-      setMapRegion({
-        latitude: loc.coords.latitude,
-        longitude: loc.coords.longitude,
-        latitudeDelta: 0.0922,
-        longitudeDelta: 0.0421,
-      });
-    } else {
+    if (status !== 'granted') {
       showError('Permiso Denegado', 'No se puede acceder a la ubicación.');
+      return;
     }
-  }, [showError]);
+
+    // Empezamos a "observar" la ubicación
+    const subscription = await Location.watchPositionAsync(
+      {
+        accuracy: Location.Accuracy.BestForNavigation,
+        timeInterval: 5000, 
+        distanceInterval: 10, 
+      },
+      (location) => {
+        setCurrentUserLocation(location.coords); // Actualiza el estado con la nueva ubicación
+        if (!initialZoomDone) {
+           // Centra el mapa en el usuario la primera vez
+          setMapRegion({
+            latitude: location.coords.latitude,
+            longitude: location.coords.longitude,
+            latitudeDelta: 0.0922,
+            longitudeDelta: 0.0421,
+          });
+          setInitialZoomDone(true);
+        }
+      }
+    );
+    setLocationSubscription(subscription);
+  }, [showError, initialZoomDone]);
+  
+
+  useEffect(() => {
+    // Retornamos una función de limpieza que se ejecuta al desmontar
+    return () => {
+      if (locationSubscription) {
+        locationSubscription.remove();
+      }
+    };
+  }, [locationSubscription]);
 
   const obtenerReportes = useCallback(
     async (filters: CurrentFilters = {}) => {
@@ -105,14 +120,12 @@ const CommunityMapScreen = () => {
         if (filters.estadoSaludId)
           params.id_estado_salud = Number(filters.estadoSaludId);
         if (filters.zona) params.zona = filters.zona;
-
         const filteredParams = Object.fromEntries(
           Object.entries(params).filter(([_, v]) => v !== undefined),
         );
         const response = await apiClient.get('/sightings/filter', {
           params: filteredParams,
         });
-
         const validReportes = response.data.data.filter(
           (r: Reporte) => r.latitude && r.longitude,
         );
@@ -155,7 +168,34 @@ const CommunityMapScreen = () => {
     }
   }, []);
 
-  const toggleCriticalView = async () => {
+  const fetchHeatmapData = useCallback(async () => {
+    setHeatmapLoading(true);
+    try {
+      const response = await apiClient.get<{ data: any[] }>(
+        '/stats/heatmap-data',
+      );
+      const transformedData: HeatmapPoint[] = response.data.data
+        .map((item) => ({
+          latitude: item.latitude,
+          longitude: item.longitude,
+          weight:
+            item.id_estado_salud === 3
+              ? 3.0
+              : item.id_estado_salud === 2
+              ? 1.5
+              : 0.5,
+        }))
+        .filter((point) => point.latitude && point.longitude);
+      setHeatmapData(transformedData);
+    } catch (error) {
+      console.error('Error fetching heatmap data:', error);
+    } finally {
+      setHeatmapLoading(false);
+    }
+  }, []);
+
+
+  const toggleCriticalView = useCallback(async () => {
     const newState = !showCriticalReports;
     setShowCriticalReports(newState);
     setSelectedSighting(null);
@@ -164,16 +204,22 @@ const CommunityMapScreen = () => {
     } else {
       obtenerReportes(currentFilters);
     }
-  };
+  }, [
+    showCriticalReports,
+    currentFilters,
+    fetchCriticalReports,
+    obtenerReportes,
+  ]);
 
-  const getMarkerColor = (report: Reporte): string | undefined => {
-    if (!showCriticalReports) return undefined;
-    if (report.id_estado_salud === 3) return Colors.danger || 'red';
-    if (report.id_estado_salud === 2) return Colors.warning || 'yellow';
-    return undefined;
-  };
+  const toggleHeatmap = useCallback(() => {
+    const newState = !showHeatmap;
+    setShowHeatmap(newState);
+    if (newState && heatmapData.length === 0 && !heatmapLoading) {
+      fetchHeatmapData();
+    }
+  }, [showHeatmap, heatmapData.length, heatmapLoading, fetchHeatmapData]);
 
-  const handleDelete = async () => {
+  const handleDelete = useCallback(async () => {
     if (!selectedSighting) return;
     confirm({
       title: 'Confirmar Eliminación',
@@ -198,24 +244,72 @@ const CommunityMapScreen = () => {
         }
       },
     });
-  };
+  }, [
+    selectedSighting,
+    showCriticalReports,
+    currentFilters,
+    confirm,
+    fetchCriticalReports,
+    obtenerReportes,
+    showSuccess,
+    showError,
+  ]);
 
-  const handleApplyFilter = (filters: CurrentFilters) => {
+  const handleApplyFilter = useCallback((filters: CurrentFilters) => {
     setCurrentFilters(filters);
     setFilterModalVisible(false);
     setShowCriticalReports(false);
-  };
+  }, []);
 
-  const handleClearFilters = () => {
+  const handleClearFilters = useCallback(() => {
     setCurrentFilters({});
     setHasSearchedWithFilters(false);
     setShowCriticalReports(false);
+  }, []);
+
+  const onRegionChangeComplete = (newRegion: Region) => {
+    setMapRegion(newRegion);
   };
 
-  useEffect(() => {
-    if (showCriticalReports || hasActiveFilters) {
+// --- Handler para presionar un marcador 
+  const handleMarkerPress = useCallback((reporte: Reporte | null) => {
+    
+    if (!reporte) {
+      setSelectedSighting(null);
+      setCalculatedDistance(null); 
       return;
     }
+
+    //  Mostrar el modal de detalles
+    setSelectedSighting(reporte);
+
+    // Calcular y mostrar la distancia
+    if (!currentUserLocation) {
+      showInfo("Calculando...", "Espera un momento, obteniendo tu ubicación.");
+      setCalculatedDistance(null); 
+      return;
+    }
+
+    const distance = getHaversineDistance(
+      currentUserLocation.latitude,
+      currentUserLocation.longitude,
+      reporte.latitude,
+      reporte.longitude
+    );
+
+    let friendlyDistance: string;
+    if (distance < 1000) {
+      friendlyDistance = `${Math.round(distance)} metros`;
+    } else {
+      friendlyDistance = `${(distance / 1000).toFixed(2)} km`;
+    }
+-
+    setCalculatedDistance(friendlyDistance); 
+    showInfo("Distancia al Reporte", `Estás a ${friendlyDistance} de este avistamiento.`);
+  }, [currentUserLocation, showInfo]);
+  // --- EFECTOS (EFFECTS) ---
+  useEffect(() => {
+    if (showCriticalReports || hasActiveFilters) return;
     const intervalId = setInterval(async () => {
       try {
         const response = await apiClient.get<{ data: Reporte[] }>(
@@ -225,58 +319,114 @@ const CommunityMapScreen = () => {
           },
         );
         const newReports = response.data.data.filter(
-          (r: Reporte) => r.latitude && r.longitude,
+          (r) => r.latitude && r.longitude,
         );
-
-        // Notificar si hay nuevos reportes críticos
         const newCount = newReports.length;
         const currentCount = previousCriticalCount.current;
         if (newCount > currentCount) {
           showSuccess(
             '¡Alerta!',
-            `Se ha detectado ${newCount - currentCount} avistamiento de alta prioridad.`,
+            `Se ha detectado ${
+              newCount - currentCount
+            } avistamiento de alta prioridad.`,
           );
         }
-        
-        // Actualizar el estado para la insignia y la referencia para el próximo chequeo
         setCriticalCountForBadge(newCount);
         previousCriticalCount.current = newCount;
         setCriticalReports(newReports);
-
       } catch (error) {
         console.error('Error fetching critical reports:', error);
       }
     }, 30000);
-
     return () => clearInterval(intervalId);
   }, [showCriticalReports, hasActiveFilters, showSuccess]);
 
-  // Se mantiene este useEffect para la carga inicial de reportes generales
+  useEffect(() => {
+    const initializeData = async () => {
+      try {
+        await Promise.all([
+          startLocationTracking(), 
+          obtenerReportes(currentFilters),
+          fetchCriticalReports(),
+          fetchHeatmapData(),
+        ]);
+      } catch (error) {
+        console.error('Error durante la inicialización del mapa:', error);
+      }
+    };
+    if (!showCriticalReports && !hasActiveFilters) {
+      initializeData();
+    }
+  }, [
+    startLocationTracking,
+    obtenerReportes,
+    fetchCriticalReports,
+    fetchHeatmapData,
+    showCriticalReports,
+    hasActiveFilters,
+  ]);
+  
+  const reportsToRender = showCriticalReports ? criticalReports : reportes;
+
+useEffect(() => {
+    if (reportsToRender.length === 0 || showHeatmap || !mapRef.current) {
+      return;
+    }
+    const coordinates = reportsToRender.map((report) => ({
+      latitude: report.latitude,
+      longitude: report.longitude,
+    }));
+
+    if (currentUserLocation) {
+      coordinates.push(currentUserLocation);
+    }
+
+    setTimeout(() => {
+      mapRef.current?.fitToCoordinates(coordinates, {
+        edgePadding: { top: 150, right: 50, bottom: 100, left: 50 },
+        animated: true,
+      });
+    }, 500);
+  }, [reportsToRender, showHeatmap]); 
   useEffect(() => {
     if (!showCriticalReports) {
       obtenerReportes(currentFilters);
     }
   }, [currentFilters, obtenerReportes, showCriticalReports]);
 
-  // Se mantiene este useEffect para la ubicación y la carga inicial de críticos
-  useEffect(() => {
-    obtenerUbicacionActual();
-    fetchCriticalReports();
-  }, [obtenerUbicacionActual, fetchCriticalReports]);
-
-  const reportsToRender = showCriticalReports ? criticalReports : reportes;
+  // --- DATOS DERIVADOS ---
   const currentLoadingState =
-    loading || (showCriticalReports && criticalLoading);
+    loading || (showCriticalReports && criticalLoading) || heatmapLoading;
   const shouldHideMap =
     currentLoadingState ||
     (hasSearchedWithFilters && reportsToRender.length === 0);
 
-
+  // --- NAVEGACIÓN ---
   const goToStatsScreen = () => {
-    setMenuVisible(false); // Cerrar el menú flotante
-    router.push('../stats'); // Asume que la ruta al componente es '/stats'
+    setMenuVisible(false);
+    router.push('/stats');
+  };
+  const goToMySightingsScreen = () => {
+    setMenuVisible(false);
+    router.push('/my-sightings');
+  };
+  const goToCreateReport = () => {
+    setMenuVisible(false);
+    router.push('/create-report');
+  };
+  const goToCreateAlert = () => {
+    setMenuVisible(false);
+    router.push('/alerts/create-alert');
   };
 
+  const getMarkerColor = (report: Reporte): string | undefined => {
+    if (!showCriticalReports) return undefined;
+    if (report.id_estado_salud === 3) return Colors.danger || 'red';
+    if (report.id_estado_salud === 2) return Colors.warning || 'yellow';
+    return undefined;
+  };
+
+  // --- RENDERIZADO ---
   return (
     <View style={styles.container}>
       <CustomHeader
@@ -302,122 +452,69 @@ const CommunityMapScreen = () => {
         }
       />
 
-      <TouchableOpacity
-        style={styles.filterButton}
-        onPress={() => {
+      <MapControlButtons
+        showCriticalReports={showCriticalReports}
+        criticalLoading={criticalLoading}
+        criticalCountForBadge={criticalCountForBadge}
+        onToggleCriticalView={toggleCriticalView}
+        hasActiveFilters={hasActiveFilters}
+        onShowFilters={() => {
           setMenuVisible(false);
           setSelectedSighting(null);
           setFilterModalVisible(true);
         }}
-        activeOpacity={0.8}
-      >
-        <Ionicons
-          name="options-outline"
-          size={24}
-          color={
-            showCriticalReports ? Colors.gray : Colors.lightText || 'white'
-          }
-        />
-        {hasActiveFilters && !showCriticalReports && (
-          <View style={styles.filterIndicator} />
-        )}
-      </TouchableOpacity>
+        showHeatmap={showHeatmap}
+        heatmapLoading={heatmapLoading}
+        onToggleHeatmap={toggleHeatmap}
+      />
 
-      <TouchableOpacity
-        style={[
-          styles.criticalButton,
-          showCriticalReports && styles.criticalButtonActive,
-        ]}
-        onPress={toggleCriticalView}
-        activeOpacity={0.8}
-      >
-        {criticalLoading ? (
-          <ActivityIndicator size="small" color={Colors.lightText} />
-        ) : (
-          <Ionicons
-            name="warning"
-            size={24}
-            color={
-              showCriticalReports ? Colors.lightText : Colors.danger || 'red'
-            }
-          />
-        )}
-        {criticalCountForBadge > 0 && !showCriticalReports && (
-          <View style={styles.criticalBadge}>
-            <Text style={styles.criticalBadgeText}>{criticalCountForBadge}</Text>
-          </View>
-        )}
-      </TouchableOpacity>
+      <MapStatusOverlay
+        currentLoadingState={currentLoadingState}
+        shouldHideMap={shouldHideMap}
+        reportsToRenderCount={reportsToRender.length}
+        showCriticalReports={showCriticalReports}
+        onClearFilters={handleClearFilters}
+      />
 
-      {currentLoadingState && (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={Colors.primary} />
-          <Text style={styles.loadingText}>
-            {showCriticalReports
-              ? 'Buscando emergencias...'
-              : 'Buscando avistamientos...'}
-          </Text>
-        </View>
-      )}
-
-      {!currentLoadingState &&
-        shouldHideMap &&
-        reportsToRender.length === 0 && (
-          <View className="no-results" style={styles.noResultsContainer}>
-            <Ionicons name="search-outline" size={64} color={Colors.gray} />
-            <Text style={styles.noResultsTitle}>
-              {showCriticalReports
-                ? '¡Excelente! No hay reportes críticos.'
-                : 'No se encontraron resultados'}
-            </Text>
-            {!showCriticalReports && (
-              <TouchableOpacity
-                style={styles.clearFilterButton}
-                onPress={handleClearFilters}
-              >
-                <Text style={styles.clearFilterText}>Limpiar filtros</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        )}
-
-      <MapView
-        ref={mapRef}
-        provider={PROVIDER_GOOGLE}
-        style={[styles.map, shouldHideMap && styles.hiddenMap]}
-        region={mapRegion}
-        onPress={() => setSelectedSighting(null)}
-      >
-        {location && (
-          <Marker
-            coordinate={location}
-            title="Ubicación Actual"
-            pinColor="blue"
-          />
-        )}
-
-        {reportsToRender.map((r) => (
-          <ReporteMarker
-            key={r.id_avistamiento}
-            reporte={r}
-            onSelect={setSelectedSighting}
-            criticalColor={getMarkerColor(r)}
-          />
-        ))}
-      </MapView>
-
+      <CommunityMapView
+        mapRef={mapRef}
+        mapRegion={mapRegion}
+        location={currentUserLocation} // Pasa la ubicación del usuario al mapa
+        showHeatmap={showHeatmap}
+        heatmapData={heatmapData}
+        reportsToRender={reportsToRender}
+        onSelectSighting={handleMarkerPress} //Llama al handler que calcula la distancia
+        getMarkerColor={getMarkerColor}
+        shouldHideMap={shouldHideMap}
+        onRegionChangeComplete={onRegionChangeComplete}
+      />
       {selectedSighting && (
         <ReporteDetails
           reporte={selectedSighting}
-          onClose={() => setSelectedSighting(null)}
+          onClose={() => {
+            setSelectedSighting(null);
+            setCalculatedDistance(null);
+          }}
           onDelete={handleDelete}
+          distance={calculatedDistance}
         />
       )}
       <FloatingSpeedDial
         visible={menuVisible}
         onToggle={() => setMenuVisible((v) => !v)}
         actions={[
-          // Botón para ir a Estadísticas
+          {
+            key: 'Mis Avistamientos',
+            label: 'Mis Avistamientos',
+            onPress: goToMySightingsScreen,
+            icon: (
+              <Ionicons
+                name="person-circle-outline"
+                size={22}
+                color={Colors.secondary}
+              />
+            ),
+          },
           {
             key: 'Estadísticas',
             label: 'Estadísticas',
@@ -430,14 +527,10 @@ const CommunityMapScreen = () => {
               />
             ),
           },
-          // Botón para Crear Reporte
           {
             key: 'Crear Reporte',
             label: 'Crear Reporte',
-            onPress: () => {
-              setMenuVisible(false);
-              router.push('/create-report');
-            },
+            onPress: goToCreateReport,
             icon: (
               <Ionicons
                 name="document-text-outline"
@@ -446,14 +539,10 @@ const CommunityMapScreen = () => {
               />
             ),
           },
-          // Botón para Crear Alerta
           {
             key: 'Crear Alerta',
             label: 'Crear Alerta',
-            onPress: () => {
-              setMenuVisible(false);
-              router.push('/alerts/create-alert');
-            },
+            onPress: goToCreateAlert,
             icon: (
               <Ionicons
                 name="alert-circle-outline"
@@ -487,115 +576,9 @@ const CommunityMapScreen = () => {
   );
 };
 
+// Estilos mínimos para el contenedor principal
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background || '#F8F8F8' },
-  map: { flex: 1 },
-  hiddenMap: { opacity: 0.3 },
-
-  filterButton: {
-    position: 'absolute',
-    top: 100,
-    left: 20,
-    backgroundColor: Colors.accent || '#007AFF',
-    borderRadius: 30,
-    padding: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 5,
-    zIndex: 10,
-  },
-
-  criticalButton: {
-    position: 'absolute',
-    top: 100,
-    right: 20,
-    backgroundColor: Colors.lightText || 'white',
-    borderRadius: 30,
-    padding: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 5,
-    zIndex: 10,
-    borderWidth: 2,
-    borderColor: Colors.danger || 'red',
-  },
-  criticalButtonActive: {
-    backgroundColor: Colors.danger || 'red',
-    borderColor: Colors.danger || 'red',
-    shadowColor: Colors.danger || 'red',
-    shadowOpacity: 0.5,
-  },
-
-  filterIndicator: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: Colors.success || '#4CAF50',
-  },
-
-  criticalBadge: {
-    position: 'absolute',
-    top: -5,
-    right: -5,
-    backgroundColor: Colors.danger || 'red',
-    borderRadius: 10,
-    width: 20,
-    height: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  criticalBadgeText: {
-    color: Colors.lightText || 'white',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-
-  loadingContainer: {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    transform: [{ translateX: -75 }, { translateY: -50 }],
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    padding: 20,
-    borderRadius: 10,
-    alignItems: 'center',
-    zIndex: 20,
-  },
-  loadingText: { marginTop: 10, fontSize: 14, color: Colors.text },
-  noResultsContainer: {
-    position: 'absolute',
-    top: '40%',
-    left: '10%',
-    right: '10%',
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    padding: 30,
-    borderRadius: 15,
-    alignItems: 'center',
-    zIndex: 20,
-    elevation: 5,
-  },
-  noResultsTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: Colors.text,
-    marginTop: 16,
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  clearFilterButton: {
-    backgroundColor: Colors.primary,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  clearFilterText: { color: Colors.lightText, fontWeight: '600', fontSize: 16 },
 });
 
 export default CommunityMapScreen;

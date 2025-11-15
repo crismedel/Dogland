@@ -1,5 +1,10 @@
 import pool from '../db/db.js';
-import { auditCreate, auditUpdate, auditDelete } from '../services/auditService.js';
+import {
+  auditCreate,
+  auditUpdate,
+  auditDelete,
+} from '../services/auditService.js';
+import { getOldValuesForAudit, sanitizeForAudit } from '../utils/audit.js';
 
 export const listAllUsers = async (req, res, next) => {
   try {
@@ -17,7 +22,7 @@ export const listAllUsers = async (req, res, next) => {
     res.json({
       success: true,
       data: result.rows,
-      count: result.rowCount
+      count: result.rowCount,
     });
   } catch (error) {
     next(error);
@@ -31,6 +36,7 @@ export const getUserProfile = async (req, res, next) => {
       `
       SELECT u.id_usuario, u.nombre_usuario, u.apellido_paterno, u.apellido_materno,
              u.telefono, u.email, u.fecha_nacimiento, u.fecha_creacion, u.activo,
+             u.id_sexo, u.has_2fa,
              r.nombre_rol, c.nombre_ciudad, s.sexo, o.nombre_organizacion
       FROM usuario u
       JOIN rol r ON u.id_rol = r.id_rol
@@ -39,11 +45,11 @@ export const getUserProfile = async (req, res, next) => {
       LEFT JOIN organizacion o ON u.id_organizacion = o.id_organizacion
       WHERE u.id_usuario = $1
       `,
-      [userId]
+      [userId],
     );
     res.json({
       success: true,
-      data: result.rows[0]
+      data: result.rows[0],
     });
   } catch (error) {
     next(error);
@@ -52,7 +58,7 @@ export const getUserProfile = async (req, res, next) => {
 
 export const getUserById = async (req, res, next) => {
   try {
-    const { id } = req.validatedParams;
+    const { id } = req.params;
     const result = await pool.query(
       `
       SELECT u.id_usuario, u.nombre_usuario, u.apellido_paterno, u.apellido_materno,
@@ -65,12 +71,12 @@ export const getUserById = async (req, res, next) => {
       LEFT JOIN organizacion o ON u.id_organizacion = o.id_organizacion
       WHERE u.id_usuario = $1
       `,
-      [id]
+      [id],
     );
     if (result.rowCount === 0) {
       return res.status(404).json({
         success: false,
-        error: 'Usuario no encontrado'
+        error: 'Usuario no encontrado',
       });
     }
     res.json({ success: true, data: result.rows[0] });
@@ -93,8 +99,8 @@ export const createUser = async (req, res, next) => {
       id_ciudad,
       id_organizacion,
       id_rol,
-    } = req.validatedBody;
-    
+    } = req.body;
+
     const result = await pool.query(
       `
       INSERT INTO usuario (nombre_usuario, apellido_paterno, apellido_materno, id_sexo, 
@@ -114,18 +120,18 @@ export const createUser = async (req, res, next) => {
         id_ciudad,
         id_organizacion,
         id_rol,
-      ]
+      ],
     );
-    
+
     const newUser = result.rows[0];
-    
-    // Filtrar password antes de auditar
-    const { password_hash: _, ...newUserSafe } = newUser;
+
+    // Sanitizar antes de auditar
+    const newUserSafe = sanitizeForAudit('usuario', newUser);
     await auditCreate(req, 'usuario', newUser.id_usuario, newUserSafe);
-    
+
     res.status(201).json({
       success: true,
-      data: newUser
+      data: newUser,
     });
   } catch (error) {
     next(error);
@@ -134,7 +140,7 @@ export const createUser = async (req, res, next) => {
 
 export const updateUser = async (req, res, next) => {
   try {
-    const { id } = req.validatedParams;
+    const { id } = req.params;
     const {
       nombre_usuario,
       apellido_paterno,
@@ -145,28 +151,23 @@ export const updateUser = async (req, res, next) => {
       id_organizacion,
       id_rol,
       activo,
-    } = req.validatedBody;
-    
-    // Obtener valores antiguos
-    const oldUserResult = await pool.query(
-      'SELECT * FROM usuario WHERE id_usuario = $1',
-      [id]
-    );
-    
-    if (oldUserResult.rowCount === 0) {
+    } = req.body;
+
+    // Usar helper para auditar
+    const oldUser = await getOldValuesForAudit('usuario', 'id_usuario', id);
+
+    if (!oldUser) {
       return res.status(404).json({
         success: false,
-        error: 'Usuario no encontrado'
+        error: 'Usuario no encontrado',
       });
     }
-    
-    const oldUser = oldUserResult.rows[0];
-    
+
     // Validacion de ciudad
     if (id_ciudad) {
       const cityExistsResult = await pool.query(
         'SELECT 1 FROM ciudad WHERE id_ciudad = $1',
-        [id_ciudad]
+        [id_ciudad],
       );
       if (cityExistsResult.rowCount === 0) {
         return res.status(400).json({
@@ -175,7 +176,7 @@ export const updateUser = async (req, res, next) => {
         });
       }
     }
-    
+
     // Hacer el UPDATE
     const result = await pool.query(
       `
@@ -203,62 +204,117 @@ export const updateUser = async (req, res, next) => {
         id_rol,
         activo,
         id,
-      ]
+      ],
     );
-    
+
     const updatedUser = result.rows[0];
-    
-    // Auditar sin password
-    const { password_hash, ...oldUserSafe } = oldUser;
-    await auditUpdate(req, 'usuario', oldUserSafe);
-    
+
+    // Usar helper para sanitizar
+    const oldUserSafe = sanitizeForAudit('usuario', oldUser);
+    const newUserSafe = sanitizeForAudit('usuario', updatedUser);
+    await auditUpdate(req, 'usuario', id, oldUserSafe, newUserSafe);
+
     res.json({
       success: true,
-      data: updatedUser
+      data: updatedUser,
     });
   } catch (error) {
     next(error);
   }
 };
 
+export const updateOwnProfile = async (req, res, next) => {
+  try {
+    const userId = req.user.id; // Del token JWT
+    const {
+      nombre_usuario,
+      apellido_paterno,
+      apellido_materno,
+      telefono,
+      fecha_nacimiento,
+      id_sexo,
+    } = req.body;
+
+    const oldUser = await getOldValuesForAudit('usuario', 'id_usuario', userId);
+
+    if (!oldUser) {
+      return res.status(404).json({
+        success: false,
+        error: 'Usuario no encontrado',
+      });
+    }
+
+    const result = await pool.query(
+      `UPDATE usuario
+       SET nombre_usuario   = COALESCE($1, nombre_usuario),
+           apellido_paterno = COALESCE($2, apellido_paterno),
+           apellido_materno = COALESCE($3, apellido_materno),
+           telefono         = COALESCE($4, telefono),
+           fecha_nacimiento = COALESCE($5, fecha_nacimiento),
+           id_sexo          = COALESCE($6, id_sexo)
+       WHERE id_usuario = $7
+       RETURNING *`,
+      [
+        nombre_usuario,
+        apellido_paterno,
+        apellido_materno,
+        telefono,
+        fecha_nacimiento,
+        id_sexo,
+        userId,
+      ],
+    );
+
+    const updatedUser = result.rows[0];
+
+    // Usar helper para sanitizar
+    const oldUserSafe = sanitizeForAudit('usuario', oldUser);
+    const newUserSafe = sanitizeForAudit('usuario', updatedUser);
+    await auditUpdate(req, 'usuario', userId, oldUserSafe, newUserSafe);
+
+    res.json({
+      success: true,
+      data: updatedUser,
+    });
+  } catch (error) {
+    console.error('❌ Error en updateOwnProfile:', error);
+    next(error);
+  }
+};
+
 export const deleteUser = async (req, res, next) => {
-  const { id } = req.validatedParams;
+  const { id } = req.params;
   let client;
-  
+
   try {
     client = await pool.connect();
-    
+
     try {
       await client.query('BEGIN');
-      
-      // Obtener datos antes de eliminar
-      const oldUserResult = await client.query(
-        'SELECT * FROM usuario WHERE id_usuario = $1',
-        [id]
-      );
-      
-      if (oldUserResult.rowCount === 0) {
+
+      // Usar helper para auditar
+      const oldUser = await getOldValuesForAudit('usuario', 'id_usuario', id);
+
+      if (!oldUser) {
         await client.query('ROLLBACK');
-        return res.status(404).json({ 
-          success: false, 
-          error: 'Usuario no encontrado' 
+        return res.status(404).json({
+          success: false,
+          error: 'Usuario no encontrado',
         });
       }
-      
-      const oldUser = oldUserResult.rows[0];
-      
+
       // Eliminar
       const result = await client.query(
         'DELETE FROM usuario WHERE id_usuario = $1 RETURNING id_usuario, email',
-        [id]
+        [id],
       );
-      
-      // Auditar eliminacion
-      const { password_hash, ...oldUserSafe } = oldUser;
-      await auditDelete(req, 'usuario', oldUserSafe);
-      
+
+      // Usar helper para sanitizar
+      const oldUserSafe = sanitizeForAudit('usuario', oldUser);
+      await auditDelete(req, 'usuario', id, oldUserSafe);
+
       await client.query('COMMIT');
-      
+
       res.json({
         success: true,
         message: 'Usuario eliminado correctamente',
@@ -276,39 +332,34 @@ export const deleteUser = async (req, res, next) => {
 };
 
 export const deactivateUser = async (req, res, next) => {
-  const { id } = req.validatedParams;
+  const { id } = req.params;
   let client;
-  
+
   try {
     client = await pool.connect();
-    
-    // Obtener valores antiguos
-    const oldUserResult = await client.query(
-      'SELECT * FROM usuario WHERE id_usuario = $1',
-      [id]
-    );
-    
-    if (oldUserResult.rowCount === 0) {
-      return res.status(404).json({ 
-        success: false, 
-        error: 'Usuario no encontrado' 
+
+    // Usar helper para auditar
+    const oldUser = await getOldValuesForAudit('usuario', 'id_usuario', id);
+
+    if (!oldUser) {
+      return res.status(404).json({
+        success: false,
+        error: 'Usuario no encontrado',
       });
     }
-    
-    const oldUser = oldUserResult.rows[0];
-    
+
     const result = await client.query(
       `UPDATE usuario
        SET activo = false, deleted_at = NOW()
        WHERE id_usuario = $1
        RETURNING id_usuario, email`,
-      [id]
+      [id],
     );
-    
-    // Auditar como DELETE
-    const { password_hash, ...oldUserSafe } = oldUser;
-    await auditDelete(req, 'usuario', oldUserSafe);
-    
+
+    // Usar helper para sanitizar
+    const oldUserSafe = sanitizeForAudit('usuario', oldUser);
+    await auditDelete(req, 'usuario', id, oldUserSafe);
+
     res.json({
       success: true,
       message: 'Usuario desactivado correctamente',
@@ -322,40 +373,34 @@ export const deactivateUser = async (req, res, next) => {
 };
 
 export const activateUser = async (req, res, next) => {
-  const { id } = req.validatedParams;
+  const { id } = req.params;
   let client;
-  
+
   try {
     client = await pool.connect();
-    
-    // Obtener valores antiguos
-    const oldUserResult = await client.query(
-      'SELECT * FROM usuario WHERE id_usuario = $1',
-      [id]
-    );
-    
-    if (oldUserResult.rowCount === 0) {
+
+    // Usar helper para auditar
+    const oldUser = await getOldValuesForAudit('usuario', 'id_usuario', id);
+
+    if (!oldUser) {
       return res.status(404).json({
         success: false,
-        error: 'Usuario no encontrado'
+        error: 'Usuario no encontrado',
       });
     }
-    
-    const oldUser = oldUserResult.rows[0];
-    
+
     const result = await client.query(
       `UPDATE usuario
        SET activo = true, deleted_at = NULL
        WHERE id_usuario = $1
        RETURNING id_usuario, email, activo`,
-      [id]
+      [id],
     );
-    
+
     // Auditar reactivacion como CREATE
-    const { password_hash, ...oldUserSafe } = oldUser;
     const newValues = { activo: true, deleted_at: null };
     await auditCreate(req, 'usuario', id, newValues);
-    
+
     res.json({
       success: true,
       message: 'Usuario activado correctamente',
@@ -369,25 +414,36 @@ export const activateUser = async (req, res, next) => {
 };
 
 export const savePushToken = async (req, res, next) => {
-  const { token, plataforma } = req.validatedBody;
+  const { token, plataforma, device_id, app_version } = req.body;
   const id = req.user.id;
-  
+
   try {
     const query = `
-      INSERT INTO dispositivo (id_usuario, token, plataforma)
-      VALUES ($1, $2, $3)
-      ON CONFLICT (token) DO UPDATE
+      INSERT INTO dogland.user_push_tokens (user_id, push_token, platform, device_id, app_version, created_at, last_seen, is_valid, failure_count)
+      VALUES ($1, $2, $3, $4, $5, NOW(), NOW(), true, 0)
+      ON CONFLICT (push_token) DO UPDATE
       SET
-        id_usuario = EXCLUDED.id_usuario,
-        plataforma = EXCLUDED.plataforma,
-        fecha_actualizacion = NOW();
+        user_id = EXCLUDED.user_id,
+        platform = EXCLUDED.platform,
+        device_id = EXCLUDED.device_id,
+        app_version = EXCLUDED.app_version,
+        last_seen = NOW(),
+        is_valid = true,
+        failure_count = 0
+      ;
     `;
-    
-    await pool.query(query, [id, token, plataforma]);
-    
+
+    await pool.query(query, [
+      id,
+      token,
+      plataforma,
+      device_id || null,
+      app_version || null,
+    ]);
+
     res.json({
       success: true,
-      message: 'Dispositivo registrado exitosamente.'
+      message: 'Token de push registrado/actualizado exitosamente.',
     });
   } catch (error) {
     next(error);

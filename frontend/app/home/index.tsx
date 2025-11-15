@@ -1,6 +1,5 @@
 import React from 'react';
 import {
-  Text,
   View,
   StyleSheet,
   Dimensions,
@@ -13,12 +12,16 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import CustomButton from '../../src/components/UI/CustomButton';
 import { Colors } from '@/src/constants/colors';
-import { fetchUserProfile } from '@/src/api/users'; // <-- importa tu función
-import { authStorage } from '@/src/utils/authStorage'; // para logout en caso 401 opcional
+import { fetchUserProfile } from '@/src/api/users';
+import { useAuth } from '@/src/contexts/AuthContext';
+import {
+  fontWeightBold,
+  fontWeightMedium,
+  AppText,
+} from '@/src/components/AppText';
 
 const { width } = Dimensions.get('window');
 const BADGE_SIZE = 42;
@@ -27,41 +30,37 @@ export default function Index() {
   const [userName, setUserName] = React.useState<string>('');
   const [loading, setLoading] = React.useState<boolean>(true);
   const [error, setError] = React.useState<string | null>(null);
+  const [showPopup, setShowPopup] = React.useState<boolean>(false);
+  const [popupMessage, setPopupMessage] = React.useState<string>('');
+  const { logout } = useAuth();
 
-  // Cargar perfil al montar
-  React.useEffect(() => {
-    let isMounted = true;
-    (async () => {
-      try {
-        const user = await fetchUserProfile();
-        if (!isMounted) return;
+  // ✅ cargar únicamente el perfil
+  const loadData = React.useCallback(async () => {
+    setLoading(true);
+    setError(null);
 
-        // Ajusta según tu backend. Con /users/me recibes:
-        // { id_usuario, nombre_usuario, ... , nombre_rol, ... }
-        const name = user?.nombre_usuario || user?.nombre_usuario || '';
-        setUserName(name);
-      } catch (err: any) {
-        if (!isMounted) return;
-        // Manejo de errores básicos
-        if (err?.response?.status === 401) {
-          // Token inválido/expirado → limpiar y mandar a login
-          await authStorage.removeToken?.();
-          router.replace('/auth');
-          return;
-        }
-        setError(
-          err?.response?.data?.error ??
-            err?.message ??
-            'No se pudo cargar el perfil',
-        );
-      } finally {
-        if (isMounted) setLoading(false);
+    try {
+      const user = await fetchUserProfile();
+      const name = user?.nombre_usuario || '';
+      setUserName(name);
+
+      setShowPopup(false);
+    } catch (err: any) {
+      if (err?.response?.status === 401) {
+        await logout();
+        router.replace('/auth');
+        return;
       }
-    })();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+
+      setError('No se pudo cargar tu perfil. Por favor, intenta de nuevo.');
+    } finally {
+      setLoading(false);
+    }
+  }, [logout]);
+
+  React.useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const userInitial = React.useMemo(
     () => (userName?.trim()?.[0] || 'U').toUpperCase(),
@@ -77,7 +76,6 @@ export default function Index() {
     Linking.openURL(urls[platform]);
   };
 
-  // Loading/errores arriba del layout
   if (loading) {
     return (
       <View
@@ -87,9 +85,9 @@ export default function Index() {
         ]}
       >
         <ActivityIndicator size="large" color="#2c3e50" />
-        <Text style={{ marginTop: 12, color: '#2c3e50' }}>
+        <AppText style={{ marginTop: 12, color: '#2c3e50' }}>
           Cargando tu perfil…
-        </Text>
+        </AppText>
       </View>
     );
   }
@@ -102,16 +100,12 @@ export default function Index() {
           { justifyContent: 'center', alignItems: 'center', padding: 16 },
         ]}
       >
-        <Text
+        <AppText
           style={{ color: 'crimson', textAlign: 'center', marginBottom: 12 }}
         >
           {error}
-        </Text>
-        <CustomButton
-          title="Reintentar"
-          onPress={() => router.replace('/')}
-          variant="primary"
-        />
+        </AppText>
+        <CustomButton title="Reintentar" onPress={loadData} variant="primary" />
       </View>
     );
   }
@@ -121,13 +115,13 @@ export default function Index() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      <LinearGradient
-        colors={['#F2E2C4', '#F2E2C4']}
-        style={StyleSheet.absoluteFillObject}
+      <Image
+        source={require('../../assets/images/huellas.png')}
+        style={styles.imageWrapper}
       />
 
-      {/* Badge con inicial del usuario real */}
-      <View style={styles.topBar}>
+      {/* Badge de perfil */}
+      <View style={styles.topBar1}>
         <Pressable
           onPress={() => router.push('/profile')}
           accessibilityLabel="Ir al perfil"
@@ -136,21 +130,33 @@ export default function Index() {
             pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] },
           ]}
         >
-          <Text style={styles.profileInitial}>{userInitial}</Text>
+          <AppText style={styles.profileInitial}>{userInitial}</AppText>
+        </Pressable>
+      </View>
+      <View style={styles.topBar2}>
+        <Pressable
+          onPress={() => router.push('/notifications')}
+          accessibilityLabel="Ir al perfil"
+          style={({ pressed }) => [
+            styles.profileBadge,
+            pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] },
+          ]}
+        >
+          <Ionicons name="notifications-outline" size={24} color="white" />
         </Pressable>
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.welcomeText}>
+        <AppText style={styles.welcomeText}>
           Bienvenido/a {userName || 'Usuario'}
-        </Text>
+        </AppText>
 
-        {/* Bloque 1 (imagen derecha) */}
+        {/* Bloque 1 */}
         <View style={styles.cardRight}>
           <View style={styles.textBlock}>
-            <Text style={styles.questionText}>
+            <AppText style={styles.questionText}>
               ¿Viste un perrito que necesita ayuda?
-            </Text>
+            </AppText>
             <CustomButton
               title="Dar aviso"
               onPress={() => router.push('/alerts')}
@@ -164,16 +170,16 @@ export default function Index() {
           />
         </View>
 
-        {/* Bloque 2 (imagen izquierda) */}
+        {/* Bloque 2 */}
         <View style={styles.cardLeft}>
           <Image
             source={{ uri: 'https://placedog.net/300/300?id=8' }}
             style={styles.circleImage}
           />
           <View style={styles.textBlock}>
-            <Text style={styles.questionText}>
+            <AppText style={styles.questionText}>
               ¿Te gustaría adoptar un perrito?
-            </Text>
+            </AppText>
             <CustomButton
               title="Quiero adoptar"
               onPress={() => router.push('/adoption')}
@@ -183,10 +189,10 @@ export default function Index() {
           </View>
         </View>
 
-        {/* Bloque 3 (imagen derecha) */}
+        {/* Bloque 3 */}
         <View style={styles.cardRight}>
           <View style={styles.textBlock}>
-            <Text style={styles.questionText}>Mapa Comunitario</Text>
+            <AppText style={styles.questionText}>Mapa Comunitario</AppText>
             <CustomButton
               title="Ver mapa"
               onPress={() => router.push('/community_maps')}
@@ -200,14 +206,14 @@ export default function Index() {
           />
         </View>
 
-        {/* Bloque 4 (imagen izquierda) */}
+        {/* Bloque 4 */}
         <View style={styles.cardLeft}>
           <Image
             source={{ uri: 'https://placedog.net/300/300?id=20' }}
             style={styles.circleImage}
           />
           <View style={styles.textBlock}>
-            <Text style={styles.questionText}>Avistamientos</Text>
+            <AppText style={styles.questionText}>Avistamientos</AppText>
             <CustomButton
               title="Ver avistamientos"
               onPress={() => router.push('/sightings')}
@@ -219,7 +225,7 @@ export default function Index() {
 
         {/* Redes sociales */}
         <View style={styles.socialContainer}>
-          <Text style={styles.socialText}>Puedes buscarnos en :</Text>
+          <AppText style={styles.socialText}>Puedes buscarnos en :</AppText>
           <View style={styles.socialButtons}>
             <Ionicons
               name="logo-facebook"
@@ -249,11 +255,22 @@ export default function Index() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1 },
+/* ---- ESTILOS ---- */
 
-  // Top bar con badge de perfil
-  topBar: { position: 'absolute', top: 50, left: 20, zIndex: 10 },
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: Colors.background },
+  imageWrapper: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    opacity: 0.5,
+    width: '100%',
+    height: '100%',
+    resizeMode: 'repeat',
+  },
+  topBar1: { position: 'absolute', top: 50, left: 20, zIndex: 10 },
+  topBar2: { position: 'absolute', top: 50, right: 20, zIndex: 10 },
   profileBadge: {
     width: BADGE_SIZE,
     height: BADGE_SIZE,
@@ -275,14 +292,13 @@ const styles = StyleSheet.create({
   },
   profileInitial: {
     color: '#fff',
-    fontWeight: '800',
+    fontWeight: fontWeightBold,
     fontSize: 18,
-    letterSpacing: 0.5,
   },
   content: { paddingTop: 120, paddingBottom: 40, gap: 30 },
   welcomeText: {
     fontSize: 28,
-    fontWeight: '800',
+    fontWeight: fontWeightBold,
     color: '#2c3e50',
     textAlign: 'center',
     marginBottom: 20,
@@ -290,15 +306,13 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 1, height: 2 },
     textShadowRadius: 3,
   },
-
-  /** ---- CARDS ---- */
   cardRight: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginHorizontal: 16,
     padding: 16,
-    backgroundColor: 'rgba(255,255,255,0.5)',
+    backgroundColor: '#f4ecde',
     borderTopRightRadius: 70,
     borderBottomRightRadius: 70,
     borderTopLeftRadius: 20,
@@ -319,7 +333,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginHorizontal: 16,
     padding: 16,
-    backgroundColor: 'rgba(255,255,255,0.5)',
+    backgroundColor: '#f4ecde',
     borderTopLeftRadius: 70,
     borderBottomLeftRadius: 70,
     borderTopRightRadius: 20,
@@ -336,8 +350,8 @@ const styles = StyleSheet.create({
   },
   textBlock: { flex: 1, alignItems: 'center', marginHorizontal: 10 },
   questionText: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 15,
+    fontWeight: fontWeightMedium,
     marginBottom: 12,
     color: '#000',
     textAlign: 'center',
@@ -362,7 +376,7 @@ const styles = StyleSheet.create({
   socialContainer: { alignItems: 'center', marginTop: 30 },
   socialText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: fontWeightMedium,
     marginBottom: 10,
     color: '#2c3e50',
   },

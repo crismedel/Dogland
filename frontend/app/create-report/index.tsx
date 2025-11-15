@@ -1,29 +1,37 @@
-import React, { useState, useEffect } from 'react';
 import {
-  View,
-  Text,
+  AppText,
+  fontWeightMedium
+} from '@/src/components/AppText';
+import { useNotification } from '@/src/components/notifications';
+import CustomButton from '@/src/components/UI/CustomButton';
+import CustomHeader from '@/src/components/UI/CustomHeader';
+import { Colors } from '@/src/constants/colors';
+import { Ionicons } from '@expo/vector-icons';
+import * as Location from 'expo-location';
+import { useRouter } from 'expo-router';
+import React, { useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  Dimensions,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
-  Alert,
-  ScrollView,
-  Platform,
-  KeyboardAvoidingView,
-  Image,
-  Dimensions,
-  ActivityIndicator,
+  View,
 } from 'react-native';
 import DropDownPicker from 'react-native-dropdown-picker';
-import * as Location from 'expo-location';
 import MapView, { Marker } from 'react-native-maps';
-import { AxiosError } from 'axios';
-import { useNotification } from '@/src/components/notifications/NotificationContext';
 import apiClient from '../../src/api/client';
-import { Colors } from '@/src/constants/colors';
-import CustomHeader from '@/src/components/UI/CustomHeader';
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import CustomButton from '@/src/components/UI/CustomButton';
+
+// --- INICIO DE IMPORTACIONES OFFLINE ---
+import { useNetInfo } from '@react-native-community/netinfo';
+import { useReportSync } from '../../src/hooks/useReportSync'; // Ajusta la ruta si es necesario
+import { saveReportOffline } from '../../src/utils/offlineStorage'; // Ajusta la ruta si es necesario
+// --- FIN DE IMPORTACIONES OFFLINE ---
 
 const { width } = Dimensions.get('window');
 
@@ -36,13 +44,19 @@ const CreateReportScreen = () => {
   const router = useRouter();
   const { showError, showSuccess, showInfo } = useNotification();
 
+  // --- HOOKS OFFLINE ---
+  const netInfo = useNetInfo();
+  // Llamamos a useReportSync() aquí para activar el listener de conexión
+  // que subirá los reportes pendientes automáticamente.
+  useReportSync();
+  // --- FIN HOOKS OFFLINE ---
+
   // ESTADOS DEL FORMULARIO
   const [descripcion, setDescripcion] = useState('');
   const [titulo, setTitulo] = useState('');
   const [imageUrl, setImageUrl] = useState('');
 
-  // 🚨 CAMBIO CLAVE: Eliminamos el estado del usuario. El ID se obtiene del token en el backend.
-  const [loading, setLoading] = useState(false); // Nuevo estado para el loading del botón
+  const [loading, setLoading] = useState(false);
 
   // ESTADOS DE DROPDOWN
   const [especie, setEspecie] = useState<number | null>(null);
@@ -63,7 +77,9 @@ const CreateReportScreen = () => {
     { label: 'Grave', value: 3 },
   ]);
 
-  const [estadoAvistamiento, setEstadoAvistamiento] = useState<number | null>(null);
+  const [estadoAvistamiento, setEstadoAvistamiento] = useState<number | null>(
+    null,
+  );
   const [openEstadoAvistamiento, setOpenEstadoAvistamiento] = useState(false);
   const [itemsEstadoAvistamiento, setItemsEstadoAvistamiento] = useState([
     { label: 'Salud Pública', value: 1 },
@@ -79,8 +95,7 @@ const CreateReportScreen = () => {
   } | null>(null);
   const [mostrarMapa, setMostrarMapa] = useState(false);
 
-  // Ya no necesitamos la lógica de `useEffect` para `fetchUsers`. La eliminamos.
-
+  // --- LÓGICA DE UBICACIÓN (sin cambios) ---
   const obtenerUbicacionActual = async () => {
     let { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== 'granted') {
@@ -97,11 +112,26 @@ const CreateReportScreen = () => {
     setUbicacion(coordinate);
     Alert.alert(
       'Ubicación Seleccionada',
-      `Lat: ${coordinate.latitude.toFixed(4)}, Lon: ${coordinate.longitude.toFixed(4)}`,
+      `Lat: ${coordinate.latitude.toFixed(
+        4,
+      )}, Lon: ${coordinate.longitude.toFixed(4)}`,
     );
     setMostrarMapa(false);
   };
 
+  // --- FUNCIÓN PARA LIMPIAR EL FORMULARIO ---
+  const resetForm = () => {
+    setDescripcion('');
+    setTitulo('');
+    setImageUrl('');
+    setEspecie(null);
+    setEstadoSalud(null);
+    setEstadoAvistamiento(null);
+    setUbicacion(null);
+    setLoading(false);
+  };
+
+  // --- FUNCIÓN DE ENVÍO (MODIFICADA PARA OFFLINE) ---
   const handleCreateReport = async () => {
     // 1. Validaciones
     if (
@@ -119,10 +149,11 @@ const CreateReportScreen = () => {
       return;
     }
 
-    setLoading(true); // Se activa el estado de carga
-    
-    // 2. Pre-procesamiento de la URL de la foto
-    const finalImageUrl = imageUrl && imageUrl.startsWith('http') ? imageUrl : null;
+    setLoading(true);
+
+    // 2. Pre-procesamiento de la URL
+    const finalImageUrl =
+      imageUrl && imageUrl.startsWith('http') ? imageUrl : null;
     if (imageUrl && !finalImageUrl) {
       showInfo(
         'Advertencia',
@@ -130,8 +161,7 @@ const CreateReportScreen = () => {
       );
     }
 
-    // 🚨 CAMBIO CLAVE: reportData ya NO contiene id_usuario
-    // El backend lo obtendrá del token JWT.
+    // 3. Preparar los datos del reporte
     const reportData = {
       id_estado_avistamiento: estadoAvistamiento,
       id_estado_salud: estadoSalud,
@@ -146,45 +176,55 @@ const CreateReportScreen = () => {
       url: finalImageUrl,
     };
 
-    // 3. Petición a la API y manejo de errores
-    try {
-      const response = await apiClient.post('/sightings', reportData);
+    // 4. Lógica Offline/Online
+    const isOnline = netInfo.isConnected && netInfo.isInternetReachable;
 
-      if (response.status === 201) {
-        showSuccess('Éxito', 'Reporte creado con éxito.');
-        setDescripcion('');
-        setTitulo('');
-        setImageUrl('');
-        setEspecie(null);
-        setEstadoSalud(null);
-        setEstadoAvistamiento(null);
-        setUbicacion(null);
-      } else {
-        showError('Error', 'Hubo un problema al crear el reporte.');
-      }
-    } catch (error) {
-      const isAxiosError = (err: any): err is AxiosError<ErrorData> => {
-        return err && err.isAxiosError === true;
-      };
-
-      if (isAxiosError(error)) {
-        console.error(
-          'Error al enviar el reporte (Axios):',
-          error.response?.data || error.message,
+    if (isOnline) {
+      // --- INTENTO DE ENVÍO ONLINE ---
+      try {
+        const response = await apiClient.post('/sightings', reportData);
+        if (response.status === 201) {
+          showSuccess('Éxito', 'Reporte creado con éxito.');
+          resetForm();
+          router.back();
+        } else {
+          showError('Error', 'Hubo un problema al crear el reporte.');
+          setLoading(false);
+        }
+      } catch (error) {
+        // El envío online falló (ej. 500 o error de red)
+        console.error('Error al enviar online, preguntando para guardar offline:', error);
+        setLoading(false);
+        Alert.alert(
+          'Error de Envío',
+          'No pudimos subir el reporte. ¿Quieres guardarlo para intentarlo más tarde?',
+          [
+            { text: 'Cancelar', style: 'cancel' },
+            {
+              text: 'Guardar Offline',
+              onPress: async () => {
+                await saveReportOffline(reportData);
+                resetForm();
+                router.back();
+              },
+            },
+          ],
         );
-        const errorData = error.response?.data;
-        const errorResponse = errorData?.error || errorData?.message;
-        const errorMessage =
-          typeof errorResponse === 'string'
-            ? errorResponse
-            : 'No se pudo conectar con el servidor o hubo un error desconocido.';
-        showError('Error', errorMessage);
-      } else {
-        console.error('Error inesperado (no-Axios):', error);
-        showError('Error', 'Ocurrió un error inesperado.');
       }
-    } finally {
-      setLoading(false); // Se desactiva el estado de carga
+    } else {
+      // --- MODO OFFLINE (SIN CONEXIÓN) ---
+      try {
+        await saveReportOffline(reportData);
+        showSuccess(
+          'Guardado Offline',
+          'Reporte guardado. Se subirá automáticamente cuando recuperes la conexión.',
+        );
+        resetForm();
+        router.back();
+      } catch (saveError) {
+        showError('Error', 'No se pudo guardar el reporte localmente.');
+        setLoading(false);
+      }
     }
   };
 
@@ -221,7 +261,7 @@ const CreateReportScreen = () => {
       >
         <View style={styles.formContainer}>
           <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Título del Reporte:</Text>
+            <AppText style={styles.inputLabel}>Título del Reporte:</AppText>
             <TextInput
               style={styles.textInput}
               placeholder="Ej: Perro herido en Av. Principal"
@@ -231,7 +271,9 @@ const CreateReportScreen = () => {
           </View>
 
           <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Descripción del Reporte:</Text>
+            <AppText style={styles.inputLabel}>
+              Descripción del Reporte:
+            </AppText>
             <TextInput
               style={[
                 styles.textInput,
@@ -244,8 +286,13 @@ const CreateReportScreen = () => {
             />
           </View>
 
-          <View style={[styles.inputContainer, Platform.OS === 'ios' && { zIndex: 5000 }]}>
-            <Text style={styles.inputLabel}>Especie del Animal:</Text>
+          <View
+            style={[
+              styles.inputContainer,
+              Platform.OS === 'ios' && { zIndex: 5000 },
+            ]}
+          >
+            <AppText style={styles.inputLabel}>Especie del Animal:</AppText>
             <DropDownPicker
               open={openEspecie}
               value={especie}
@@ -259,8 +306,15 @@ const CreateReportScreen = () => {
             />
           </View>
 
-          <View style={[styles.inputContainer, Platform.OS === 'ios' && { zIndex: 4000 }]}>
-            <Text style={styles.inputLabel}>Estado de Salud del Animal:</Text>
+          <View
+            style={[
+              styles.inputContainer,
+              Platform.OS === 'ios' && { zIndex: 4000 },
+            ]}
+          >
+            <AppText style={styles.inputLabel}>
+              Estado de Salud del Animal:
+            </AppText>
             <DropDownPicker
               open={openEstadoSalud}
               value={estadoSalud}
@@ -274,8 +328,15 @@ const CreateReportScreen = () => {
             />
           </View>
 
-          <View style={[styles.inputContainer, Platform.OS === 'ios' && { zIndex: 3000 }]}>
-            <Text style={styles.inputLabel}>Estado del Avistamiento:</Text>
+          <View
+            style={[
+              styles.inputContainer,
+              Platform.OS === 'ios' && { zIndex: 3000 },
+            ]}
+          >
+            <AppText style={styles.inputLabel}>
+              Estado del Avistamiento:
+            </AppText>
             <DropDownPicker
               open={openEstadoAvistamiento}
               value={estadoAvistamiento}
@@ -290,7 +351,9 @@ const CreateReportScreen = () => {
           </View>
 
           <View style={[styles.inputContainer, { zIndex: 2000 }]}>
-            <Text style={styles.inputLabel}>URL de la Foto (Opcional):</Text>
+            <AppText style={styles.inputLabel}>
+              URL de la Foto (Opcional):
+            </AppText>
             <TextInput
               style={styles.textInput}
               placeholder="Ej: https://tudominio.com/foto.jpg"
@@ -304,14 +367,16 @@ const CreateReportScreen = () => {
                 <Image
                   source={{ uri: imageUrl }}
                   style={styles.imagePreview}
-                  onError={() => console.log('Error al cargar la URL de previsualización')}
+                  onError={() =>
+                    console.log('Error al cargar la URL de previsualización')
+                  }
                 />
               </View>
             )}
           </View>
 
           <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Ubicación:</Text>
+            <AppText style={styles.inputLabel}>Ubicación:</AppText>
             <TouchableOpacity
               style={styles.textInput}
               onPress={() =>
@@ -319,18 +384,26 @@ const CreateReportScreen = () => {
                   'Selecciona una opción',
                   '¿Quieres seleccionar en el mapa o usar tu ubicación actual?',
                   [
-                    { text: 'Ver en Mapa', onPress: () => setMostrarMapa(true) },
-                    { text: 'Usar Ubicación Actual', onPress: obtenerUbicacionActual },
+                    {
+                      text: 'Ver en Mapa',
+                      onPress: () => setMostrarMapa(true),
+                    },
+                    {
+                      text: 'Usar Ubicación Actual',
+                      onPress: obtenerUbicacionActual,
+                    },
                     { text: 'Cancelar', style: 'cancel' },
                   ],
                 )
               }
             >
-              <Text style={{ color: ubicacion ? '#000' : '#888' }}>
+              <AppText style={{ color: ubicacion ? '#000' : '#888' }}>
                 {ubicacion
-                  ? `${ubicacion.latitude.toFixed(4)}, ${ubicacion.longitude.toFixed(4)}`
+                  ? `${ubicacion.latitude.toFixed(
+                      4,
+                    )}, ${ubicacion.longitude.toFixed(4)}`
                   : 'Seleccionar ubicación'}
-              </Text>
+              </AppText>
             </TouchableOpacity>
           </View>
 
@@ -371,8 +444,8 @@ const CreateReportScreen = () => {
   );
 };
 
+// --- ESTILOS (sin cambios, excepto por un scroll más grande) ---
 const styles = StyleSheet.create({
-  // ... (tus estilos)
   container: {
     flex: 1,
     backgroundColor: Colors.lightText,
@@ -413,7 +486,7 @@ const styles = StyleSheet.create({
   },
   inputLabel: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: fontWeightMedium,
     color: '#374151',
     marginBottom: 6,
   },
