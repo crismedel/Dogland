@@ -1,16 +1,25 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Sighting } from '../../types/sighting';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../constants/colors'; 
+import { Colors } from '../../constants/colors';
+import {
+  fontWeightBold,
+  fontWeightSemiBold,
+  fontWeightMedium,
+  AppText,
+} from '@/src/components/AppText';
 
 interface SightingCardProps {
   sighting: Sighting;
   onDeleteSuccess?: (id: number) => void;
 }
 
-const SightingCard: React.FC<SightingCardProps> = ({ sighting, onDeleteSuccess }) => {
+const SightingCard: React.FC<SightingCardProps> = ({
+  sighting,
+  onDeleteSuccess,
+}) => {
   const router = useRouter();
 
   const riskLabel = 'Desconocido';
@@ -32,13 +41,13 @@ const SightingCard: React.FC<SightingCardProps> = ({ sighting, onDeleteSuccess }
       const imageUrl = sighting.fotos_url[0];
       return (
         <View style={styles.imageContainer}>
-          <Text style={styles.imageText}>Imagen cargada</Text>
+          <AppText style={styles.imageText}>Imagen cargada</AppText>
         </View>
       );
     } else {
       return (
         <View style={styles.imageContainer}>
-          <Text style={styles.noImageText}>Sin imagen disponible</Text>
+          <AppText style={styles.noImageText}>Sin imagen disponible</AppText>
         </View>
       );
     }
@@ -51,7 +60,7 @@ const SightingCard: React.FC<SightingCardProps> = ({ sighting, onDeleteSuccess }
       activeOpacity={0.8}
     >
       <View style={styles.cardHeader}>
-        <Text style={styles.title}>{sighting.descripcion}</Text>
+        <AppText style={styles.title}>{sighting.descripcion}</AppText>
         <View style={styles.actions}>
           {/* Usamos Colors.danger para el ícono de eliminar */}
           <TouchableOpacity onPress={handleDelete} style={styles.iconButton}>
@@ -61,15 +70,15 @@ const SightingCard: React.FC<SightingCardProps> = ({ sighting, onDeleteSuccess }
       </View>
 
       <View style={styles.badgeContainer}>
-        <Text style={styles.riskText}>{riskLabel}</Text>
+        <AppText style={styles.riskText}>{riskLabel}</AppText>
       </View>
 
-      <Text style={styles.description}>{sighting.descripcion}</Text>
+      <AppText style={styles.description}>{sighting.descripcion}</AppText>
 
       <View style={styles.alertInfo}>
-        <Text style={styles.date}>
+        <AppText style={styles.date}>
           📅 {new Date(sighting.fecha_creacion).toLocaleDateString()}
-        </Text>
+        </AppText>
 
         {renderImage()}
       </View>
@@ -89,7 +98,7 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
     elevation: 5,
     borderLeftWidth: 5,
-    borderLeftColor: Colors.primary, 
+    borderLeftColor: Colors.primary,
   },
   archivedCard: {
     opacity: 0.7,
@@ -104,7 +113,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: fontWeightMedium,
     color: Colors.text, // Texto principal oscuro
     flex: 1,
     marginRight: 8,

@@ -1,162 +1,207 @@
-// app/adoption/component/formAgregarPerrito.tsx
-import React, { useState } from 'react';
+import { AppText, fontWeightBold } from '@/src/components/AppText';
+import { Picker } from '@react-native-picker/picker';
+import React, { useEffect, useState } from 'react';
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
+  ActivityIndicator,
+  Alert,
   ScrollView,
   StyleSheet,
-  Alert,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
-const FormAgregarPerrito = () => {
-  const [form, setForm] = useState({
-    nombre_animal: '',
-    edad_animal: '',
-    edad_aproximada: '',
-    id_raza: '',
-    id_especie: '',
-    id_estado_salud: '',
-    descripcion_estado_salud: '',
-    disponible: true,
-    descripcion_adopcion: '',
+// Importa tus funciones de la capa de API
+import { createFullAnimal } from '@/src/api/envioAnimalesAdop';
+import { fetchHealthStates } from '@/src/api/historialMedicoAdopt';
+import { fetchRaces } from '@/src/api/razaAnimalesAdop';
+
+const initialState = {
+  nombre_animal: '',
+  edad_animal: '',
+  size: '',
+  id_raza: '',
+  id_estado_salud: '',
+  descripcion_adopcion: '',
+  foto_url: '',
+  historial_medico: {
     diagnostico: '',
     tratamiento: '',
-    foto_url: '',
-  });
+    fecha_examen: new Date().toISOString().split('T')[0],
+  },
+};
 
-  const handleChange = (field: string, value: string) => {
-    setForm({ ...form, [field]: value });
+const FormAgregarPerrito = () => {
+  const [form, setForm] = useState(initialState);
+  const [loading, setLoading] = useState(false);
+  const [razas, setRazas] = useState<any[]>([]);
+  const [estadosSalud, setEstadosSalud] = useState<any[]>([]);
+  const [loadingOptions, setLoadingOptions] = useState(true);
+
+  useEffect(() => {
+    const loadOptions = async () => {
+      try {
+        const [racesData, healthStatesData] = await Promise.all([
+          fetchRaces(),
+          fetchHealthStates(),
+        ]);
+        setRazas(racesData);
+        setEstadosSalud(healthStatesData);
+      } catch (error) {
+        console.error('Error cargando opciones:', error);
+        Alert.alert('Error de Carga', 'No se pudieron obtener los datos. Revisa la consola o el estado del servidor.');
+      } finally {
+        setLoadingOptions(false);
+      }
+    };
+    loadOptions();
+  }, []);
+
+  const handleChange = (field: string, value: any) => {
+    if (field.startsWith('historial_medico.')) {
+      const subField = field.split('.')[1];
+      setForm(prevForm => ({ ...prevForm, historial_medico: { ...prevForm.historial_medico, [subField]: value } }));
+    } else {
+      setForm({ ...form, [field]: value });
+    }
   };
 
   const handleSubmit = async () => {
+    if (!form.nombre_animal || !form.id_raza || !form.id_estado_salud || !form.size) {
+      Alert.alert('Campos Incompletos', 'Por favor, completa la información general del animal marcada con *.');
+      return;
+    }
+
+    setLoading(true);
     try {
-      if (!form.nombre_animal || !form.id_especie || !form.id_raza) {
-        Alert.alert('Error', 'Por favor, completa los campos obligatorios.');
-        return;
-      }
+      const payload = {
+        ...form,
+        edad_animal: form.edad_animal ? parseInt(form.edad_animal, 10) : null,
+      };
+      const response = await createFullAnimal(payload);
 
-      const response = await fetch('http://<TU_IP_O_DOMINIO>:3000/api/animals', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        Alert.alert('Éxito', 'Animal agregado correctamente 🎉');
-        setForm({
-          nombre_animal: '',
-          edad_animal: '',
-          edad_aproximada: '',
-          id_raza: '',
-          id_especie: '',
-          id_estado_salud: '',
-          descripcion_estado_salud: '',
-          disponible: true,
-          descripcion_adopcion: '',
-          diagnostico: '',
-          tratamiento: '',
-          foto_url: '',
-        });
+      if (response.success) {
+        Alert.alert('¡Éxito!', 'Animal agregado correctamente 🎉');
+        setForm(initialState);
       } else {
-        Alert.alert('Error', data.message || 'Error al agregar el animal');
+        Alert.alert('Error al Guardar', response.message || 'Ocurrió un error en el servidor.');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Error en handleSubmit:', error);
-      Alert.alert('Error', 'No se pudo conectar con el servidor.');
+      Alert.alert('Error de Conexión', error.message || 'No se pudo contactar con el servidor.');
+    } finally {
+      setLoading(false);
     }
   };
+
+  if (loadingOptions) {
+    return <ActivityIndicator size="large" color="#1976d2" style={{ marginTop: 50 }} />;
+  }
 
   return (
     <ScrollView contentContainerStyle={styles.scroll}>
       <View style={styles.card}>
-        <Text style={styles.sectionTitle}>Información General</Text>
+        <AppText style={styles.sectionTitle}>Información General</AppText>
 
         <TextInput
           style={styles.input}
-          placeholder="Nombre del animal"
+          placeholder="Nombre del animal *"
           value={form.nombre_animal}
           onChangeText={(text) => handleChange('nombre_animal', text)}
         />
+
         <TextInput
           style={styles.input}
-          placeholder="Edad (en meses)"
+          placeholder="Edad (meses)"
           keyboardType="numeric"
           value={form.edad_animal}
           onChangeText={(text) => handleChange('edad_animal', text)}
         />
-        <TextInput
-          style={styles.input}
-          placeholder="Edad aproximada (en meses)"
-          keyboardType="numeric"
-          value={form.edad_aproximada}
-          onChangeText={(text) => handleChange('edad_aproximada', text)}
-        />
+        
+        <View style={styles.pickerContainer}>
+          <Picker
+            selectedValue={form.size}
+            onValueChange={(itemValue) => handleChange('size', itemValue)}
+          >
+            <Picker.Item label="Selecciona un tamaño... *" value="" />
+            <Picker.Item label="Pequeño" value="Pequeño" />
+            <Picker.Item label="Mediano" value="Mediano" />
+            <Picker.Item label="Grande" value="Grande" />
+          </Picker>
+        </View>
 
+        <View style={styles.pickerContainer}>
+          <Picker
+            selectedValue={form.id_raza}
+            onValueChange={(value) => handleChange('id_raza', value)}
+          >
+            <Picker.Item label="Selecciona raza *" value="" />
+            {razas.map((raza) => (
+              <Picker.Item key={raza.id_raza} label={raza.nombre_raza} value={raza.id_raza} />
+            ))}
+          </Picker>
+        </View>
+          
+        <View style={styles.pickerContainer}>
+          <Picker
+            selectedValue={form.id_estado_salud}
+            onValueChange={(value) => handleChange('id_estado_salud', value)}
+          >
+            <Picker.Item label="Selecciona estado de salud *" value="" />
+            {estadosSalud.map((estado) => (
+              <Picker.Item key={estado.id_estado_salud} label={estado.estado_salud} value={estado.id_estado_salud} />
+            ))}
+          </Picker>
+        </View>
+          
+        <AppText style={styles.sectionTitle}>Adopción</AppText>
         <TextInput
-          style={styles.input}
-          placeholder="Especie (ID o nombre)"
-          value={form.id_especie}
-          onChangeText={(text) => handleChange('id_especie', text)}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Raza (ID o nombre)"
-          value={form.id_raza}
-          onChangeText={(text) => handleChange('id_raza', text)}
-        />
-
-        <Text style={styles.sectionTitle}>Estado de Salud</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Estado de salud (ID o nombre)"
-          value={form.id_estado_salud}
-          onChangeText={(text) => handleChange('id_estado_salud', text)}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Descripción de salud"
-          value={form.descripcion_estado_salud}
-          onChangeText={(text) =>
-            handleChange('descripcion_estado_salud', text)
-          }
-        />
-
-        <Text style={styles.sectionTitle}>Adopción</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Descripción para adopción"
+          style={styles.textArea}
+          placeholder="Descripción de adopción"
+          multiline
           value={form.descripcion_adopcion}
           onChangeText={(text) => handleChange('descripcion_adopcion', text)}
         />
 
-        <Text style={styles.sectionTitle}>Historial Médico</Text>
+        <AppText style={styles.sectionTitle}>Fotografía</AppText>
         <TextInput
           style={styles.input}
-          placeholder="Diagnóstico"
-          value={form.diagnostico}
-          onChangeText={(text) => handleChange('diagnostico', text)}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Tratamiento"
-          value={form.tratamiento}
-          onChangeText={(text) => handleChange('tratamiento', text)}
-        />
-
-        <Text style={styles.sectionTitle}>Fotografía</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="URL de la imagen"
+          placeholder="URL de la foto"
           value={form.foto_url}
           onChangeText={(text) => handleChange('foto_url', text)}
         />
 
-        <TouchableOpacity style={styles.button} onPress={handleSubmit}>
-          <Text style={styles.buttonText}>Guardar Perrito</Text>
+        <AppText style={styles.sectionTitle}>Historial Médico</AppText>
+          
+        <TextInput
+          style={styles.input}
+          placeholder="Diagnóstico"
+          value={form.historial_medico.diagnostico}
+          onChangeText={(text) => handleChange('historial_medico.diagnostico', text)}
+        />
+
+        <TextInput
+          style={styles.input}
+          placeholder="Tratamiento"
+          value={form.historial_medico.tratamiento}
+          onChangeText={(text) => handleChange('historial_medico.tratamiento', text)}
+        />
+
+        <TextInput
+          style={styles.input}
+          placeholder="Fecha de examen (YYYY-MM-DD)"
+          value={form.historial_medico.fecha_examen}
+          onChangeText={(text) => handleChange('historial_medico.fecha_examen', text)}
+        />
+
+        <TouchableOpacity
+          style={[styles.button, loading && styles.buttonDisabled]}
+          onPress={handleSubmit}
+          disabled={loading}
+        >
+          <AppText style={styles.buttonText}>
+            {loading ? 'Guardando...' : 'Guardar'}
+          </AppText>
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -164,40 +209,72 @@ const FormAgregarPerrito = () => {
 };
 
 const styles = StyleSheet.create({
-  scroll: { padding: 16 },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 20,
-    elevation: 3,
+  scroll: { 
+    padding: 16, 
+    backgroundColor: '#f0f4f8' 
   },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginTop: 15,
-    marginBottom: 8,
-    color: '#333',
+  card: { 
+    backgroundColor: '#fff', 
+    borderRadius: 12, 
+    padding: 20, 
+    elevation: 3, 
+    shadowColor: '#000', 
+    shadowOffset: { width: 0, height: 2 }, 
+    shadowOpacity: 0.1, 
+    shadowRadius: 4, 
   },
-  input: {
-    backgroundColor: '#f4f6f9',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: '#ddd',
+  sectionTitle: { 
+    fontSize: 18, 
+    fontWeight: fontWeightBold, 
+    marginTop: 20, 
+    marginBottom: 12, 
+    color: '#333', 
+    borderBottomWidth: 1, 
+    borderBottomColor: '#eee', 
+    paddingBottom: 6, 
   },
-  button: {
-    backgroundColor: '#1976d2',
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 20,
+  input: { 
+    backgroundColor: '#f9f9f9', 
+    borderRadius: 8, 
+    padding: 12, 
+    marginBottom: 12, 
+    borderWidth: 1, 
+    borderColor: '#ddd', 
+    fontSize: 16, 
   },
-  buttonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 16,
+  pickerContainer: { 
+    backgroundColor: '#f9f9f9', 
+    borderRadius: 8, 
+    borderWidth: 1, 
+    borderColor: '#ddd', 
+    marginBottom: 12, 
+    justifyContent: 'center', 
+  },
+  textArea: { 
+    backgroundColor: '#f9f9f9', 
+    borderRadius: 8, 
+    padding: 12, 
+    marginBottom: 12, 
+    borderWidth: 1, 
+    borderColor: '#ddd', 
+    fontSize: 16, 
+    height: 100, 
+    textAlignVertical: 'top', 
+  },
+  button: { 
+    backgroundColor: '#1976d2', 
+    paddingVertical: 14, 
+    borderRadius: 8, 
+    alignItems: 'center', 
+    marginTop: 20, 
+  },
+  buttonDisabled: { 
+    backgroundColor: '#a0c0e0', 
+  },
+  buttonText: { 
+    color: '#fff', 
+    fontWeight: fontWeightBold, 
+    fontSize: 16, 
   },
 });
 

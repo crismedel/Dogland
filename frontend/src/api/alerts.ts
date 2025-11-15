@@ -1,6 +1,18 @@
 import apiClient from './client';
 import { Alert } from '../types/alert';
 
+// Define la interfaz para una alerta activa.
+// Ajusta esto según la estructura real de tus alertas en el backend.
+export interface ActiveAlert {
+  id_alerta: number;
+  titulo: string;
+  descripcion: string;
+  latitud: number;
+  longitud: number;
+  estado: 'activa' | 'resuelta'; // O los estados que manejes
+  // Agrega cualquier otro campo relevante de tu alerta
+}
+
 // Obtener todas las alertas
 export async function fetchAlerts(): Promise<Alert[]> {
   const res = await apiClient.get('/alerts');

@@ -1,88 +1,31 @@
-// app/adoption/index.tsx
-import React, { useState, useEffect } from 'react';
 import {
-  View,
-  Text,
-  FlatList,
-  StyleSheet,
-  ActivityIndicator,
-  TouchableOpacity,
-  Image,
-} from 'react-native';
+  AppText,
+  fontWeightBold,
+  fontWeightSemiBold,
+} from '@/src/components/AppText';
+import CustomHeader from '@/src/components/UI/CustomHeader';
+import { Colors } from '@/src/constants/colors';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import {
+  ActivityIndicator,
+  Dimensions,
+  FlatList,
+  Image,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import AnimalCard from './component/card';
 import FiltroCan from './component/filtroCan';
-import CustomHeader from '@/src/components/UI/CustomHeader';
+import Pagination from './component/Pagination';
+import { mockAnimals } from './component/mockAnimals';
 
-const mockAnimals = [
-  {
-    id: '1',
-    name: 'Mascullo',
-    breed: 'Pastor Alemán',
-    age: 18,
-    size: 'Grande',
-    species: 'Perro',
-    health: 'Sano',
-    imageUrl:
-      'https://images.unsplash.com/photo-1552053831-71594a27632d?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60',
-  },
-  {
-    id: '2',
-    name: 'Luna',
-    breed: 'Labrador',
-    age: 14,
-    size: 'Mediano',
-    species: 'Perro',
-    health: 'En tratamiento',
-    imageUrl:
-      'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60',
-  },
-  {
-    id: '3',
-    name: 'Thor',
-    breed: 'Husky Siberiano',
-    age: 72,
-    size: 'Grande',
-    species: 'Perro',
-    health: 'Sano',
-    imageUrl:
-      'https://images.unsplash.com/photo-1560807707-8cc77767d783?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60',
-  },
-  {
-    id: '4',
-    name: 'Mishi',
-    breed: 'Siames',
-    age: 24,
-    size: 'Pequeño',
-    species: 'Gato',
-    health: 'Sano',
-    imageUrl:
-      'https://images.unsplash.com/photo-1601758125946-6ec2ef642b1a?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60',
-  },
-  {
-    id: '5',
-    name: 'Rex',
-    breed: 'Bulldog',
-    age: 36,
-    size: 'Mediano',
-    species: 'Perro',
-    health: 'Discapacitado',
-    imageUrl:
-      'https://images.unsplash.com/photo-1517423447168-cb804aafa6e0?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60',
-  },
-  {
-    id: '6',
-    name: 'Bella',
-    breed: 'Poodle',
-    age: 12,
-    size: 'Pequeño',
-    species: 'Perro',
-    health: 'Sano',
-    imageUrl:
-      'https://images.unsplash.com/photo-1517849845537-4d257902454a?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60',
-  },
-];
+const { width } = Dimensions.get('window');
+const SPACING = 10;
+const NUM_COLUMNS = 2;
+const ITEMS_PER_PAGE = 8;
 
 const Index = () => {
   const [animals, setAnimals] = useState<any[]>([]);
@@ -90,7 +33,22 @@ const Index = () => {
   const [loading, setLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const params = useLocalSearchParams();
   const router = useRouter();
+  const listRef = useRef<FlatList<any> | null>(null);
+
+  // 🔹 Restaurar página al volver desde el perfil
+  useFocusEffect(
+    useCallback(() => {
+      if (params.currentPage) {
+        const page = parseInt(params.currentPage as string, 10);
+        if (!isNaN(page)) {
+          setCurrentPage(page);
+        }
+      }
+    }, [params.currentPage]),
+  );
 
   useEffect(() => {
     const fetchAnimals = async () => {
@@ -131,7 +89,7 @@ const Index = () => {
     setFilteredAnimals(filtered);
     setShowFilters(false);
 
-    const active = [];
+    const active: string[] = [];
     if (filters.selectedBreeds.length > 0)
       active.push(`${filters.selectedBreeds.length} razas`);
     if (filters.selectedHealth.length > 0)
@@ -145,11 +103,51 @@ const Index = () => {
       active.push('edad');
     }
     setActiveFilters(active);
+
+    // Reset a primera página
+    setCurrentPage(1);
+    setTimeout(
+      () => listRef.current?.scrollToOffset({ offset: 0, animated: true }),
+      50,
+    );
   };
 
   const handleClearFilters = () => {
     setFilteredAnimals(animals);
     setActiveFilters([]);
+    setCurrentPage(1);
+    setTimeout(
+      () => listRef.current?.scrollToOffset({ offset: 0, animated: true }),
+      50,
+    );
+  };
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredAnimals.length / ITEMS_PER_PAGE),
+  );
+
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages);
+    if (currentPage < 1) setCurrentPage(1);
+  }, [filteredAnimals.length, totalPages]);
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      listRef.current?.scrollToOffset({ offset: 0, animated: true });
+    }, 50);
+    return () => clearTimeout(t);
+  }, [currentPage]);
+
+  const getPagedData = () => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    return filteredAnimals.slice(startIndex, endIndex);
+  };
+
+  const handlePageChange = (page: number) => {
+    const validPage = Math.max(1, Math.min(totalPages, page));
+    setCurrentPage(validPage);
   };
 
   if (loading) {
@@ -159,6 +157,8 @@ const Index = () => {
       </View>
     );
   }
+
+  const pagedAnimals = getPagedData();
 
   return (
     <View style={styles.container}>
@@ -181,81 +181,104 @@ const Index = () => {
       />
 
       {/* 🔹 Botón para ver historiales médicos */}
-      <TouchableOpacity
-        style={styles.medicalButton}
-        onPress={() => router.push('/adoption/historialMedico')}
-      >
-        <Ionicons
-          name="medkit-outline"
-          size={18}
-          color="#fff"
-          style={{ marginRight: 6 }}
-        />
-        <Text style={styles.medicalButtonText}>Ver historiales médicos</Text>
-      </TouchableOpacity>
-
-      {/* 🔹 NUEVO BOTÓN TEMPORAL: Agregar Perrito */}
-      <TouchableOpacity
-        style={styles.addButton}
-        onPress={() => router.push('/adoption/agregarPerrito')}
-      >
-        <Ionicons
-          name="add-circle-outline"
-          size={20}
-          color="#fff"
-          style={{ marginRight: 6 }}
-        />
-        <Text style={styles.addButtonText}>Agregar perrito temporal</Text>
-      </TouchableOpacity>
-
-      {/* Filtros activos */}
-      {activeFilters.length > 0 && (
-        <View style={styles.activeFiltersContainer}>
-          <Text style={styles.activeFiltersText}>
-            Filtros activos: {activeFilters.join(', ')}
-          </Text>
-          <TouchableOpacity onPress={handleClearFilters}>
-            <Text style={styles.clearFiltersText}>Limpiar</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {/* Componente de Filtros */}
-      <FiltroCan
-        visible={showFilters}
-        onClose={() => setShowFilters(false)}
-        onApply={handleApplyFilters}
-        animals={animals}
-      />
-
-      {/* Contenido principal */}
-      <View style={styles.content}>
-        <Text style={styles.title}>Animales disponibles</Text>
-        {filteredAnimals.length === 0 ? (
-          <View style={styles.noResults}>
-            <Ionicons name="search-outline" size={50} color="#ccc" />
-            <Text style={styles.noResultsText}>No se encontraron animales</Text>
-            <Text style={styles.noResultsSubtext}>
-              Intenta con otros filtros
-            </Text>
-          </View>
-        ) : (
-          <FlatList
-            data={filteredAnimals}
-            renderItem={({ item }) => <AnimalCard animal={item} />}
-            keyExtractor={(item) => item.id}
-            numColumns={2}
-            contentContainerStyle={styles.list}
+      <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 10 }}>
+        <TouchableOpacity
+          style={styles.medicalButton}
+          onPress={() => router.push('/adoption/historialMedico')}
+        >
+          <Ionicons
+            name="medkit-outline"
+            size={18}
+            color="#fff"
+            style={{ marginRight: 6 }}
           />
+          <AppText style={styles.medicalButtonText}>
+            Ver historiales médicos
+          </AppText>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={() => router.push('/adoption/agregarPerrito')}
+        >
+          <Ionicons
+            name="add-circle-outline"
+            size={20}
+            color="#fff"
+            style={{ marginRight: 6 }}
+          />
+          <AppText style={styles.addButtonText}>
+            Agregar perrito temporal
+          </AppText>
+        </TouchableOpacity>
+      </View>
+
+      <View style={{ flex: 1, width }}>
+        {/* Filtros activos */}
+        {activeFilters.length > 0 && (
+          <View style={styles.activeFiltersContainer}>
+            <AppText style={styles.activeFiltersText}>
+              {activeFilters.join(' • ')}
+            </AppText>
+            <TouchableOpacity onPress={handleClearFilters}>
+              <AppText style={styles.clearFiltersText}>Limpiar</AppText>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Componente de Filtros */}
+        <FiltroCan
+          visible={showFilters}
+          onClose={() => setShowFilters(false)}
+          onApply={handleApplyFilters}
+          animals={animals}
+        />
+
+        {/* 🔹 FlatList con currentPage pasado a AnimalCard */}
+        <FlatList
+          ref={listRef}
+          data={pagedAnimals}
+          renderItem={({ item }) => (
+            <AnimalCard animal={item} currentPage={currentPage} />
+          )}
+          keyExtractor={(item) => item.id}
+          numColumns={NUM_COLUMNS}
+          contentContainerStyle={styles.listContent}
+          columnWrapperStyle={{ gap: SPACING }}
+          ItemSeparatorComponent={() => <View style={{ height: SPACING }} />}
+          showsVerticalScrollIndicator={true}
+          ListFooterComponent={() =>
+            filteredAnimals.length > 0 ? (
+              <View style={styles.footerPagination}>
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={handlePageChange}
+                />
+              </View>
+            ) : null
+          }
+        />
+
+        {filteredAnimals.length === 0 && (
+          <View style={styles.noResults}>
+            <Ionicons name="search-outline" size={50} color="#b0bec5" />
+            <AppText style={styles.noResultsText}>
+              No se encontraron animales
+            </AppText>
+            <AppText style={styles.noResultsSubtext}>
+              Intenta con otros filtros
+            </AppText>
+          </View>
         )}
       </View>
     </View>
   );
 };
 
+// 🔹 Estilos (idénticos a los que ya tenías)
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f4f6f9' },
-
+  container: { flex: 1, backgroundColor: Colors?.background ?? '#F4F6F9' },
   // 🔹 Estilo del botón de historial médico
   medicalButton: {
     flexDirection: 'row',
@@ -269,10 +292,9 @@ const styles = StyleSheet.create({
   },
   medicalButtonText: {
     color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 14,
+    fontWeight: fontWeightBold,
+    fontSize: 12,
   },
-
   // 🔹 Estilo del nuevo botón temporal
   addButton: {
     flexDirection: 'row',
@@ -282,51 +304,56 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 8,
     alignSelf: 'center',
-    marginBottom: 15,
+    marginBottom: 10,
   },
   addButtonText: {
     color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 14,
+    fontWeight: fontWeightBold,
+    fontSize: 12,
   },
-
   activeFiltersContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#e3f2fd',
-    padding: 10,
-    marginHorizontal: 10,
-    borderRadius: 8,
-    marginBottom: 10,
+    marginHorizontal: 16,
+    marginBottom: 8,
+    backgroundColor: '#EAF3FE',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
   },
-  activeFiltersText: { fontSize: 14, color: '#1976d2' },
-  clearFiltersText: { fontSize: 14, color: '#f44336', fontWeight: 'bold' },
-
-  content: {
+  activeFiltersText: {
+    fontSize: 13,
+    color: '#1976d2',
     flex: 1,
-    backgroundColor: '#fff',
-    margin: 10,
-    borderRadius: 10,
-    padding: 10,
+    marginRight: 12,
   },
-  title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    textAlign: 'center',
-    color: '#333',
+  clearFiltersText: {
+    fontSize: 13,
+    color: '#f44336',
+    fontWeight: fontWeightSemiBold,
   },
-  list: { paddingBottom: 20 },
-  noResults: {
-    flex: 1,
-    justifyContent: 'center',
+  listContent: { paddingHorizontal: 16, paddingBottom: 10, paddingTop: 6 },
+  footerPagination: {
+    paddingVertical: 8,
     alignItems: 'center',
-    paddingVertical: 50,
+    justifyContent: 'center',
   },
-  noResultsText: { fontSize: 18, color: '#666', marginTop: 10 },
-  noResultsSubtext: { fontSize: 14, color: '#999', marginTop: 5 },
-
+  noResults: {
+    position: 'absolute',
+    top: '40%',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    gap: 6,
+  },
+  noResultsText: {
+    fontSize: 16,
+    color: '#607d8b',
+    marginTop: 10,
+    fontWeight: fontWeightSemiBold,
+  },
+  noResultsSubtext: { fontSize: 13, color: '#90a4ae', marginTop: 2 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 });
 

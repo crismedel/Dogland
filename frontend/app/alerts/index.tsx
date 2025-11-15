@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
   View,
-  Text,
   FlatList,
   StyleSheet,
   ActivityIndicator,
@@ -16,11 +15,19 @@ import { Alert, FilterOptions } from '../../src/types/alert';
 import AlertCard from '../../src/components/alerts/AlertCard';
 import FilterModal from '../../src/components/alerts/FilterModal';
 import { fetchAlerts } from '../../src/api/alerts';
+import { useAutoRefresh } from '@/src/utils/useAutoRefresh';
+import { REFRESH_KEYS } from '@/src/constants/refreshKeys';
 
 import { Ionicons } from '@expo/vector-icons';
 import FloatingSpeedDial from '../../src/components/UI/FloatingMenu';
 import CustomHeader from '@/src/components/UI/CustomHeader';
 import { Colors } from '@/src/constants/colors';
+import {
+  fontWeightBold,
+  fontWeightSemiBold,
+  fontWeightMedium,
+  AppText,
+} from '@/src/components/AppText';
 
 const CommunityAlertsScreen = () => {
   const router = useRouter();
@@ -103,18 +110,19 @@ const CommunityAlertsScreen = () => {
       setError(
         'No se pudieron cargar las alertas. Revisa tu conexión e inténtalo nuevamente.',
       );
-      setAllAlerts([]); // opcional: vaciar lista en error
+      setAllAlerts([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   };
 
-  // Fetch inicial
-  useEffect(() => {
-    setLoading(true);
-    loadAlerts();
-  }, []);
+  useAutoRefresh({
+    key: REFRESH_KEYS.ALERTS,
+    onRefresh: loadAlerts,
+    refreshOnFocus: true,
+    refreshOnMount: true,
+  });
 
   // Aplicar filtros cuando cambien
   useEffect(() => {
@@ -130,12 +138,21 @@ const CommunityAlertsScreen = () => {
     await loadAlerts();
   };
 
+  const clearAllFilters = () => {
+    setFilters({
+      type: 'todos',
+      riskLevel: 'todos',
+      status: 'activas',
+      timeRange: 'todas',
+    });
+  };
+
   // Loading
   if (loading) {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color={Colors.primary} />
-        <Text style={styles.loadingText}>Cargando alertas...</Text>
+        <AppText style={styles.loadingText}>Cargando alertas...</AppText>
       </View>
     );
   }
@@ -143,10 +160,9 @@ const CommunityAlertsScreen = () => {
   // UI
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1 }}
+      style={{ flex: 1, backgroundColor: Colors.background }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      {/* Header sin “cuadrado blanco”. Forzamos transparente aquí por si el componente trae fondo por defecto. */}
       <CustomHeader
         title={`Alertas Comunitarias (${filteredAlerts.length})`}
         leftComponent={
@@ -159,30 +175,46 @@ const CommunityAlertsScreen = () => {
         }
         rightComponent={
           <TouchableOpacity
-            // sin fondo, solo borde sutil opcional
             style={styles.filterButton}
             onPress={() => setShowFilters(true)}
           >
             <Ionicons name="options-outline" size={22} color="#fff" />
           </TouchableOpacity>
         }
-        // Si tu CustomHeader acepta estilos del contenedor, asegura transparentes:
-        // containerStyle={{ backgroundColor: 'transparent', elevation: 0, shadowOpacity: 0 }}
-        // contentStyle={{ backgroundColor: 'transparent' }}
       />
 
       <View style={styles.container}>
+        {/* Chips de filtros activos */}
         {(filters.type !== 'todos' ||
           filters.riskLevel !== 'todos' ||
           filters.status !== 'activas' ||
           filters.timeRange !== 'todas') && (
-          <View style={styles.activeFilters}>
-            <Text style={styles.activeFiltersText}>
-              Filtros: {filters.type !== 'todos' && `Tipo: ${filters.type} `}
-              {filters.riskLevel !== 'todos' && `Riesgo: ${filters.riskLevel} `}
-              {filters.status !== 'activas' && `Estado: ${filters.status} `}
-              {filters.timeRange !== 'todas' && `Período: ${filters.timeRange}`}
-            </Text>
+          <View style={styles.filtersBar}>
+            <Ionicons name="options-outline" size={16} color="#374151" />
+            <AppText style={styles.filtersBarLabel}>Filtros:</AppText>
+
+            {/* Chip combinado (texto resumido) */}
+            <View style={styles.filterChip}>
+              <AppText numberOfLines={1} style={styles.filterChipText}>
+                {filters.type !== 'todos' ? `Tipo: ${filters.type}  •  ` : ''}
+                {filters.riskLevel !== 'todos'
+                  ? `Riesgo: ${filters.riskLevel}  •  `
+                  : ''}
+                {filters.status !== 'activas'
+                  ? `Estado: ${filters.status}  •  `
+                  : ''}
+                {filters.timeRange !== 'todas'
+                  ? `Período: ${filters.timeRange}`
+                  : ''}
+              </AppText>
+              <TouchableOpacity
+                style={styles.chipClose}
+                onPress={clearAllFilters}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Ionicons name="close" size={14} color="#6B7280" />
+              </TouchableOpacity>
+            </View>
           </View>
         )}
 
@@ -194,13 +226,13 @@ const CommunityAlertsScreen = () => {
               size={56}
               color={Colors.primary}
             />
-            <Text style={styles.emptyTitle}>
+            <AppText style={styles.emptyTitle}>
               No se pudo cargar la información
-            </Text>
-            <Text style={styles.emptySubtitle}>{error}</Text>
+            </AppText>
+            <AppText style={styles.emptySubtitle}>{error}</AppText>
             <TouchableOpacity style={styles.retryBtn} onPress={onRefresh}>
               <Ionicons name="refresh" size={18} color="#fff" />
-              <Text style={styles.retryText}>Reintentar</Text>
+              <AppText style={styles.retryText}>Reintentar</AppText>
             </TouchableOpacity>
           </View>
         ) : filteredAlerts.length === 0 ? (
@@ -210,18 +242,20 @@ const CommunityAlertsScreen = () => {
               size={56}
               color={Colors.primary}
             />
-            <Text style={styles.emptyTitle}>No hay alertas para mostrar</Text>
-            <Text style={styles.emptySubtitle}>
+            <AppText style={styles.emptyTitle}>
+              No hay alertas para mostrar
+            </AppText>
+            <AppText style={styles.emptySubtitle}>
               {allAlerts.length === 0
                 ? 'Aún no hay alertas creadas.'
                 : 'Ajusta los filtros o crea una nueva alerta.'}
-            </Text>
+            </AppText>
             <TouchableOpacity
               style={styles.primaryBtn}
               onPress={() => router.push('/alerts/create-alert')}
             >
               <Ionicons name="add" size={18} color="#fff" />
-              <Text style={styles.primaryBtnText}>Crear alerta</Text>
+              <AppText style={styles.primaryBtnText}>Crear alerta</AppText>
             </TouchableOpacity>
           </View>
         ) : (
@@ -284,10 +318,10 @@ const CommunityAlertsScreen = () => {
               ),
             },
           ]}
-          placement="left" // el tooltip aparece a la izquierda de cada acción (como el ejemplo)
-          direction="up" // las acciones se expanden hacia arriba
+          placement="left"
+          direction="up"
           gap={12}
-          persistentTooltips // tooltips visibles siempre cuando está abierto
+          persistentTooltips
         />
       </View>
     </KeyboardAvoidingView>
@@ -300,10 +334,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: 16,
-    paddingTop: 8, // evita choques visuales con el header
+    paddingTop: 8,
+    backgroundColor: Colors.background,
   },
 
-  // Botón del header sin fondo blanco
   filterButton: {
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -312,22 +346,66 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
 
-  activeFilters: {
-    backgroundColor: Colors.secondary,
-    padding: 8,
-    borderRadius: 8,
+  // Nueva barra de filtros con chips
+  filtersBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: '#FFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    marginHorizontal: 0,
     marginBottom: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 1,
   },
-  activeFiltersText: {
+  filtersBarLabel: {
+    fontSize: 13,
+    color: '#374151',
+    fontWeight: fontWeightSemiBold,
+    marginRight: 4,
+  },
+  filterChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F3F4F6',
+    borderColor: '#E5E7EB',
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    maxWidth: '86%',
+  },
+  filterChipText: {
+    color: '#374151',
     fontSize: 12,
-    color: '#1976d2',
-    fontWeight: '500',
+    fontWeight: fontWeightMedium,
+    maxWidth: '90%',
+  },
+  chipClose: {
+    marginLeft: 8,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   center: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: Colors.background,
   },
   loadingText: { marginTop: 8, color: Colors.secondary },
 
@@ -340,7 +418,7 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: fontWeightSemiBold,
     color: Colors.lightText,
     textAlign: 'center',
     marginTop: 8,
@@ -360,7 +438,10 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 10,
   },
-  retryText: { color: '#fff', fontWeight: '600' },
+  retryText: {
+    color: '#fff',
+    fontWeight: fontWeightMedium,
+  },
 
   primaryBtn: {
     flexDirection: 'row',
@@ -371,5 +452,8 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 10,
   },
-  primaryBtnText: { color: '#fff', fontWeight: '700' },
+  primaryBtnText: {
+    color: '#fff',
+    fontWeight: fontWeightSemiBold,
+  },
 });

@@ -1,24 +1,27 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   FlatList,
-  ActivityIndicator,
   RefreshControl,
-  SafeAreaView,
   TouchableOpacity,
+  ActivityIndicator,
+  Image,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import apiClient from '../../src/api/client';
 import { Colors } from '@/src/constants/colors';
-import { useNotification } from '@/src/components/notifications/NotificationContext';
+import { useNotification } from '@/src/components/notifications';
 import {
   obtenerNombreEspecie,
   obtenerNombreEstadoSalud,
 } from '../../src/types/report';
+import { AppText } from '@/src/components/AppText';
+import CustomHeader from '@/src/components/UI/CustomHeader';
 
-interface Sighting {
+interface ApiSighting {
   id_avistamiento: number;
   descripcion: string;
   id_especie: number;
@@ -26,26 +29,37 @@ interface Sighting {
   fecha_creacion: string;
   fotos_url: string[];
   nivel_riesgo: string;
-  activa: boolean;
+  id_estado_avistamiento: number;
   latitude?: number;
   longitude?: number;
 }
 
-const AvistamientosScreen = () => {
+interface Sighting extends ApiSighting {
+  activa: boolean;
+}
+
+const AvistamientosScreen: React.FC = () => {
   const router = useRouter();
   const { showSuccess } = useNotification();
 
   const [sightings, setSightings] = useState<Sighting[]>([]);
+  const [criticalSightings, setCriticalSightings] = useState<Sighting[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [criticalSightings, setCriticalSightings] = useState<Sighting[]>([]);
+
+  const normalizeSighting = (item: ApiSighting): Sighting => ({
+    ...item,
+    activa: item.id_estado_avistamiento === 1,
+  });
 
   const fetchSightings = useCallback(async () => {
     try {
-      const response = await apiClient.get('/sightings');
-      setSightings(response.data.data);
-    } catch (error) {
-      console.error('Error al obtener los avistamientos:', error);
+      const res = await apiClient.get('/sightings');
+      const rawData: ApiSighting[] = res.data.data || [];
+      const normalized = rawData.map(normalizeSighting);
+      setSightings(normalized);
+    } catch (err) {
+      console.error('Error al obtener los avistamientos:', err);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -54,115 +68,279 @@ const AvistamientosScreen = () => {
 
   const fetchCriticalSightings = useCallback(async () => {
     try {
-      const response = await apiClient.get('/sightings/filter', {
+      const res = await apiClient.get('/sightings/filter', {
         params: { id_estado_salud: 3 },
       });
-      setCriticalSightings(response.data.data);
-    } catch (error) {
-      console.error('Error al obtener avistamientos críticos:', error);
+      const rawData: ApiSighting[] = res.data.data || [];
+      const normalized = rawData.map(normalizeSighting);
+      setCriticalSightings(normalized);
+    } catch (err) {
+      console.error('Error al obtener avistamientos críticos:', err);
     }
   }, []);
-
-  const handlePressSighting = (id: number) => {
-    router.push({
-      pathname: '/sightings/[id]',
-      params: { id: id.toString() },
-    });
-  };
 
   useEffect(() => {
     fetchSightings();
     fetchCriticalSightings();
   }, [fetchSightings, fetchCriticalSightings]);
 
+  // Verificar nuevos críticos cada 30 segundos
   useEffect(() => {
-    const intervalId = setInterval(async () => {
-      const currentCriticalCount = criticalSightings.length;
+    const interval = setInterval(async () => {
+      const prev = criticalSightings.length;
       await fetchCriticalSightings();
-      const newCriticalCount = criticalSightings.length;
-
-      if (newCriticalCount > currentCriticalCount) {
+      const next = criticalSightings.length;
+      if (next > prev) {
         showSuccess(
           '¡Alerta!',
-          `Hay ${newCriticalCount - currentCriticalCount} nuevos avistamientos críticos.`,
+          `Hay ${next - prev} nuevos avistamientos críticos.`,
         );
       }
     }, 30000);
-
-    return () => clearInterval(intervalId);
+    return () => clearInterval(interval);
   }, [criticalSightings, fetchCriticalSightings, showSuccess]);
 
-  const renderItem = ({ item }: { item: Sighting; index: number }) => {
-    const formatDate = (dateString: string) => {
-      if (!dateString) return 'Fecha inválida';
-      try {
-        const date = new Date(dateString);
-        return date.toLocaleDateString();
-      } catch {
-        return 'Fecha inválida';
-      }
-    };
+  const totalCount = sightings.length;
+  const criticalCount = criticalSightings.length;
+  const activeCount = sightings.filter((s) => s.activa).length;
 
-    const isCritical = item.id_estado_salud === 3;
-    const cardStyle = isCritical ? styles.criticalCard : styles.card;
+  const combinedSightings = [
+    ...criticalSightings,
+    ...sightings.filter(
+      (s) =>
+        !criticalSightings.find((c) => c.id_avistamiento === s.id_avistamiento),
+    ),
+  ];
+
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return 'Fecha inválida';
+    try {
+      return new Date(dateString).toLocaleDateString();
+    } catch {
+      return 'Fecha inválida';
+    }
+  };
+
+  // 🎨 Paleta según estado
+  const getStatePalette = (id_estado_salud: number) => {
+    if (id_estado_salud === 3) {
+      return {
+        start: Colors.danger,
+        end: '#ff7676',
+        accent: Colors.danger,
+        chipBg: 'rgba(220,53,69,0.12)',
+      };
+    }
+    if (id_estado_salud === 2) {
+      return {
+        start: Colors.warning,
+        end: Colors.secondary,
+        accent: Colors.secondary,
+        chipBg: 'rgba(249,203,106,0.15)',
+      };
+    }
+    return {
+      start: Colors.success,
+      end: '#8be58b',
+      accent: Colors.success,
+      chipBg: 'rgba(40,167,69,0.12)',
+    };
+  };
+
+  const handlePressSighting = (id: number) => {
+    router.push({ pathname: '/sightings/[id]', params: { id: id.toString() } });
+  };
+
+  // Header personalizado
+  const renderHeader = () => (
+    <CustomHeader
+      title="Avistamientos"
+      leftComponent={
+        <TouchableOpacity onPress={() => router.back()}>
+          <Image
+            source={require('../../assets/images/volver.png')}
+            style={{ width: 24, height: 24, tintColor: Colors.lightText }}
+          />
+        </TouchableOpacity>
+      }
+    />
+  );
+
+  const renderDashboard = () => (
+    <View style={styles.dashboardWrap}>
+      <LinearGradient
+        colors={[Colors.background, Colors.backgroundSecon]}
+        start={[0, 0]}
+        end={[1, 1]}
+        style={styles.dashboard}
+      >
+        <View style={styles.metricItem}>
+          <LinearGradient
+            colors={[Colors.accent, Colors.primary]}
+            style={styles.metricIconBg}
+          >
+            <Ionicons name="list" size={20} color={Colors.lightText} />
+          </LinearGradient>
+          <AppText style={styles.metricValue}>{totalCount}</AppText>
+          <AppText style={styles.metricLabel}>Total</AppText>
+        </View>
+
+        <View style={styles.metricItem}>
+          <LinearGradient
+            colors={[Colors.danger, '#ffb3b3']}
+            style={styles.metricIconBg}
+          >
+            <Ionicons name="alert-circle" size={20} color={Colors.lightText} />
+          </LinearGradient>
+          <AppText style={styles.metricValue}>{criticalCount}</AppText>
+          <AppText style={styles.metricLabel}>Críticos</AppText>
+        </View>
+
+        <View style={styles.metricItem}>
+          <LinearGradient
+            colors={[Colors.success, '#b8f5b8']}
+            style={styles.metricIconBg}
+          >
+            <Ionicons
+              name="checkmark-circle"
+              size={20}
+              color={Colors.lightText}
+            />
+          </LinearGradient>
+          <AppText style={styles.metricValue}>{activeCount}</AppText>
+          <AppText style={styles.metricLabel}>Activos</AppText>
+        </View>
+      </LinearGradient>
+    </View>
+  );
+
+  const renderItem = ({ item }: { item: Sighting }) => {
+    const palette = getStatePalette(item.id_estado_salud);
+    const stateName =
+      obtenerNombreEstadoSalud(item.id_estado_salud) || 'Desconocido';
+    const speciesName =
+      obtenerNombreEspecie(item.id_especie) || 'Especie desconocida';
 
     return (
       <TouchableOpacity
-        style={cardStyle}
+        activeOpacity={0.9}
         onPress={() => handlePressSighting(item.id_avistamiento)}
-        activeOpacity={0.8}
       >
-        <Text style={styles.cardTitle}>{item.descripcion}</Text>
-        <View style={styles.infoRow}>
-          <Text style={styles.label}>Especie:</Text>
-          <Text style={styles.value}>
-            {obtenerNombreEspecie(item.id_especie) || 'Desconocida'}
-          </Text>
-        </View>
-        <View style={styles.infoRow}>
-          <Text style={styles.label}>Estado Salud:</Text>
-          <Text style={styles.value}>
-            {obtenerNombreEstadoSalud(item.id_estado_salud) || 'Desconocido'}
-          </Text>
-        </View>
-        <View style={styles.infoRow}>
-          <Text style={styles.label}>Fecha:</Text>
-          <Text style={styles.value}>{formatDate(item.fecha_creacion)}</Text>
-        </View>
+        <LinearGradient
+          colors={[`${palette.start}10`, `${palette.end}05`]}
+          start={[0, 0]}
+          end={[1, 1]}
+          style={[styles.card, { borderColor: palette.accent + '100' }]}
+        >
+          <View style={styles.cardLeft}>
+            <LinearGradient
+              colors={[palette.start, palette.end]}
+              style={styles.stateBadge}
+              start={[0, 0]}
+              end={[1, 1]}
+            >
+              <Ionicons
+                name={item.id_estado_salud === 3 ? 'warning' : 'leaf'}
+                size={20}
+                color="#fff"
+              />
+            </LinearGradient>
+          </View>
+
+          <View style={styles.cardBody}>
+            <View style={styles.cardTitleRow}>
+              <AppText style={styles.cardTitle} numberOfLines={2}>
+                {item.descripcion || 'Sin descripción.'}
+              </AppText>
+              <AppText style={styles.smallDate}>
+                {formatDate(item.fecha_creacion)}
+              </AppText>
+            </View>
+
+            <View style={styles.chipsRow}>
+              <LinearGradient
+                colors={[`${palette.start}33`, `${palette.end}55`]}
+                start={[0, 0]}
+                end={[1, 1]}
+                style={styles.chipGradient}
+              >
+                <View style={styles.chipInner}>
+                  <Ionicons
+                    name="paw"
+                    size={14}
+                    color={palette.accent}
+                    style={{ marginRight: 6 }}
+                  />
+                  <AppText style={[styles.chipText, { color: palette.accent }]}>
+                    {speciesName}
+                  </AppText>
+                </View>
+              </LinearGradient>
+
+              <LinearGradient
+                colors={[`${palette.start}33`, `${palette.end}55`]}
+                start={[0, 0]}
+                end={[1, 1]}
+                style={styles.chipGradient}
+              >
+                <View style={styles.chipInner}>
+                  <Ionicons
+                    name="heart"
+                    size={14}
+                    color={palette.accent}
+                    style={{ marginRight: 6 }}
+                  />
+                  <AppText style={[styles.chipText, { color: palette.accent }]}>
+                    {stateName}
+                  </AppText>
+                </View>
+              </LinearGradient>
+
+              {item.nivel_riesgo ? (
+                <View
+                  style={[styles.chip, { backgroundColor: palette.chipBg }]}
+                >
+                  <Ionicons
+                    name="flame"
+                    size={14}
+                    color={palette.accent}
+                    style={{ marginRight: 6 }}
+                  />
+                  <AppText style={[styles.chipText, { color: palette.accent }]}>
+                    {item.nivel_riesgo}
+                  </AppText>
+                </View>
+              ) : null}
+            </View>
+          </View>
+        </LinearGradient>
       </TouchableOpacity>
     );
   };
 
   if (loading && sightings.length === 0) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color={Colors.primary} />
-        <Text style={styles.loadingText}>Cargando avistamientos...</Text>
+      <View style={styles.container}>
+        {renderHeader()}
+        <View style={styles.loadingWrap}>
+          <ActivityIndicator size="large" color={Colors.primary} />
+          <AppText style={styles.loadingText}>
+            Cargando avistamientos...
+          </AppText>
+        </View>
       </View>
     );
   }
 
-  const combinedSightings = [
-    ...criticalSightings,
-    ...sightings.filter(
-      (s) => !criticalSightings.find((c) => c.id_avistamiento === s.id_avistamiento)
-    ),
-  ];
-
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
+      {renderHeader()}
+      {renderDashboard()}
       <FlatList
         data={combinedSightings}
         renderItem={renderItem}
-        keyExtractor={(item) => item.id_avistamiento?.toString()}
+        keyExtractor={(item) => item.id_avistamiento.toString()}
         contentContainerStyle={styles.listContent}
-        ListEmptyComponent={() => (
-          <View style={styles.centered}>
-            <Text style={styles.emptyText}>
-              No hay avistamientos registrados.
-            </Text>
-          </View>
-        )}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -171,57 +349,179 @@ const AvistamientosScreen = () => {
               fetchSightings();
               fetchCriticalSightings();
             }}
+            colors={[Colors.primary]}
           />
         }
+        ListEmptyComponent={() => (
+          <View style={styles.emptyWrap}>
+            <Ionicons name="eye-off" size={44} color={Colors.darkGray} />
+            <AppText style={styles.emptyText}>
+              No hay avistamientos registrados.
+            </AppText>
+          </View>
+        )}
       />
-    </SafeAreaView>
+    </View>
   );
 };
 
+export default AvistamientosScreen;
+
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f0f4f7' },
-  centered: {
+  container: {
+    flex: 1,
+    backgroundColor: Colors.background,
+  },
+  loadingWrap: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
   },
-  loadingText: { marginTop: 10, fontSize: 16, color: '#6b7280' },
-  listContent: { padding: 10 },
-  card: {
-    backgroundColor: Colors.lightText,
-    padding: 15,
-    borderRadius: 12,
-    marginBottom: 10,
+  loadingText: {
+    marginTop: 12,
+    color: Colors.darkGray,
+    fontSize: 15,
+  },
+  dashboardWrap: {
+    paddingHorizontal: 14,
+    paddingTop: 4,
+    paddingBottom: 2,
+  },
+  dashboard: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    backgroundColor: Colors.backgroundSecon,
+    borderRadius: 10,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowOpacity: 0.03,
+    shadowRadius: 3,
+    elevation: 1,
+    opacity: 0.95, // más sutil visualmente
   },
-  criticalCard: {
-    backgroundColor: '#FFE5E5',
-    borderColor: Colors.danger || 'red',
-    borderWidth: 2,
-    padding: 15,
+
+  metricItem: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 2,
+  },
+  metricIconBg: {
+    width: 26,
+    height: 26,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 2,
+    opacity: 0.9,
+  },
+  metricValue: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: Colors.text,
+  },
+  metricLabel: {
+    fontSize: 10,
+    color: Colors.darkGray,
+    marginTop: 0,
+  },
+
+  listContent: {
+    paddingHorizontal: 14,
+    paddingTop: 12,
+    paddingBottom: 30,
+  },
+  card: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.backgroundSecon,
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 10,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 3,
+    marginBottom: 20,
+  },
+  cardLeft: {
+    width: 62,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingRight: 8,
+  },
+  stateBadge: {
+    width: 48,
+    height: 48,
     borderRadius: 12,
-    marginBottom: 10,
-    shadowColor: Colors.danger || 'red',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 5.46,
-    elevation: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  cardBody: {
+    flex: 1,
+    paddingLeft: 6,
+  },
+  cardTitleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
   },
   cardTitle: {
-    fontSize: 18,
+    flex: 1,
+    fontSize: 15,
     fontWeight: '600',
-    color: '#1f2937',
-    marginBottom: 10,
+    color: Colors.text,
   },
-  infoRow: { flexDirection: 'row', marginBottom: 5 },
-  label: { fontSize: 14, fontWeight: '500', color: '#4b5563', width: 120 },
-  value: { fontSize: 14, color: '#374151', flexShrink: 1 },
-  emptyText: { fontSize: 16, color: '#6b7280', textAlign: 'center' },
-});
+  smallDate: {
+    fontSize: 12,
+    color: Colors.darkGray,
+    marginLeft: 8,
+  },
+  chipsRow: {
+    marginTop: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    marginRight: 8,
+  },
+  chipText: {
+    fontSize: 13,
+  },
 
-export default AvistamientosScreen;
+  chipGradient: {
+    borderRadius: 999,
+    padding: 1.5,
+    marginRight: 8,
+    marginBottom: 6,
+  },
+  chipInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: Colors.background,
+  },
+  emptyWrap: {
+    paddingTop: 40,
+    alignItems: 'center',
+  },
+  emptyText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: Colors.darkGray,
+  },
+});

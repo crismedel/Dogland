@@ -4,6 +4,7 @@ export const Colors = {
   secondary: '#d97706', // Un naranja oscuro
   accent: '#1976d2', // Un azul para acentos
   background: '#F2E2C4', // Fondo claro
+  backgroundSecon: '#E0CDAF', // Fondo oscuro claro
   text: '#2c3e50', // Texto oscuro principal
   lightText: '#ffffff', // Texto claro (para fondos oscuros)
   gray: '#cccccc', // Gris claro
