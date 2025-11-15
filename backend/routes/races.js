@@ -1,24 +1,16 @@
+// backend/routes/races.js
 import express from 'express';
-import pool from '../db/db.js';
+import { authenticateToken } from '../middlewares/auth.js';
+import { getAllRaces } from '../controllers/racesController.js';
 
 const router = express.Router();
 
-router.get('/races/:speciesId', async (req, res) => {
-  const { speciesId } = req.params;
-  try {
-    const result = await pool.query(
-      ` 
-        SELECT 
-            id_raza, nombre_raza
-        FROM 
-            raza
-        WHERE id_especie = $1
-    `, [speciesId]
-    );  
-    res.json({ success: true, data: result.rows, count: result.rowCount });
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message })
-  }
-});
+/**
+ * @route GET /api/races
+ * @desc Obtiene la lista de todas las razas.
+ * @query ?id_especie=1 - Opcional: filtra las razas por ID de especie.
+ * @access Private
+ */
+router.get('/races', authenticateToken, getAllRaces);
 
 export default router;

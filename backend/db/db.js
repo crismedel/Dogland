@@ -10,7 +10,9 @@ const pool = new Pool({
   host: DB_HOST,
   database: DB_NAME,
   password: DB_PASS,
-  port: DB_PORT
+  port: DB_PORT,
+  // Configurar search_path para usar schema dogland por defecto
+  options: '-c search_path=dogland,public'
 });
 
 export default pool;

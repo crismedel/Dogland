@@ -37,3 +37,4 @@ build/
 
 # Coverage
 coverage/
+test-reports/

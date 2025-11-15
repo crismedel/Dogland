@@ -1,0 +1,88 @@
+services:
+  # PostgreSQL DESARROLLO - Solo con profile "dev"
+  postgres:
+    profiles: ["dev"]
+    image: postgis/postgis:15-3.4
+    container_name: dogland_postgres_dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD_requerido}
+      POSTGRES_HOST_AUTH_METHOD: scram-sha-256
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "${POSTGRES_EXTERNAL_PORT:-25432}:5432"  # Puerto no estándar para seguridad
+    volumes:
+      # Init scripts
+      - ./db/db_init:/docker-entrypoint-initdb.d:ro
+      # Persist db data
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - dogland_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-dogland_user} -d ${POSTGRES_DB:-dogland}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # PostgreSQL TEST - Solo con profile "test"
+  postgres-test:
+    profiles: ["test"]
+    image: postgis/postgis:15-3.4
+    container_name: dogland_postgres_test
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_TEST_DB:-dogland_test}
+      POSTGRES_USER: ${POSTGRES_TEST_USER:-test_user}
+      POSTGRES_PASSWORD: ${POSTGRES_TEST_PASSWORD:?POSTGRES_TEST_PASSWORD_requerido}
+      POSTGRES_HOST_AUTH_METHOD: scram-sha-256
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "${POSTGRES_TEST_PORT:-25433}:5432"  # Puerto diferente al de desarrollo
+    volumes:
+      - ./db/db_init:/docker-entrypoint-initdb.d:ro
+      - postgres_test_data:/var/lib/postgresql/data
+    networks:
+      - dogland_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_TEST_USER:-test_user} -d ${POSTGRES_TEST_DB:-dogland_test}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # pgAdmin - Solo accesible via SSH tunnel (seguro) - Solo con profile "dev"
+  pgadmin:
+    profiles: ["dev"]
+    image: dpage/pgadmin4:latest
+    container_name: dogland_pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:?PGADMIN_PASSWORD_requerido}
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
+    ports:
+      - "127.0.0.1:5050:80"  # Solo localhost - acceso via SSH tunnel
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - dogland_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+    name: dogland_postgres_data
+  postgres_test_data:
+    name: dogland_postgres_test_data
+  pgadmin_data:
+    name: dogland_pgadmin_data
+
+networks:
+  dogland_network:
+    name: dogland_network
+    driver: bridge
