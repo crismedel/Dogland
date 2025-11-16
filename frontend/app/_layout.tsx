@@ -1,4 +1,3 @@
-// app/_layout.tsx
 import { Stack, router, usePathname } from 'expo-router';
 import {
   View,
@@ -7,7 +6,7 @@ import {
   ActivityIndicator,
   LogBox,
 } from 'react-native';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 import { useCustomFonts } from '@/src/constants/fontFamily';
 import { Colors } from '@/src/constants/colors';
@@ -16,7 +15,10 @@ import { AuthProvider, useAuth } from '@/src/contexts/AuthContext';
 import BottomNavBar from '@/src/components/UI/TabBar';
 import { RefreshProvider } from '@/src/contexts/RefreshContext';
 
-// Silenciar warning específico de expo-notifications (si aparece)
+// React Query
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+// Silenciar warning específico de expo-notifications
 LogBox.ignoreLogs(['expo-notifications was removed', 'Notifications']);
 
 function AppContent() {
@@ -74,14 +76,19 @@ function AppContent() {
 }
 
 export default function RootLayout() {
+  // Crear un solo QueryClient con useState
+  const [queryClient] = useState(() => new QueryClient());
+
   return (
-    <AuthProvider>
-      <RefreshProvider>
-        <NotificationProvider>
-          <AppContent />
-        </NotificationProvider>
-      </RefreshProvider>
-    </AuthProvider>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <RefreshProvider>
+          <NotificationProvider>
+            <AppContent />
+          </NotificationProvider>
+        </RefreshProvider>
+      </AuthProvider>
+    </QueryClientProvider>
   );
 }
 

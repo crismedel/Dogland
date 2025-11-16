@@ -1,13 +1,4 @@
-import {
-  AppText,
-  fontWeightBold,
-  fontWeightSemiBold,
-} from '@/src/components/AppText';
-import CustomHeader from '@/src/components/UI/CustomHeader';
-import { Colors } from '@/src/constants/colors';
-import { Ionicons } from '@expo/vector-icons';
-import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Dimensions,
@@ -16,153 +7,213 @@ import {
   StyleSheet,
   TouchableOpacity,
   View,
+  RefreshControl,
+  Platform,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
+
+import {
+  AppText,
+  fontWeightBold,
+  fontWeightSemiBold,
+} from '@/src/components/AppText';
+import CustomHeader from '@/src/components/UI/CustomHeader';
+import { Colors } from '@/src/constants/colors';
 import AnimalCard from './component/card';
 import FiltroCan from './component/filtroCan';
 import Pagination from './component/Pagination';
-import { mockAnimals } from './component/mockAnimals';
+import useAnimals from '@/src/hooks/useAnimals';
+import { ListRenderItem } from 'react-native';
+import { Animal } from '@/src/types/animals';
+import { useNotification } from '@/src/components/notifications/NotificationProvider';
+import {
+  HEALTH_MAPPING,
+  SIZES_MAPPING,
+  BREED_MAPPING,
+} from '@/src/utils/animalUtils';
 
 const { width } = Dimensions.get('window');
 const SPACING = 10;
 const NUM_COLUMNS = 2;
 const ITEMS_PER_PAGE = 8;
 
-const Index = () => {
-  const [animals, setAnimals] = useState<any[]>([]);
-  const [filteredAnimals, setFilteredAnimals] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+interface AppliedFilters {
+  ageRange: number[];
+  selectedBreeds: string[];
+  selectedHealth: string[];
+  selectedSizes: string[];
+  showFavorites?: boolean;
+}
+
+const AdoptionIndex = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
+  const [appliedFilters, setAppliedFilters] = useState<AppliedFilters | null>(
+    null,
+  );
+
+  const {
+    allAnimals: animals,
+    getFiltered,
+    favoritesSet,
+    toggleFavorite,
+    isLoading,
+    isFetching,
+    refetch,
+  } = useAnimals();
+
   const params = useLocalSearchParams();
   const router = useRouter();
-  const listRef = useRef<FlatList<any> | null>(null);
+  const { showError } = useNotification();
 
-  // 🔹 Restaurar página al volver desde el perfil
   useFocusEffect(
     useCallback(() => {
       if (params.currentPage) {
         const page = parseInt(params.currentPage as string, 10);
-        if (!isNaN(page)) {
-          setCurrentPage(page);
-        }
+        if (!isNaN(page)) setCurrentPage(page);
       }
     }, [params.currentPage]),
   );
 
-  useEffect(() => {
-    const fetchAnimals = async () => {
-      try {
-        // por ahora solo usamos los datos de ejemplo
-        setAnimals(mockAnimals);
-        setFilteredAnimals(mockAnimals);
-      } catch (error) {
-        console.error('Error fetching animals:', error);
-      } finally {
-        setLoading(false);
-      }
+  const filteredAnimals = useMemo(() => {
+    if (!appliedFilters) return animals;
+
+    const filters = {
+      onlyFavorites: appliedFilters.showFavorites,
+      id_raza:
+        appliedFilters.selectedBreeds.length > 0
+          ? Number(
+              Object.keys(BREED_MAPPING).find(
+                (key) =>
+                  BREED_MAPPING[Number(key)] ===
+                  appliedFilters.selectedBreeds[0],
+              ),
+            )
+          : null,
+      id_estado_salud:
+        appliedFilters.selectedHealth.length > 0
+          ? Number(
+              Object.keys(HEALTH_MAPPING).find(
+                (key) =>
+                  HEALTH_MAPPING[Number(key)] ===
+                  appliedFilters.selectedHealth[0],
+              ),
+            )
+          : null,
+      tamanio:
+        appliedFilters.selectedSizes.length > 0
+          ? appliedFilters.selectedSizes[0]
+          : null,
     };
-    fetchAnimals();
+
+    return getFiltered(filters as any);
+  }, [animals, appliedFilters, getFiltered, BREED_MAPPING, HEALTH_MAPPING]);
+
+  const handleApplyFilters = useCallback((filters: AppliedFilters) => {
+    setAppliedFilters(filters);
+
+    const newActiveFilters: string[] = [];
+
+    if (filters.ageRange[0] > 0 || filters.ageRange[1] < 10) {
+      newActiveFilters.push(
+        `Edad: ${filters.ageRange[0]}-${filters.ageRange[1]} meses`,
+      );
+    }
+
+    if (filters.selectedBreeds.length > 0) {
+      newActiveFilters.push(`Raza: ${filters.selectedBreeds.join(', ')}`);
+    }
+
+    if (filters.selectedHealth.length > 0) {
+      newActiveFilters.push(`Salud: ${filters.selectedHealth.join(', ')}`);
+    }
+
+    if (filters.selectedSizes.length > 0) {
+      newActiveFilters.push(`Tamaño: ${filters.selectedSizes.join(', ')}`);
+    }
+
+    if (filters.showFavorites) {
+      newActiveFilters.push('Solo favoritos');
+    }
+
+    setActiveFilters(newActiveFilters);
+    setShowFilters(false);
+    setCurrentPage(1);
   }, []);
 
-  const handleApplyFilters = (filters: {
-    ageRange: number[];
-    selectedBreeds: string[];
-    selectedHealth: string[];
-    selectedSizes: string[];
-  }) => {
-    const filtered = animals.filter((animal) => {
-      const ageMatch =
-        animal.age >= filters.ageRange[0] && animal.age <= filters.ageRange[1];
-      const breedMatch =
-        filters.selectedBreeds.length === 0 ||
-        filters.selectedBreeds.includes(animal.breed);
-      const healthMatch =
-        filters.selectedHealth.length === 0 ||
-        filters.selectedHealth.includes(animal.health);
-      const sizeMatch =
-        filters.selectedSizes.length === 0 ||
-        filters.selectedSizes.includes(animal.size);
-      return ageMatch && breedMatch && healthMatch && sizeMatch;
-    });
-
-    setFilteredAnimals(filtered);
-    setShowFilters(false);
-
-    const active: string[] = [];
-    if (filters.selectedBreeds.length > 0)
-      active.push(`${filters.selectedBreeds.length} razas`);
-    if (filters.selectedHealth.length > 0)
-      active.push(`${filters.selectedHealth.length} estados`);
-    if (filters.selectedSizes.length > 0)
-      active.push(`${filters.selectedSizes.length} tamaños`);
-    if (
-      filters.ageRange[0] > 0 ||
-      filters.ageRange[1] < Math.max(...animals.map((a) => a.age))
-    ) {
-      active.push('edad');
-    }
-    setActiveFilters(active);
-
-    // Reset a primera página
-    setCurrentPage(1);
-    setTimeout(
-      () => listRef.current?.scrollToOffset({ offset: 0, animated: true }),
-      50,
-    );
-  };
-
-  const handleClearFilters = () => {
-    setFilteredAnimals(animals);
+  const handleClearFilters = useCallback(() => {
+    setAppliedFilters(null);
     setActiveFilters([]);
     setCurrentPage(1);
-    setTimeout(
-      () => listRef.current?.scrollToOffset({ offset: 0, animated: true }),
-      50,
-    );
-  };
+  }, []);
+
+  const handleRefresh = useCallback(async () => {
+    await refetch();
+  }, [refetch]);
 
   const totalPages = Math.max(
     1,
     Math.ceil(filteredAnimals.length / ITEMS_PER_PAGE),
   );
 
-  useEffect(() => {
-    if (currentPage > totalPages) setCurrentPage(totalPages);
-    if (currentPage < 1) setCurrentPage(1);
-  }, [filteredAnimals.length, totalPages]);
-
-  useEffect(() => {
-    const t = setTimeout(() => {
-      listRef.current?.scrollToOffset({ offset: 0, animated: true });
-    }, 50);
-    return () => clearTimeout(t);
-  }, [currentPage]);
-
-  const getPagedData = () => {
+  const pagedAnimals = useMemo(() => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    const endIndex = startIndex + ITEMS_PER_PAGE;
-    return filteredAnimals.slice(startIndex, endIndex);
-  };
+    return filteredAnimals.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [filteredAnimals, currentPage]);
 
-  const handlePageChange = (page: number) => {
-    const validPage = Math.max(1, Math.min(totalPages, page));
-    setCurrentPage(validPage);
-  };
+  const handlePageChange = useCallback(
+    (page: number) => {
+      const validPage = Math.max(1, Math.min(totalPages, page));
+      setCurrentPage(validPage);
+    },
+    [totalPages],
+  );
 
-  if (loading) {
+  const handleToggleFavorite = useCallback(
+    async (animalId: string) => {
+      try {
+        await toggleFavorite(animalId);
+      } catch {
+        showError('Error', 'No se pudo actualizar favorito');
+      }
+    },
+    [toggleFavorite, showError],
+  );
+
+  const isAnimalFavorited = useCallback(
+    (animalId: string) => {
+      return favoritesSet.has(animalId);
+    },
+    [favoritesSet],
+  );
+
+  const renderAnimalCard: ListRenderItem<Animal> = useCallback(
+    ({ item }) => (
+      <AnimalCard
+        animal={item}
+        currentPage={currentPage}
+        isFavorited={isAnimalFavorited(item.id)}
+        onToggleFavorite={() => handleToggleFavorite(item.id)}
+      />
+    ),
+    [currentPage, isAnimalFavorited, handleToggleFavorite],
+  );
+
+  const keyExtractor = useCallback((item: Animal) => String(item.id), []);
+
+  if (isLoading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#4A90E2" />
+        <ActivityIndicator size="large" color={Colors.primary} />
+        <AppText style={{ marginTop: 10 }}>Cargando animales...</AppText>
       </View>
     );
   }
 
-  const pagedAnimals = getPagedData();
-
   return (
     <View style={styles.container}>
-      {/* Header */}
       <CustomHeader
         title={`Animales en Adopción (${filteredAnimals.length})`}
         leftComponent={
@@ -180,7 +231,6 @@ const Index = () => {
         }
       />
 
-      {/* 🔹 Botón para ver historiales médicos */}
       <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 10 }}>
         <TouchableOpacity
           style={styles.medicalButton}
@@ -214,7 +264,6 @@ const Index = () => {
       </View>
 
       <View style={{ flex: 1, width }}>
-        {/* Filtros activos */}
         {activeFilters.length > 0 && (
           <View style={styles.activeFiltersContainer}>
             <AppText style={styles.activeFiltersText}>
@@ -226,28 +275,34 @@ const Index = () => {
           </View>
         )}
 
-        {/* Componente de Filtros */}
         <FiltroCan
           visible={showFilters}
           onClose={() => setShowFilters(false)}
           onApply={handleApplyFilters}
           animals={animals}
+          breedsMapping={BREED_MAPPING}
+          healthMapping={HEALTH_MAPPING}
+          sizesMapping={SIZES_MAPPING}
         />
 
-        {/* 🔹 FlatList con currentPage pasado a AnimalCard */}
         <FlatList
-          ref={listRef}
           data={pagedAnimals}
-          renderItem={({ item }) => (
-            <AnimalCard animal={item} currentPage={currentPage} />
-          )}
-          keyExtractor={(item) => item.id}
+          renderItem={renderAnimalCard}
+          keyExtractor={keyExtractor}
           numColumns={NUM_COLUMNS}
           contentContainerStyle={styles.listContent}
           columnWrapperStyle={{ gap: SPACING }}
           ItemSeparatorComponent={() => <View style={{ height: SPACING }} />}
-          showsVerticalScrollIndicator={true}
-          ListFooterComponent={() =>
+          refreshControl={
+            <RefreshControl
+              refreshing={isFetching}
+              onRefresh={handleRefresh}
+              colors={[Colors.primary]}
+              tintColor={Colors.primary}
+              progressViewOffset={10}
+            />
+          }
+          ListFooterComponent={
             filteredAnimals.length > 0 ? (
               <View style={styles.footerPagination}>
                 <Pagination
@@ -258,28 +313,32 @@ const Index = () => {
               </View>
             ) : null
           }
+          ListEmptyComponent={
+            !isLoading && appliedFilters ? (
+              <View style={styles.noResults}>
+                <Ionicons name="search-outline" size={50} color="#b0bec5" />
+                <AppText style={styles.noResultsText}>
+                  No se encontraron animales
+                </AppText>
+                <AppText style={styles.noResultsSubtext}>
+                  Intenta con otros filtros
+                </AppText>
+              </View>
+            ) : null
+          }
+          showsVerticalScrollIndicator={false}
+          maxToRenderPerBatch={8}
+          updateCellsBatchingPeriod={50}
+          windowSize={11}
+          removeClippedSubviews={Platform.OS === 'android'}
         />
-
-        {filteredAnimals.length === 0 && (
-          <View style={styles.noResults}>
-            <Ionicons name="search-outline" size={50} color="#b0bec5" />
-            <AppText style={styles.noResultsText}>
-              No se encontraron animales
-            </AppText>
-            <AppText style={styles.noResultsSubtext}>
-              Intenta con otros filtros
-            </AppText>
-          </View>
-        )}
       </View>
     </View>
   );
 };
 
-// 🔹 Estilos (idénticos a los que ya tenías)
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors?.background ?? '#F4F6F9' },
-  // 🔹 Estilo del botón de historial médico
+  container: { flex: 1, backgroundColor: Colors.background ?? '#F4F6F9' },
   medicalButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -295,7 +354,6 @@ const styles = StyleSheet.create({
     fontWeight: fontWeightBold,
     fontSize: 12,
   },
-  // 🔹 Estilo del nuevo botón temporal
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -333,18 +391,22 @@ const styles = StyleSheet.create({
     color: '#f44336',
     fontWeight: fontWeightSemiBold,
   },
-  listContent: { paddingHorizontal: 16, paddingBottom: 10, paddingTop: 6 },
+  listContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 10,
+    paddingTop: 6,
+    flexGrow: 1,
+  },
   footerPagination: {
     paddingVertical: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
   noResults: {
-    position: 'absolute',
-    top: '40%',
-    left: 0,
-    right: 0,
+    flex: 1,
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
     gap: 6,
   },
   noResultsText: {
@@ -354,7 +416,12 @@ const styles = StyleSheet.create({
     fontWeight: fontWeightSemiBold,
   },
   noResultsSubtext: { fontSize: 13, color: '#90a4ae', marginTop: 2 },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  center: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: Colors.background,
+  },
 });
 
-export default Index;
+export default AdoptionIndex;

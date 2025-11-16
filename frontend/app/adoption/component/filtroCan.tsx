@@ -1,5 +1,4 @@
-// app/adoption/components/filtroCan.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   View,
   Modal,
@@ -7,15 +6,13 @@ import {
   StyleSheet,
   ScrollView,
   TouchableWithoutFeedback,
+  Platform,
 } from 'react-native';
-import MultiSlider from '@ptomasroos/react-native-multi-slider';
 import { Ionicons } from '@expo/vector-icons';
-import {
-  fontWeightBold,
-  fontWeightSemiBold,
-  fontWeightMedium,
-  AppText,
-} from '@/src/components/AppText';
+import MultiSlider from '@ptomasroos/react-native-multi-slider';
+import { LinearGradient } from 'expo-linear-gradient';
+import { AppText, fontWeightBold } from '@/src/components/AppText';
+import { Colors } from '@/src/constants/colors';
 
 interface FiltroCanProps {
   visible: boolean;
@@ -25,107 +22,198 @@ interface FiltroCanProps {
     selectedBreeds: string[];
     selectedHealth: string[];
     selectedSizes: string[];
+    showFavorites?: boolean;
   }) => void;
   animals: any[];
+  breedsMapping?: Record<number, string>;
+  healthMapping?: Record<number, string>;
+  sizesMapping?: Record<number | string, string>;
 }
+
+const normalizeField = (
+  value: any,
+  mapping?: Record<number | string, string>,
+): string => {
+  if (value == null || value === '') return 'Desconocido';
+  if (typeof value === 'object') {
+    if (value.name) return value.name;
+    if (value.id && mapping?.[value.id]) return mapping[value.id];
+    return String(value.id ?? 'Desconocido');
+  }
+  if (typeof value === 'number') return mapping?.[value] ?? `#${value}`;
+  if (typeof value === 'string') return value.trim() || 'Desconocido';
+  return 'Desconocido';
+};
 
 const FiltroCan: React.FC<FiltroCanProps> = ({
   visible,
   onClose,
   onApply,
   animals,
+  breedsMapping = {},
+  healthMapping = {},
+  sizesMapping = {},
 }) => {
-  const maxAge =
-    animals.length > 0 ? Math.max(...animals.map((a) => a.age)) : 10;
+  const maxAge = useMemo(
+    () =>
+      animals.length > 0
+        ? Math.max(...animals.map((a) => Number(a.age) || 0))
+        : 10,
+    [animals],
+  );
+
   const [ageRange, setAgeRange] = useState<[number, number]>([0, maxAge]);
-
-  // Obtener opciones únicas de los datos
-  const breeds = [...new Set(animals.map((animal) => animal.breed))].sort();
-  const healthStatus = [
-    ...new Set(animals.map((animal) => animal.health)),
-  ].sort();
-  const sizes = [...new Set(animals.map((animal) => animal.size))].sort();
-
   const [selectedBreeds, setSelectedBreeds] = useState<string[]>([]);
   const [selectedHealth, setSelectedHealth] = useState<string[]>([]);
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
+  const [showFavorites, setShowFavorites] = useState<boolean>(false);
+
+  const breeds = useMemo(() => {
+    return [
+      ...new Set(
+        animals.map((a) => {
+          const breedId = a.id_raza ?? a.breed;
+          return (
+            breedsMapping[breedId] || normalizeField(a.breed, breedsMapping)
+          );
+        }),
+      ),
+    ].filter((v) => v !== 'Desconocido');
+  }, [animals, breedsMapping]);
+
+  const healthStatus = useMemo(() => {
+    return [
+      ...new Set(
+        animals.map((a) => {
+          const healthId = a.id_estado_salud ?? a.estadoMedico;
+          return (
+            healthMapping[healthId] || normalizeField(a.health, healthMapping)
+          );
+        }),
+      ),
+    ].filter((v) => v !== 'Desconocido');
+  }, [animals, healthMapping]);
+
+  const sizes = useMemo(() => {
+    return [
+      ...new Set(
+        animals.map((a) => {
+          const sizeValue = a.size;
+          return (
+            sizesMapping[sizeValue as number | string] ||
+            normalizeField(a.size, sizesMapping)
+          );
+        }),
+      ),
+    ]
+      .filter((v) => v !== 'Desconocido')
+      .sort();
+  }, [animals, sizesMapping]);
 
   useEffect(() => {
     if (visible) {
-      // Resetear filtros cuando se abre el modal
       setAgeRange([0, maxAge]);
       setSelectedBreeds([]);
       setSelectedHealth([]);
       setSelectedSizes([]);
+      setShowFavorites(false);
     }
   }, [visible, maxAge]);
 
-  const toggleBreed = (breed: string) => {
-    setSelectedBreeds((prev) =>
-      prev.includes(breed) ? prev.filter((b) => b !== breed) : [...prev, breed],
-    );
-  };
+  const toggleItem = useCallback(
+    (value: string, setFn: React.Dispatch<React.SetStateAction<string[]>>) => {
+      setFn((prev) =>
+        prev.includes(value)
+          ? prev.filter((v) => v !== value)
+          : [...prev, value],
+      );
+    },
+    [],
+  );
 
-  const toggleHealth = (health: string) => {
-    setSelectedHealth((prev) =>
-      prev.includes(health)
-        ? prev.filter((h) => h !== health)
-        : [...prev, health],
-    );
-  };
-
-  const toggleSize = (size: string) => {
-    setSelectedSizes((prev) =>
-      prev.includes(size) ? prev.filter((s) => s !== size) : [...prev, size],
-    );
-  };
-
-  const handleApply = () => {
+  const handleApply = useCallback(() => {
     onApply({
       ageRange,
       selectedBreeds,
       selectedHealth,
       selectedSizes,
+      showFavorites,
     });
-  };
+  }, [
+    ageRange,
+    selectedBreeds,
+    selectedHealth,
+    selectedSizes,
+    showFavorites,
+    onApply,
+  ]);
 
-  const handleReset = () => {
+  const handleReset = useCallback(() => {
     setAgeRange([0, maxAge]);
     setSelectedBreeds([]);
     setSelectedHealth([]);
     setSelectedSizes([]);
-  };
+    setShowFavorites(false);
+  }, [maxAge]);
 
-  const getSelectedCount = () => {
-    let count = 0;
-    if (ageRange[0] > 0 || ageRange[1] < maxAge) count++;
-    count += selectedBreeds.length;
-    count += selectedHealth.length;
-    count += selectedSizes.length;
-    return count;
-  };
+  const selectedCount =
+    (ageRange[0] > 0 || ageRange[1] < maxAge ? 1 : 0) +
+    selectedBreeds.length +
+    selectedHealth.length +
+    selectedSizes.length +
+    (showFavorites ? 1 : 0);
 
   return (
-    <Modal visible={visible} transparent animationType="slide">
+    <Modal visible={visible} transparent animationType="fade">
       <TouchableWithoutFeedback onPress={onClose}>
-        <View style={styles.modalOverlay}>
+        <View style={styles.overlay}>
           <TouchableWithoutFeedback>
-            <View style={styles.modalContainer}>
-              <View style={styles.modalHeader}>
-                <AppText style={styles.modalTitle}>Filtrar Animales</AppText>
-                <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-                  <Ionicons name="close" size={24} color="#666" />
-                </TouchableOpacity>
-              </View>
-
-              <ScrollView
-                style={styles.scrollContent}
-                showsVerticalScrollIndicator={false}
+            <View style={styles.container}>
+              <LinearGradient
+                colors={[Colors.primary, Colors.primary]}
+                style={styles.header}
               >
-                {/* Filtro por Edad */}
-                <View style={styles.filterSection}>
+                <AppText style={styles.title}>Filtros de Búsqueda</AppText>
+                <TouchableOpacity onPress={onClose}>
+                  <Ionicons name="close" size={26} color="#fff" />
+                </TouchableOpacity>
+              </LinearGradient>
+
+              <ScrollView showsVerticalScrollIndicator={false}>
+                <View style={styles.section}>
+                  <AppText style={styles.sectionTitle}>Preferencias</AppText>
+                  <View style={{ flexDirection: 'row', gap: 8 }}>
+                    <TouchableOpacity
+                      activeOpacity={0.8}
+                      onPress={() => setShowFavorites((s) => !s)}
+                      style={[
+                        styles.chip,
+                        showFavorites && styles.chipSelected,
+                        Platform.OS === 'ios' && styles.chipShadow,
+                        { paddingHorizontal: 12 },
+                      ]}
+                    >
+                      <AppText
+                        style={[
+                          styles.chipText,
+                          showFavorites && styles.chipTextSelected,
+                        ]}
+                      >
+                        <Ionicons
+                          name={showFavorites ? 'heart' : 'heart-outline'}
+                          size={14}
+                          color={Colors.text}
+                          style={{ marginRight: 10 }}
+                        />
+                        Solo favoritos
+                      </AppText>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                <View style={styles.section}>
                   <AppText style={styles.sectionTitle}>Edad (meses)</AppText>
-                  <AppText style={styles.rangeText}>
+                  <AppText style={styles.range}>
                     {ageRange[0]} - {ageRange[1]} meses
                   </AppText>
                   <MultiSlider
@@ -133,118 +221,59 @@ const FiltroCan: React.FC<FiltroCanProps> = ({
                     min={0}
                     max={maxAge}
                     step={1}
-                    onValuesChange={(values) =>
-                      setAgeRange([values[0], values[1]])
-                    }
-                    selectedStyle={{ backgroundColor: '#4A90E2' }}
+                    onValuesChange={(v) => setAgeRange([v[0], v[1]])}
+                    selectedStyle={{ backgroundColor: Colors.primary }}
                     markerStyle={{
-                      backgroundColor: '#4A90E2',
+                      backgroundColor: Colors.secondary,
                       height: 20,
                       width: 20,
+                      borderRadius: 10,
                     }}
-                    trackStyle={{ height: 4 }}
+                    trackStyle={{ height: 5 }}
                   />
                 </View>
 
-                {/* Filtro por Raza */}
-                <View style={styles.filterSection}>
-                  <AppText style={styles.sectionTitle}>Raza</AppText>
-                  <View style={styles.chipContainer}>
-                    {breeds.map((breed) => (
-                      <TouchableOpacity
-                        key={breed}
-                        style={[
-                          styles.chip,
-                          selectedBreeds.includes(breed) && styles.chipSelected,
-                        ]}
-                        onPress={() => toggleBreed(breed)}
-                      >
-                        <AppText
-                          style={[
-                            styles.chipText,
-                            selectedBreeds.includes(breed) &&
-                              styles.chipTextSelected,
-                          ]}
-                        >
-                          {breed}
-                        </AppText>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                </View>
+                {breeds.length > 0 && (
+                  <FilterGroup
+                    title="Raza"
+                    items={breeds}
+                    selected={selectedBreeds}
+                    onToggle={(v) => toggleItem(v, setSelectedBreeds)}
+                  />
+                )}
 
-                {/* Filtro por Estado de Salud */}
-                <View style={styles.filterSection}>
-                  <AppText style={styles.sectionTitle}>Estado de Salud</AppText>
-                  <View style={styles.chipContainer}>
-                    {healthStatus.map((health) => (
-                      <TouchableOpacity
-                        key={health}
-                        style={[
-                          styles.chip,
-                          selectedHealth.includes(health) &&
-                            styles.chipSelected,
-                        ]}
-                        onPress={() => toggleHealth(health)}
-                      >
-                        <AppText
-                          style={[
-                            styles.chipText,
-                            selectedHealth.includes(health) &&
-                              styles.chipTextSelected,
-                          ]}
-                        >
-                          {health}
-                        </AppText>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                </View>
+                {healthStatus.length > 0 && (
+                  <FilterGroup
+                    title="Estado de salud"
+                    items={healthStatus}
+                    selected={selectedHealth}
+                    onToggle={(v) => toggleItem(v, setSelectedHealth)}
+                  />
+                )}
 
-                {/* Filtro por Tamaño */}
-                <View style={styles.filterSection}>
-                  <AppText style={styles.sectionTitle}>Tamaño</AppText>
-                  <View style={styles.chipContainer}>
-                    {sizes.map((size) => (
-                      <TouchableOpacity
-                        key={size}
-                        style={[
-                          styles.chip,
-                          selectedSizes.includes(size) && styles.chipSelected,
-                        ]}
-                        onPress={() => toggleSize(size)}
-                      >
-                        <AppText
-                          style={[
-                            styles.chipText,
-                            selectedSizes.includes(size) &&
-                              styles.chipTextSelected,
-                          ]}
-                        >
-                          {size}
-                        </AppText>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                </View>
+                {sizes.length > 0 && (
+                  <FilterGroup
+                    title="Tamaño"
+                    items={sizes}
+                    selected={selectedSizes}
+                    onToggle={(v) => toggleItem(v, setSelectedSizes)}
+                  />
+                )}
               </ScrollView>
 
-              {/* Botones de acción */}
-              <View style={styles.buttonRow}>
+              <View style={styles.actions}>
                 <TouchableOpacity
-                  style={[styles.button, styles.resetButton]}
+                  style={[styles.button, styles.reset]}
                   onPress={handleReset}
                 >
-                  <AppText style={styles.buttonTextReset}>Reiniciar</AppText>
+                  <AppText style={styles.resetText}>Reiniciar</AppText>
                 </TouchableOpacity>
-
                 <TouchableOpacity
-                  style={[styles.button, styles.applyButton]}
+                  style={[styles.button, styles.apply]}
                   onPress={handleApply}
                 >
-                  <AppText style={styles.buttonText}>
-                    Aplicar{' '}
-                    {getSelectedCount() > 0 && `(${getSelectedCount()})`}
+                  <AppText style={styles.applyText}>
+                    Aplicar {selectedCount > 0 && `(${selectedCount})`}
                   </AppText>
                 </TouchableOpacity>
               </View>
@@ -256,108 +285,140 @@ const FiltroCan: React.FC<FiltroCanProps> = ({
   );
 };
 
+const FilterGroup = ({
+  title,
+  items,
+  selected,
+  onToggle,
+}: {
+  title: string;
+  items: string[];
+  selected: string[];
+  onToggle: (v: string) => void;
+}) => (
+  <View style={styles.section}>
+    <AppText style={styles.sectionTitle}>{title}</AppText>
+    <View style={styles.chips}>
+      {items.map((item) => (
+        <TouchableOpacity
+          key={item}
+          activeOpacity={0.7}
+          style={[
+            styles.chip,
+            selected.includes(item) && styles.chipSelected,
+            Platform.OS === 'ios' && styles.chipShadow,
+          ]}
+          onPress={() => onToggle(item)}
+        >
+          <AppText
+            style={[
+              styles.chipText,
+              selected.includes(item) && styles.chipTextSelected,
+            ]}
+          >
+            {item}
+          </AppText>
+        </TouchableOpacity>
+      ))}
+    </View>
+  </View>
+);
+
 const styles = StyleSheet.create({
-  modalOverlay: {
+  overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(0,0,0,0.45)',
     justifyContent: 'flex-end',
   },
-  modalContainer: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '80%',
+  container: {
+    backgroundColor: '#fafafa',
+    borderTopLeftRadius: 25,
+    borderTopRightRadius: 25,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 6,
+    maxHeight: '88%',
   },
-  modalHeader: {
+  header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
   },
-  modalTitle: {
+  title: {
+    color: '#fff',
     fontSize: 20,
     fontWeight: fontWeightBold,
-    color: '#333',
   },
-  closeButton: {
-    padding: 4,
-  },
-  scrollContent: {
-    maxHeight: 400,
-  },
-  filterSection: {
-    padding: 20,
+  section: {
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    borderBottomColor: '#f2f2f2',
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: fontWeightBold,
-    marginBottom: 15,
+    marginBottom: 10,
     color: '#333',
   },
-  rangeText: {
-    fontSize: 16,
+  range: {
     textAlign: 'center',
-    marginBottom: 15,
     color: '#666',
+    marginBottom: 15,
+    fontSize: 14,
   },
-  chipContainer: {
+  chips: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: 10,
   },
   chip: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: '#f0f0f0',
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: '#ccc',
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    backgroundColor: '#fafafa',
+    marginBottom: 8,
   },
   chipSelected: {
-    backgroundColor: '#4A90E2',
-    borderColor: '#4A90E2',
+    backgroundColor: Colors.primary,
+    borderColor: Colors.secondary,
   },
-  chipText: {
-    fontSize: 14,
-    color: '#666',
+  chipShadow: {
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    shadowOffset: { width: 0, height: 1 },
   },
-  chipTextSelected: {
-    color: '#fff',
-    fontWeight: fontWeightBold,
-  },
-  buttonRow: {
+  chipText: { color: Colors.text, fontSize: 14 },
+  chipTextSelected: { color: Colors.text, fontWeight: fontWeightBold },
+  actions: {
     flexDirection: 'row',
     padding: 20,
-    gap: 10,
+    gap: 12,
+    borderTopColor: '#f2f2f2',
+    borderTopWidth: 1,
   },
   button: {
     flex: 1,
-    paddingVertical: 15,
-    borderRadius: 10,
     alignItems: 'center',
+    paddingVertical: 14,
+    borderRadius: 12,
   },
-  resetButton: {
-    backgroundColor: '#f0f0f0',
+  reset: {
+    backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: '#ccc',
   },
-  applyButton: {
-    backgroundColor: '#4A90E2',
+  apply: {
+    backgroundColor: Colors.primary,
   },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: fontWeightBold,
-  },
-  buttonTextReset: {
-    color: '#666',
-    fontSize: 16,
-    fontWeight: fontWeightBold,
-  },
+  applyText: { color: Colors.text, fontWeight: fontWeightBold },
+  resetText: { color: Colors.text, fontWeight: fontWeightBold },
 });
 
 export default FiltroCan;
