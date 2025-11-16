@@ -15,12 +15,16 @@ import {
   fetchNotifications,
   markNotificationAsRead,
   deleteNotificationApi,
+  markAllNotificationsRead,
   NotificationItem,
 } from '@/src/api/notifications';
 import { useNotification } from '@/src/components/notifications';
 import CustomHeader from '@/src/components/UI/CustomHeader';
 import { Colors } from '@/src/constants/colors';
 import { Ionicons } from '@expo/vector-icons';
+import { checkAlertExists } from '@/src/api/alerts';
+import { checkSightingExists } from '@/src/api/sightings';
+import NotificationOptionsModal from './NotificationOptionsModal';
 
 const PAGE_SIZE = 20;
 
@@ -121,6 +125,7 @@ export default function NotificationsScreen() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [total, setTotal] = useState<number | null>(null);
+  const [optionsVisible, setOptionsVisible] = useState(false);
 
   const { showError, showSuccess, confirm } = useNotification();
 
@@ -168,14 +173,7 @@ export default function NotificationsScreen() {
 
   useEffect(() => {
     load(1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // NOTE: fix initial call: load(1) not load(1())
-  useEffect(() => {
-    load(1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [load]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -213,20 +211,37 @@ export default function NotificationsScreen() {
     try {
       if (type === 'alert' || type === 'alerta') {
         const id = data.alert_id ?? data.alertId ?? data.id ?? null;
-        if (id)
-          router.push({
-            pathname: '/alerts/detail-alert',
-            params: { id: String(id) },
-          });
-        else router.push('/settings/notifications');
+        if (id) {
+          const exists = await checkAlertExists(Number(id));
+          if (exists) {
+            router.push({
+              pathname: '/alerts/detail-alert',
+              params: { id: String(id) },
+            });
+          } else {
+            showError?.('Alerta no disponible', 'La alerta ya fue eliminada.');
+          }
+        } else {
+          router.push('/settings/notifications');
+        }
       } else if (type === 'avistamiento' || type === 'sighting') {
         const sightingId = data.sighting_id ?? data.id ?? null;
         if (sightingId) {
-          router.push({
-            pathname: '/sightings/[id]',
-            params: { id: String(sightingId) },
-          });
-        } else router.push('/settings/notifications');
+          const exists = await checkSightingExists(Number(sightingId));
+          if (exists) {
+            router.push({
+              pathname: '/sightings/[id]',
+              params: { id: String(sightingId) },
+            });
+          } else {
+            showError?.(
+              'Avistamiento no disponible',
+              'El avistamiento fue eliminado.',
+            );
+          }
+        } else {
+          router.push('/settings/notifications');
+        }
       } else {
         router.push('/settings/notifications');
       }
@@ -245,20 +260,102 @@ export default function NotificationsScreen() {
         destructive: true,
         onConfirm: async () => {
           try {
-            // optimistic remove
+            // Eliminación local optimista
             setItems((prev) => prev.filter((x) => x.id !== item.id));
-            await deleteNotificationApi(item.id);
+
+            // Para eliminar en la base de datos, descomenta esta línea:
+            // await deleteNotificationApi(item.id);
+
             showSuccess?.('Eliminada', 'Notificación eliminada');
           } catch (err) {
             console.warn('Error eliminando notificación', err);
             showError?.('Error', 'No se pudo eliminar la notificación');
-            // simple recovery: refresh
             await load(1);
           }
         },
       });
     },
-    [load, showError, showSuccess],
+    [load, showError, showSuccess, confirm],
+  );
+
+  const markAllAsRead = useCallback(async () => {
+    try {
+      await markAllNotificationsRead();
+      showSuccess?.('Listo', 'Todas las notificaciones marcadas como vistas');
+      await load(1);
+    } catch (err) {
+      showError?.('Error', 'No se pudieron marcar todas como vistas');
+    }
+    setOptionsVisible(false);
+  }, [load, showError, showSuccess]);
+
+  const deleteAllNotifications = useCallback(() => {
+    confirm({
+      title: 'Eliminar todas las notificaciones',
+      message: '¿Estás seguro de eliminar todas las notificaciones?',
+      confirmLabel: 'Eliminar',
+      cancelLabel: 'Cancelar',
+      destructive: true,
+      onConfirm: async () => {
+        try {
+          // Eliminación local:
+          setItems([]);
+
+          // Para eliminar en la base de datos, descomenta esta parte:
+          /*
+          await Promise.all(
+            items.map((item) => deleteNotificationApi(item.id)),
+          );
+          await load(1);
+          */
+
+          showSuccess?.(
+            'Eliminadas',
+            'Todas las notificaciones fueron eliminadas localmente',
+          );
+        } catch (err) {
+          showError?.(
+            'Error',
+            'No se pudieron eliminar todas las notificaciones',
+          );
+        }
+        setOptionsVisible(false);
+      },
+    });
+  }, [items, showError, showSuccess, confirm]);
+
+  const deleteSelectedNotifications = useCallback(
+    async (selectedIds: number[]) => {
+      if (selectedIds.length === 0) return;
+      confirm({
+        title: 'Eliminar notificaciones seleccionadas',
+        message: `¿Eliminar ${selectedIds.length} notificación(es)?`,
+        confirmLabel: 'Eliminar',
+        cancelLabel: 'Cancelar',
+        destructive: true,
+        onConfirm: async () => {
+          try {
+            // Eliminación local:
+            setItems((prev) =>
+              prev.filter((item) => !selectedIds.includes(item.id)),
+            );
+
+            // Para eliminar en la base de datos, descomenta esta parte:
+            /*
+            await Promise.all(
+              selectedIds.map((id) => deleteNotificationApi(id)),
+            );
+            await load(1);
+            */
+
+            showSuccess?.('Eliminadas', 'Notificaciones eliminadas localmente');
+          } catch (err) {
+            showError?.('Error', 'No se pudieron eliminar las notificaciones');
+          }
+        },
+      });
+    },
+    [showError, showSuccess, confirm],
   );
 
   const renderItem = useCallback(
@@ -303,6 +400,11 @@ export default function NotificationsScreen() {
             <Ionicons name="chevron-back" size={24} color="#fff" />
           </TouchableOpacity>
         }
+        rightComponent={
+          <TouchableOpacity onPress={() => setOptionsVisible(true)}>
+            <Ionicons name="options-outline" size={24} color="#fff" />
+          </TouchableOpacity>
+        }
       />
       {loading && items.length === 0 ? (
         <View style={styles.center}>
@@ -341,6 +443,15 @@ export default function NotificationsScreen() {
           contentContainerStyle={items.length === 0 ? { flex: 1 } : undefined}
         />
       )}
+
+      <NotificationOptionsModal
+        visible={optionsVisible}
+        onClose={() => setOptionsVisible(false)}
+        onMarkAllRead={markAllAsRead}
+        onDeleteAll={deleteAllNotifications}
+        onDeleteSelected={deleteSelectedNotifications}
+        notifications={items}
+      />
     </View>
   );
 }

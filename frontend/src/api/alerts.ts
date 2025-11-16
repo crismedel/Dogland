@@ -73,3 +73,17 @@ export async function createAlert(
     throw error.response?.data || error;
   }
 }
+
+// Retorna true si la alerta existe, false si no (404), lanza error para otros casos
+export async function checkAlertExists(id: number): Promise<boolean> {
+  try {
+    await fetchAlertById(id);
+    return true;
+  } catch (error: any) {
+    if (error?.status === 404 || error?.response?.status === 404) {
+      return false;
+    }
+    // Para otros errores, puedes lanzar o manejar según convenga
+    throw error;
+  }
+}

@@ -10,6 +10,7 @@ import {
   ScrollView,
   Pressable,
   ActivityIndicator,
+  Text,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -23,6 +24,9 @@ import {
   AppText,
 } from '@/src/components/AppText';
 
+// Importa la función para obtener notificaciones
+import { fetchNotifications } from '@/src/api/notifications';
+
 const { width } = Dimensions.get('window');
 const BADGE_SIZE = 42;
 
@@ -34,7 +38,10 @@ export default function Index() {
   const [popupMessage, setPopupMessage] = React.useState<string>('');
   const { logout } = useAuth();
 
-  // ✅ cargar únicamente el perfil
+  // Estado para contar notificaciones nuevas
+  const [newNotificationsCount, setNewNotificationsCount] = React.useState(0);
+
+  // ✅ cargar únicamente el perfil y notificaciones nuevas
   const loadData = React.useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -43,6 +50,16 @@ export default function Index() {
       const user = await fetchUserProfile();
       const name = user?.nombre_usuario || '';
       setUserName(name);
+
+      // Cargar notificaciones para contar las no vistas
+      const notificationsResponse = await fetchNotifications(1, 100); // Ajusta el límite si quieres
+      const notifications = Array.isArray(notificationsResponse.rows)
+        ? notificationsResponse.rows
+        : [];
+
+      // Contar las que no están leídas (read === false)
+      const newCount = notifications.filter((n) => !n.read).length;
+      setNewNotificationsCount(newCount);
 
       setShowPopup(false);
     } catch (err: any) {
@@ -133,16 +150,25 @@ export default function Index() {
           <AppText style={styles.profileInitial}>{userInitial}</AppText>
         </Pressable>
       </View>
+
+      {/* Icono de notificaciones con badge */}
       <View style={styles.topBar2}>
         <Pressable
           onPress={() => router.push('/notifications')}
-          accessibilityLabel="Ir al perfil"
+          accessibilityLabel="Ir a notificaciones"
           style={({ pressed }) => [
             styles.profileBadge,
             pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] },
           ]}
         >
           <Ionicons name="notifications-outline" size={24} color="white" />
+          {newNotificationsCount > 0 && (
+            <View style={styles.badgeContainer}>
+              <Text style={styles.badgeText}>
+                {newNotificationsCount > 99 ? '99+' : newNotificationsCount}
+              </Text>
+            </View>
+          )}
         </Pressable>
       </View>
 
@@ -294,6 +320,25 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: fontWeightBold,
     fontSize: 18,
+  },
+  badgeContainer: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    backgroundColor: '#d32f2f',
+    borderRadius: 12,
+    minWidth: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 6,
+    borderWidth: 1,
+    borderColor: '#fff',
+  },
+  badgeText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 12,
   },
   content: { paddingTop: 120, paddingBottom: 40, gap: 30 },
   welcomeText: {
