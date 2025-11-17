@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f4;
+      font-family: Arial, sans-serif;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 600px;
+      margin: 0 auto;
+      background-color: #ffffff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .header {
+      text-align: center;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #dddddd;
+    }
+
+    .header h1 {
+      color: #d97706;
+      margin: 0;
+    }
+
+    .content {
+      padding: 20px 0;
+      line-height: 1.6;
+      color: #333333;
+    }
+
+    .welcome-message {
+      text-align: center;
+      font-size: 18px;
+      margin-bottom: 20px;
+    }
+
+    .features {
+      background-color: #fef3c7;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+
+    .features h2 {
+      color: #d97706;
+      margin-top: 0;
+      font-size: 20px;
+    }
+
+    .feature-item {
+      display: flex;
+      align-items: flex-start;
+      margin-bottom: 15px;
+    }
+
+    .feature-icon {
+      background-color: #fbbf24;
+      color: #ffffff;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: inline-block;
+      text-align: center;
+      line-height: 32px;
+      font-weight: bold;
+      margin-right: 12px;
+      flex-shrink: 0;
+    }
+
+    .feature-text {
+      flex: 1;
+    }
+
+    .feature-text strong {
+      color: #d97706;
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .cta-button {
+      display: block;
+      text-align: center;
+      background-color: #fbbf24;
+      color: #ffffff;
+      padding: 12px 24px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: bold;
+      margin: 20px auto;
+      max-width: 200px;
+    }
+
+    .footer {
+      text-align: center;
+      font-size: 12px;
+      color: #888888;
+      padding-top: 20px;
+      border-top: 1px solid #dddddd;
+    }
+
+    .social-links {
+      margin: 15px 0;
+    }
+
+    .social-links a {
+      color: #d97706;
+      text-decoration: none;
+      margin: 0 10px;
+    }
+  </style>
+</head>
+
+<body>
+  <table class="container" cellpadding="0" cellspacing="0" role="presentation">
+    <tr>
+      <td>
+        <div class="header">
+          <h1>🐕 ¡Bienvenido a Dogland!</h1>
+        </div>
+        <div class="content">
+          <p class="welcome-message">
+            ¡Hola, <strong>{{name}}</strong>! 🎉<br>
+            Tu cuenta ha sido creada exitosamente.
+          </p>
+
+          <div class="features">
+            <h2>¿Qué puedes hacer en Dogland?</h2>
+
+            <div class="feature-item">
+              <span class="feature-icon">🚨</span>
+              <div class="feature-text">
+                <strong>Crear Alertas Comunitarias</strong>
+                Reporta perros en situación de calle o peligro para que la comunidad pueda ayudar.
+              </div>
+            </div>
+
+            <div class="feature-item">
+              <span class="feature-icon">🏠</span>
+              <div class="feature-text">
+                <strong>Adoptar una Mascota</strong>
+                Encuentra tu compañero ideal entre los perros disponibles para adopción.
+              </div>
+            </div>
+
+            <div class="feature-item">
+              <span class="feature-icon">👁️</span>
+              <div class="feature-text">
+                <strong>Reportar Avistamientos</strong>
+                Ayuda a localizar mascotas perdidas reportando avistamientos en tu zona.
+              </div>
+            </div>
+
+            <div class="feature-item">
+              <span class="feature-icon">🗺️</span>
+              <div class="feature-text">
+                <strong>Mapa Comunitario</strong>
+                Visualiza alertas y avistamientos en tiempo real cerca de ti.
+              </div>
+            </div>
+          </div>
+
+          <p style="text-align: center;">
+            ¡Gracias por unirte a nuestra comunidad! Juntos podemos hacer la diferencia en la vida de muchos perritos. 🐾
+          </p>
+        </div>
+        <div class="footer">
+          <p>Si tienes alguna pregunta, no dudes en contactarnos.</p>
+          <div class="social-links">
+            <a href="#">Facebook</a> |
+            <a href="#">Instagram</a> |
+            <a href="#">Twitter</a>
+          </div>
+          <p>&copy; 2025 Dogland. Todos los derechos reservados.</p>
+        </div>
+      </td>
+    </tr>
+  </table>
+</body>
+
+</html>

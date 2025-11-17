@@ -87,3 +87,20 @@ export const send2FACodeEmail = async (user, code) => {
         html: htmlContent,
     });
 };
+
+/**
+ * Envia un correo de bienvenida al usuario recién registrado.
+ * @param {object} user - Objeto del usuario (debe tener .email y .nombre_usuario).
+ */
+export const sendWelcomeEmail = async (user) => {
+    const htmlContent = compileTemplate('welcome', {
+        name: user.nombre_usuario || 'Usuario',
+    });
+
+    await transporter.sendMail({
+        from: '"Dogland" <no-reply@dogland.com>',
+        to: user.email,
+        subject: '¡Bienvenido a Dogland! 🐕',
+        html: htmlContent,
+    });
+};

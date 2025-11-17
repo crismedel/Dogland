@@ -13,6 +13,7 @@ import {
   sendPasswordResetEmail,
   sendAccountConfirmationEmail,
   send2FACodeEmail,
+  sendWelcomeEmail,
 } from '../services/emailService.js';
 import { JWT_SECRET } from '../config/env.js';
 import {
@@ -94,6 +95,11 @@ router.post('/register', async (req, res) => {
       email,
       password_hash: hashedPassword,
       id_rol: 2, // Asignar rol por defecto (usuario estándar)
+    });
+
+    // Enviar correo de bienvenida (sin bloquear la respuesta)
+    sendWelcomeEmail({ email, nombre_usuario }).catch((err) => {
+      console.error('Error enviando correo de bienvenida:', err);
     });
 
     return res.status(201).json({
