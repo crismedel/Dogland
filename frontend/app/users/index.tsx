@@ -12,9 +12,14 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import CustomHeader from '@/src/components/UI/CustomHeader';
 import { Colors } from '@/src/constants/colors';
-import { fontWeightSemiBold, fontWeightMedium, AppText } from '@/src/components/AppText';
+import {
+  fontWeightSemiBold,
+  fontWeightMedium,
+  AppText,
+} from '@/src/components/AppText';
 import { useRole } from '@/src/hooks/useRole';
 import apiClient from '@/src/api/client';
+import Spinner from '@/src/components/UI/Spinner';
 
 interface User {
   id_usuario: number;
@@ -91,7 +96,12 @@ const UsersScreen = () => {
           <AppText style={styles.userName}>
             {item.nombre_usuario} {item.apellido_paterno}
           </AppText>
-          <View style={[styles.roleBadge, { backgroundColor: getRoleBadgeColor(item.nombre_rol) }]}>
+          <View
+            style={[
+              styles.roleBadge,
+              { backgroundColor: getRoleBadgeColor(item.nombre_rol) },
+            ]}
+          >
             <AppText style={styles.roleBadgeText}>{item.nombre_rol}</AppText>
           </View>
         </View>
@@ -114,12 +124,7 @@ const UsersScreen = () => {
   );
 
   if (loading && !refreshing) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color={Colors.primary} />
-        <AppText style={styles.loadingText}>Cargando usuarios...</AppText>
-      </View>
-    );
+    return <Spinner />;
   }
 
   return (
@@ -144,7 +149,11 @@ const UsersScreen = () => {
       <View style={styles.content}>
         {error ? (
           <View style={styles.emptyState}>
-            <Ionicons name="cloud-offline-outline" size={56} color={Colors.primary} />
+            <Ionicons
+              name="cloud-offline-outline"
+              size={56}
+              color={Colors.primary}
+            />
             <AppText style={styles.emptyTitle}>Error al cargar</AppText>
             <AppText style={styles.emptySubtitle}>{error}</AppText>
             <TouchableOpacity style={styles.retryBtn} onPress={onRefresh}>

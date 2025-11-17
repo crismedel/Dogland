@@ -1,4 +1,3 @@
-// app/adoption/historialMedico.tsx
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -8,19 +7,18 @@ import {
   FlatList,
   ActivityIndicator,
 } from 'react-native';
-// import { Ionicons } from '@expo/vector-icons'; // No se usa en este archivo, se puede borrar
 import { useRouter } from 'expo-router';
-import TarjetaMedica from './component/terjetasMedicas';
-import {
-  fontWeightBold,
-  fontWeightSemiBold,
-  fontWeightMedium,
-  AppText,
-} from '@/src/components/AppText';
 
-// --- 1. Importaciones para la autenticación ---
-import { authStorage } from '@/src/utils/authStorage'; // Ajusta la ruta si es necesario
+import TarjetaMedica from './component/terjetasMedicas';
+
+// Auth
+import { authStorage } from '@/src/utils/authStorage';
 import { jwtDecode } from 'jwt-decode';
+
+import CustomHeader from '@/src/components/UI/CustomHeader';
+import CustomButton from '@/src/components/UI/CustomButton';
+import { Colors } from '@/src/constants/colors';
+import Spinner from '@/src/components/UI/Spinner';
 
 // --- Opcional: Interfaz para el payload de tu token ---
 interface TokenPayload {
@@ -33,6 +31,7 @@ interface TokenPayload {
 
 const HistorialMedico = () => {
   const router = useRouter();
+
   const [historial, setHistorial] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -58,7 +57,7 @@ const HistorialMedico = () => {
         setUserRole(roleFromToken);
         // --- Fin de la lógica del token ---
 
-        // Mock que incluye estadoMedico + descripcion (nuevo esquema)
+        // MOCK temporal
         const mockHistorial = [
           {
             id: '1',
@@ -101,11 +100,7 @@ const HistorialMedico = () => {
   };
 
   if (loading) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#4A90E2" />
-      </View>
-    );
+    return <Spinner />;
   }
 
   // --- 4. Variable para chequear permisos ---
@@ -113,88 +108,71 @@ const HistorialMedico = () => {
 
   return (
     <View style={styles.container}>
-      {/* Header (no cambia) */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={styles.backButtonHeader}
-        >
-          <Image
-            source={require('../../assets/images/volver.png')}
-            style={styles.backIconHeader}
-          />
-        </TouchableOpacity>
-        <AppText style={styles.headerTitle}>Historial Médico</AppText>
-      </View>
+      <CustomHeader
+        title="Historial Médico"
+        leftComponent={
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={styles.backButtonHeader}
+          >
+            <Image
+              source={require('../../assets/images/volver.png')}
+              style={styles.backIconHeader}
+            />
+          </TouchableOpacity>
+        }
+      />
 
-      {/* --- 5. Lista de tarjetas médicas (Pasamos props) --- */}
       <FlatList
         data={historial}
         keyExtractor={(item) => item.id}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.listContent}
         renderItem={({ item }) => (
           <TarjetaMedica
             nombre={item.nombre}
             estadoMedico={item.estadoMedico}
             descripcion={item.descripcion}
-            condicion={item.condicion}
-            // --- Props nuevas para los roles ---
-            historialId={item.id} // Para saber qué item editar/borrar
+            historialId={item.id}
             userRole={userRole}
           />
         )}
-        contentContainerStyle={{ paddingTop: 20, paddingBottom: 20 }}
       />
 
       {/* --- 6. Botón condicional "Agregar historial" --- */}
       {/* Solo se muestra si 'canManage' es true */}
       {canManage && (
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={handleAgregarHistorial}
-        >
-          <AppText style={styles.addButtonText}>
-            + Agregar historial médico
-          </AppText>
-        </TouchableOpacity>
+        <View>
+          <CustomButton
+            title="Agregar historial médico"
+            onPress={handleAgregarHistorial}
+            variant="primary"
+            icon="add-circle"
+            style={styles.floatingButton}
+          />
+        </View>
       )}
     </View>
   );
 };
 
-// --- (Estilos no cambian) ---
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#dbe8d3' },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#4A90E2',
-    padding: 12,
-    marginTop: 20,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: fontWeightBold,
-    color: '#fff',
-    marginLeft: 16,
-  },
+  container: { flex: 1, backgroundColor: Colors.background },
+
   backButtonHeader: { padding: 6 },
   backIconHeader: { width: 24, height: 24, tintColor: '#fff' },
 
-  addButton: {
-    backgroundColor: '#fbbf24',
-    marginHorizontal: 16,
-    marginVertical: 20,
-    padding: 15,
-    borderRadius: 10,
-    alignItems: 'center',
+  listContent: {
+    paddingTop: 10,
+    paddingBottom: 80, // ⬅ espacio extra para que el botón flotante no tape nada
   },
-  addButtonText: {
-    color: '#333',
-    fontSize: 16,
-    fontWeight: fontWeightBold,
-  },
-
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  floatingButton: {
+    position: 'absolute',
+    bottom: 20,
+
+    zIndex: 10,
+  },
 });
 
 export default HistorialMedico;

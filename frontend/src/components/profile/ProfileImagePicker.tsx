@@ -9,6 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNotification } from '@/src/components/notifications';
 import { useRefresh } from '@/src/contexts/RefreshContext';
 import { REFRESH_KEYS } from '@/src/constants/refreshKeys';
+import Spinner from '../UI/Spinner';
 
 type Props = {
   userId: number;
@@ -90,11 +91,7 @@ export default function ProfileImagePicker({ userId, onUploadSuccess }: Props) {
   const displayUri = selectedUri || photoUrl;
 
   if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#CC5803" />
-      </View>
-    );
+    return <Spinner />;
   }
 
   return (

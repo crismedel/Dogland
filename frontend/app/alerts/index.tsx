@@ -28,6 +28,7 @@ import {
   fontWeightMedium,
   AppText,
 } from '@/src/components/AppText';
+import Spinner from '@/src/components/UI/Spinner';
 
 const CommunityAlertsScreen = () => {
   const router = useRouter();
@@ -149,12 +150,7 @@ const CommunityAlertsScreen = () => {
 
   // Loading
   if (loading) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color={Colors.primary} />
-        <AppText style={styles.loadingText}>Cargando alertas...</AppText>
-      </View>
-    );
+    return <Spinner />;
   }
 
   // UI

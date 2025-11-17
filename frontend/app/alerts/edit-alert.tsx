@@ -17,6 +17,7 @@ import { Colors } from '@/src/constants/colors';
 import { AppText } from '@/src/components/AppText';
 import CustomHeader from '@/src/components/UI/CustomHeader';
 import DynamicForm, { FormField } from '@/src/components/UI/DynamicForm';
+import Spinner from '@/src/components/UI/Spinner';
 
 const MOCK_TIPOS_ALERTA = [
   { id: 1, nombre: 'Jauria' },
@@ -276,11 +277,7 @@ export default function EditAlertScreen() {
   ];
 
   if (loading) {
-    return (
-      <View style={styles.center}>
-        <AppText>Cargando alerta...</AppText>
-      </View>
-    );
+    return <Spinner />;
   }
 
   return (

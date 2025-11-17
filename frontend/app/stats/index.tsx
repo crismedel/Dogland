@@ -1,7 +1,4 @@
-import {
-  AppText,
-  fontWeightBold,
-} from '@/src/components/AppText';
+import { AppText, fontWeightBold } from '@/src/components/AppText';
 import CustomHeader from '@/src/components/UI/CustomHeader';
 import { Colors } from '@/src/constants/colors';
 import { useRouter } from 'expo-router';
@@ -17,6 +14,7 @@ import {
 } from 'react-native';
 import { BarChart, LineChart, PieChart } from 'react-native-chart-kit';
 import apiClient from '../../src/api/client';
+import Spinner from '@/src/components/UI/Spinner';
 
 const { width } = Dimensions.get('window');
 
@@ -59,13 +57,14 @@ const StatsScreen = () => {
   const fetchStats = useCallback(async () => {
     setLoading(true);
     try {
-      const [summaryRes, healthRes, speciesRes, userImpactRes, trendRes] = await Promise.all([
-        apiClient.get('/stats/summary'),
-        apiClient.get('/stats/health-states'),
-        apiClient.get('/stats/species'),
-        apiClient.get('/stats/user-impact'), // Ya no enviamos userId por parámetro
-        apiClient.get('/stats/trend'),
-      ]);
+      const [summaryRes, healthRes, speciesRes, userImpactRes, trendRes] =
+        await Promise.all([
+          apiClient.get('/stats/summary'),
+          apiClient.get('/stats/health-states'),
+          apiClient.get('/stats/species'),
+          apiClient.get('/stats/user-impact'), // Ya no enviamos userId por parámetro
+          apiClient.get('/stats/trend'),
+        ]);
 
       setSummary(summaryRes.data.data);
       setHealthStates(healthRes.data.data);
@@ -115,12 +114,7 @@ const StatsScreen = () => {
   });
 
   if (loading) {
-    return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color={Colors.primary} />
-        <AppText style={styles.loadingText}>Cargando estadísticas...</AppText>
-      </View>
-    );
+    return <Spinner />;
   }
 
   return (
@@ -161,10 +155,14 @@ const StatsScreen = () => {
         </View>
 
         {/* --- MI IMPACTO --- */}
-        <AppText style={styles.sectionTitle}>Mi Impacto en la Comunidad</AppText>
+        <AppText style={styles.sectionTitle}>
+          Mi Impacto en la Comunidad
+        </AppText>
         <View style={styles.impactContainer}>
           <View style={styles.impactCard}>
-            <AppText style={styles.impactValue}>{userImpact?.myReports || 0}</AppText>
+            <AppText style={styles.impactValue}>
+              {userImpact?.myReports || 0}
+            </AppText>
             <AppText style={styles.impactLabel}>Mis Reportes</AppText>
           </View>
           <View style={styles.impactCard}>
@@ -182,7 +180,9 @@ const StatsScreen = () => {
         </View>
 
         {/* --- TENDENCIA SEMANAL --- */}
-        <AppText style={styles.sectionTitle}>Tendencia (Últimos 7 días)</AppText>
+        <AppText style={styles.sectionTitle}>
+          Tendencia (Últimos 7 días)
+        </AppText>
         <View style={styles.chartContainer}>
           {trend && trend.labels.length > 0 ? (
             <LineChart

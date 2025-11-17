@@ -129,11 +129,13 @@ export default function ProfileCard({
 
 const styles = StyleSheet.create({
   profileCard: {
-    backgroundColor: Colors.lightText,
+    backgroundColor: Colors.cardBackground,
     borderRadius: 20,
     paddingVertical: 18,
     paddingHorizontal: 18,
     marginTop: 16,
+    borderWidth: 1,
+    borderColor: Colors.secondary,
     shadowColor: '#000',
     shadowOpacity: 0.045,
     shadowRadius: 10,

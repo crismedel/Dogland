@@ -160,7 +160,7 @@ AnimalCard.displayName = 'AnimalCard';
 const styles = StyleSheet.create({
   card: {
     flex: 1,
-    backgroundColor: '#f4ecde',
+    backgroundColor: Colors.cardBackground,
     borderRadius: 14,
     margin: 2,
     borderColor: Colors.secondary,

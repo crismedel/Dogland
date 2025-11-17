@@ -13,11 +13,16 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import CustomHeader from '@/src/components/UI/CustomHeader';
 import { Colors } from '@/src/constants/colors';
-import { fontWeightSemiBold, fontWeightMedium, AppText } from '@/src/components/AppText';
+import {
+  fontWeightSemiBold,
+  fontWeightMedium,
+  AppText,
+} from '@/src/components/AppText';
 import { fetchAlerts } from '@/src/api/alerts';
 import { fetchSightings } from '@/src/api/sightings';
 import AlertCard from '@/src/components/alerts/AlertCard';
 import { Alert } from '@/src/types/alert';
+import Spinner from '@/src/components/UI/Spinner';
 
 type TabType = 'alertas' | 'avistamientos';
 
@@ -80,12 +85,7 @@ const ManagementScreen = () => {
   };
 
   if (loading && !refreshing) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color={Colors.primary} />
-        <AppText style={styles.loadingText}>Cargando...</AppText>
-      </View>
-    );
+    return <Spinner />;
   }
 
   const data = activeTab === 'alertas' ? alerts : sightings;
@@ -114,7 +114,11 @@ const ManagementScreen = () => {
       <View style={styles.content}>
         {error ? (
           <View style={styles.emptyState}>
-            <Ionicons name="cloud-offline-outline" size={56} color={Colors.primary} />
+            <Ionicons
+              name="cloud-offline-outline"
+              size={56}
+              color={Colors.primary}
+            />
             <AppText style={styles.emptyTitle}>Error al cargar</AppText>
             <AppText style={styles.emptySubtitle}>{error}</AppText>
             <TouchableOpacity style={styles.retryBtn} onPress={onRefresh}>
@@ -125,7 +129,11 @@ const ManagementScreen = () => {
         ) : data.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons
-              name={activeTab === 'alertas' ? 'notifications-off-outline' : 'eye-off-outline'}
+              name={
+                activeTab === 'alertas'
+                  ? 'notifications-off-outline'
+                  : 'eye-off-outline'
+              }
               size={56}
               color={Colors.primary}
             />

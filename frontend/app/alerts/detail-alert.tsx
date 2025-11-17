@@ -329,7 +329,7 @@ const styles = StyleSheet.create({
     color: Colors.secondary,
   },
   card: {
-    backgroundColor: '#f4ecde',
+    backgroundColor: Colors.cardBackground,
     borderRadius: 20,
     padding: 18,
     marginBottom: 20,
@@ -419,7 +419,7 @@ const styles = StyleSheet.create({
   },
   calloutDivider: {
     height: 1,
-    backgroundColor: '#f4ecde',
+    backgroundColor: Colors.cardBackground,
     marginBottom: 8,
   },
   calloutText: {

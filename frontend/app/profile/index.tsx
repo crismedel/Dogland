@@ -5,11 +5,7 @@ import {
   ScrollView,
   StyleSheet,
   View,
-  Modal,
-  Animated,
   Dimensions,
-  TouchableWithoutFeedback,
-  Pressable,
   useColorScheme,
 } from 'react-native';
 import { fetchUserProfile } from '../../src/api/users';
@@ -21,23 +17,17 @@ import { REFRESH_KEYS } from '@/src/constants/refreshKeys';
 import { useAuth } from '@/src/contexts/AuthContext';
 import ProfileImagePicker from '@/src/components/profile/ProfileImagePicker';
 import { useProfilePhoto } from '@/src/utils/useProfilePhoto';
-import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/src/constants/colors';
-import {
-  fontWeightBold,
-  fontWeightSemiBold,
-  fontWeightMedium,
-  AppText,
-} from '@/src/components/AppText';
+import { AppText } from '@/src/components/AppText';
 import { router } from 'expo-router';
 import { useNotification } from '@/src/components/notifications';
 import BottomSheetModal from '@/src/components/profile/BottomSheetModal';
 import ProfileCard from '@/src/components/profile/ProfileCard';
 import ContactInfo from '@/src/components/profile/ContactInfo';
 import AdditionalInfo from '@/src/components/profile/AdditionalInfo';
+import Spinner from '@/src/components/UI/Spinner';
 
 const AVATAR_PLACEHOLDER = 'https://placehold.co/200x200/png?text=Avatar';
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 export default function ProfileScreen() {
   const [user, setUser] = useState<User | null>(null);
@@ -118,11 +108,7 @@ export default function ProfileScreen() {
   }, [photoUrl]);
 
   if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={Colors.secondary} />
-      </View>
-    );
+    return <Spinner />;
   }
 
   if (!user) {
@@ -146,6 +132,7 @@ export default function ProfileScreen() {
         contentContainerStyle={styles.container}
       >
         <CustomHeader title="Perfil" rightComponent={null} />
+
         <ProfileCard
           user={user}
           fullName={fullName}
@@ -156,7 +143,18 @@ export default function ProfileScreen() {
           onEditProfile={onEditProfile}
           onOpenSettings={onOpenSettings}
         />
+
+        <View style={styles.cardContainer}>
+          <CustomButton
+            title="Mis Postulaciones"
+            variant="secondary"
+            icon="document-text-outline"
+            onPress={() => router.push('/adoption/misPostulaciones')}
+          />
+        </View>
+
         <ContactInfo user={user} showInfo={showInfo} />
+
         <AdditionalInfo user={user} />
       </ScrollView>
 
@@ -188,6 +186,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  cardContainer: {
+    backgroundColor: Colors.cardBackground,
+    borderRadius: 20,
+    paddingVertical: 16,
+    paddingHorizontal: 18,
+    marginTop: 20,
+    borderWidth: 1,
+    borderColor: Colors.secondary,
+    shadowColor: '#000',
+    shadowOpacity: 0.045,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 4,
+  },
+
   errorContainer: {
     flex: 1,
     backgroundColor: Colors.background,

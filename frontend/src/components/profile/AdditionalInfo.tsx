@@ -3,6 +3,7 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Colors } from '@/src/constants/colors';
 import { fontWeightMedium, AppText } from '@/src/components/AppText';
+import { Ionicons } from '@expo/vector-icons';
 
 interface AdditionalInfoProps {
   user: any;
@@ -17,50 +18,52 @@ export default function AdditionalInfo({ user }: AdditionalInfoProps) {
       ...opts,
     }).format(new Date(dateStr));
 
-  const calcularEdad = (fechaNacimiento: string) => {
-    const hoy = new Date();
-    const nacimiento = new Date(fechaNacimiento);
-    let edad = hoy.getFullYear() - nacimiento.getFullYear();
-    const mes = hoy.getMonth() - nacimiento.getMonth();
-    if (mes < 0 || (mes === 0 && hoy.getDate() < nacimiento.getDate())) edad--;
-    return edad;
-  };
-
-  const edad = calcularEdad(user.fecha_nacimiento);
+  const fechaNacimiento = formatDate(user.fecha_nacimiento);
   const fechaCreacion = formatDate(user.fecha_creacion);
 
   return (
     <View style={styles.card}>
       <AppText style={styles.sectionTitle}>Información Adicional</AppText>
 
-      <View style={{ marginBottom: 16 }}>
+      {/* Fecha de nacimiento */}
+      <View style={{ marginBottom: 18 }}>
         <AppText style={styles.infoLabel}>Fecha de nacimiento</AppText>
-        <View style={styles.infoValueWrap}>
-          <AppText style={styles.infoValue}>
-            {formatDate(user.fecha_nacimiento)}
-          </AppText>
+        <View style={styles.chip}>
+          <Ionicons
+            name="calendar-outline"
+            size={16}
+            color={Colors.secondary}
+          />
+          <AppText style={styles.chipText}>{fechaNacimiento}</AppText>
         </View>
       </View>
 
       <View style={styles.divider} />
 
-      <View style={{ marginBottom: user.nombre_organizacion ? 16 : 0 }}>
+      {/* Miembro desde */}
+      <View style={{ marginBottom: user.nombre_organizacion ? 18 : 0 }}>
         <AppText style={styles.infoLabel}>Miembro desde</AppText>
-        <View style={styles.infoValueWrap}>
-          <AppText style={styles.infoValue}>{fechaCreacion}</AppText>
+        <View style={styles.chip}>
+          <Ionicons name="time-outline" size={16} color={Colors.secondary} />
+          <AppText style={styles.chipText}>{fechaCreacion}</AppText>
         </View>
       </View>
 
       {user.nombre_organizacion ? (
         <>
           <View style={styles.divider} />
-          <View>
-            <AppText style={styles.infoLabel}>Organización</AppText>
-            <View style={styles.infoValueWrap}>
-              <AppText numberOfLines={2} style={styles.infoValue}>
-                {user.nombre_organizacion}
-              </AppText>
-            </View>
+
+          {/* Organización */}
+          <AppText style={styles.infoLabel}>Organización</AppText>
+          <View style={styles.chip}>
+            <Ionicons
+              name="business-outline"
+              size={16}
+              color={Colors.secondary}
+            />
+            <AppText numberOfLines={2} style={styles.chipText}>
+              {user.nombre_organizacion}
+            </AppText>
           </View>
         </>
       ) : null}
@@ -70,13 +73,20 @@ export default function AdditionalInfo({ user }: AdditionalInfoProps) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#FFFDF4',
-    borderRadius: 14,
-    padding: 16,
-    marginTop: 16,
+    backgroundColor: Colors.cardBackground,
+    borderRadius: 20,
+    paddingVertical: 16,
+    paddingHorizontal: 18,
+    marginTop: 20,
     borderWidth: 1,
-    borderColor: 'rgba(242,216,167,0.28)',
+    borderColor: Colors.secondary,
+    shadowColor: '#000',
+    shadowOpacity: 0.045,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 4,
   },
+
   sectionTitle: {
     color: Colors.secondary,
     fontSize: 16,
@@ -89,11 +99,24 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginBottom: 6,
   },
-  infoValueWrap: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  infoValue: { color: Colors.text, fontSize: 14, flexShrink: 1 },
+
+  // NUEVO ESTILO TIPO CHIP
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: Colors.background,
+    borderWidth: 1,
+    borderColor: Colors.backgroundSecon,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+  },
+  chipText: { color: Colors.text, fontSize: 14, flexShrink: 1 },
+
   divider: {
     height: 1,
-    backgroundColor: 'rgba(0,0,0,0.04)',
-    marginVertical: 10,
+    backgroundColor: 'rgba(0,0,0,0.05)',
+    marginVertical: 12,
   },
 });

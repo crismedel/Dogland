@@ -1,20 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import {
-  View,
-  StyleSheet,
-  Alert,
-  TouchableOpacity,
-  Image,
-  AppText,
-} from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import TarjetaSoli from './component/tarjetaSoli';
 import CustomHeader from '@/src/components/UI/CustomHeader';
 import { Colors } from '@/src/constants/colors';
+import { useNotification } from '@/src/components/notifications';
 
 const SolicitudAdopcion = () => {
   const router = useRouter();
   const params = useLocalSearchParams();
+
+  const { showError, showSuccess, confirm } = useNotification();
 
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -37,7 +33,6 @@ const SolicitudAdopcion = () => {
   });
 
   useEffect(() => {
-    // Simulación de carga de datos del usuario autenticado
     setFormData((prev) => ({
       ...prev,
       nombreSolicitante: '',
@@ -60,26 +55,40 @@ const SolicitudAdopcion = () => {
       !formData.direccion ||
       !formData.motivoAdopcion
     ) {
-      Alert.alert('Error', 'Por favor completa todos los campos obligatorios');
+      showError(
+        'Campos incompletos',
+        'Por favor completa todos los campos obligatorios',
+      );
       return;
     }
 
-    setLoading(true);
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 2000)); // simulación API
-      Alert.alert(
-        '¡Solicitud Enviada!',
-        `Tu solicitud para adoptar a ${formData.nombreAnimal} ha sido enviada correctamente.`,
-        [{ text: 'OK', onPress: () => router.back() }],
-      );
-    } catch {
-      Alert.alert(
-        'Error',
-        'No se pudo enviar la solicitud. Intenta nuevamente.',
-      );
-    } finally {
-      setLoading(false);
-    }
+    confirm({
+      title: 'Confirmar Envío',
+      message: `¿Deseas enviar la solicitud para adoptar a ${formData.nombreAnimal}?`,
+      confirmLabel: 'Enviar',
+      cancelLabel: 'Cancelar',
+      destructive: false,
+      onConfirm: async () => {
+        setLoading(true);
+        try {
+          await new Promise((resolve) => setTimeout(resolve, 2000)); // simulación API
+
+          showSuccess(
+            '¡Solicitud Enviada!',
+            `Tu solicitud para adoptar a ${formData.nombreAnimal} ha sido enviada correctamente.`,
+          );
+
+          router.back(); // se vuelve atrás automáticamente
+        } catch {
+          showError(
+            'Error',
+            'No se pudo enviar la solicitud. Intenta nuevamente.',
+          );
+        } finally {
+          setLoading(false);
+        }
+      },
+    });
   };
 
   return (
@@ -97,7 +106,7 @@ const SolicitudAdopcion = () => {
         }
       />
 
-      {/* Tarjeta con formulario (componente separado) */}
+      {/* Tarjeta con formulario */}
       <TarjetaSoli
         formData={formData}
         loading={loading}

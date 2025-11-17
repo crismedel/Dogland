@@ -31,6 +31,8 @@ import {
 import { Animal } from '@/src/types/animals';
 import { useNotification } from '@/src/components/notifications/NotificationProvider';
 import { fetchAnimalById } from '@/src/api/animals';
+import { RoleGuard } from '@/src/components/auth'; // Importa RoleGuard
+import Spinner from '@/src/components/UI/Spinner';
 
 const PerfilCan = () => {
   const params = useLocalSearchParams();
@@ -59,17 +61,11 @@ const PerfilCan = () => {
   }, [id, router, showError]);
 
   if (loading) {
-    return (
-      <View style={[styles.center, { flex: 1 }]}>
-        <ActivityIndicator size="large" color={Colors.primary} />
-        <AppText>Cargando perfil...</AppText>
-      </View>
-    );
+    return <Spinner />;
   }
 
   if (!animal) return null;
 
-  // Usar datos normalizados directamente
   const healthLabel = getHealthLabel(animal);
   const breedLabel = getBreedLabel(animal.breed);
   const ageDisplay = getAgeDisplay(animal);
@@ -88,6 +84,13 @@ const PerfilCan = () => {
     });
   };
 
+  const handleEditPerfil = () => {
+    router.push({
+      pathname: '/adoption/editPerfilCan',
+      params: { id: animal.id },
+    });
+  };
+
   const handleShare = async () => {
     try {
       await Share.share({
@@ -99,7 +102,6 @@ const PerfilCan = () => {
     }
   };
 
-  // Determinar color del estado de salud (igual que en AnimalCard)
   const estadoColor = (() => {
     if (animal.estadoMedico === 1 || healthLabel === 'Sano') return '#2e7d32';
     if (animal.estadoMedico === 2 || healthLabel === 'En tratamiento')
@@ -181,6 +183,15 @@ const PerfilCan = () => {
             </View>
           )}
         </View>
+
+        <RoleGuard allowedRoles={['Admin']}>
+          <CustomButton
+            title="Editar"
+            onPress={handleEditPerfil}
+            variant="primary"
+            icon="heart"
+          />
+        </RoleGuard>
 
         <NeumorphCard title="Información del Animal">
           <Row label="Edad aproximada" value={AgeInYearsDisplay} />
@@ -420,10 +431,10 @@ const styles = StyleSheet.create({
   },
   cardNeu: {
     borderRadius: PERF_RADIUS,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.cardBackground,
     padding: 16,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#e6ebf0',
+    borderWidth: 1,
+    borderColor: Colors.secondary,
     ...Platform.select({
       ios: {
         shadowColor: '#000',

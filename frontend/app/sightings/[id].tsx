@@ -27,6 +27,7 @@ import {
   obtenerNombreEspecie,
   obtenerNombreEstadoSalud,
 } from '../../src/types/report';
+import Spinner from '@/src/components/UI/Spinner';
 
 const { width } = Dimensions.get('window');
 const HERO_HEIGHT = Math.round(width * 0.58);
@@ -114,12 +115,7 @@ const SightingDetailScreen = () => {
   };
 
   if (loading) {
-    return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color={Colors.accent} />
-        <AppText style={styles.text}>Cargando detalles...</AppText>
-      </View>
-    );
+    return <Spinner />;
   }
 
   if (error || !sighting) {

@@ -16,6 +16,7 @@ import { Colors } from '@/src/constants/colors';
 import { AppText, fontWeightSemiBold } from '@/src/components/AppText';
 import { normalizeAnimal } from '@/src/utils/animalUtils';
 import { Animal } from '@/src/types/animals';
+import Spinner from '@/src/components/UI/Spinner';
 
 type FavoriteRaw =
   | { id_favorito?: number; id_animal: number | string; animal?: any }
@@ -105,11 +106,7 @@ export default function FavoritesScreen() {
   };
 
   if (loading) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color={Colors?.primary ?? '#4A90E2'} />
-      </View>
-    );
+    return <Spinner />;
   }
 
   if (error) {

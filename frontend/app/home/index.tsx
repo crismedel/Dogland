@@ -26,6 +26,7 @@ import {
 
 // Importa la función para obtener notificaciones
 import { fetchNotifications } from '@/src/api/notifications';
+import Spinner from '@/src/components/UI/Spinner';
 
 const { width } = Dimensions.get('window');
 const BADGE_SIZE = 42;
@@ -94,19 +95,7 @@ export default function Index() {
   };
 
   if (loading) {
-    return (
-      <View
-        style={[
-          styles.container,
-          { justifyContent: 'center', alignItems: 'center' },
-        ]}
-      >
-        <ActivityIndicator size="large" color="#2c3e50" />
-        <AppText style={{ marginTop: 12, color: '#2c3e50' }}>
-          Cargando tu perfil…
-        </AppText>
-      </View>
-    );
+    return <Spinner />;
   }
 
   if (error) {
@@ -357,7 +346,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginHorizontal: 16,
     padding: 16,
-    backgroundColor: '#f4ecde',
+    backgroundColor: Colors.cardBackground,
     borderTopRightRadius: 70,
     borderBottomRightRadius: 70,
     borderTopLeftRadius: 20,
@@ -378,7 +367,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginHorizontal: 16,
     padding: 16,
-    backgroundColor: '#f4ecde',
+    backgroundColor: Colors.cardBackground,
     borderTopLeftRadius: 70,
     borderBottomLeftRadius: 70,
     borderTopRightRadius: 20,

@@ -1,211 +1,174 @@
-import React, { useState } from 'react';
-import {
-  View,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-} from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { updateAnimal } from '../../src/api/animals';
-import { Ionicons } from '@expo/vector-icons';
-import {
-  fontWeightBold,
-  fontWeightSemiBold,
-  fontWeightMedium,
-  AppText,
-} from '@/src/components/AppText';
+import React, { useState, useMemo } from 'react';
+import { View, StyleSheet, Image, ScrollView } from 'react-native';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 
-const EditarPerfilCan = () => {
-  const { id, name, breed, age } = useLocalSearchParams();
-  const [loading, setLoading] = useState(true);
+import CustomHeader from '@/src/components/UI/CustomHeader';
+import { AppText } from '@/src/components/AppText';
+import { Colors } from '@/src/constants/colors';
+
+import DynamicForm, { FormField } from '@/src/components/UI/DynamicForm';
+
+// 🔹 Listas temporales (reemplazables por tu API real)
+const RAZAS = ['Pastor Alemán', 'Labrador', 'Poodle', 'Mezcla'];
+const ESPECIES = ['Perro', 'Gato', 'Otros'];
+const TAMANIOS = ['Pequeño', 'Mediano', 'Grande'];
+const ESTADOS_SALUD = ['Sano', 'En Tratamiento', 'Crítico'];
+
+export default function EditarPerfilCan() {
   const router = useRouter();
+  const { data } = useLocalSearchParams();
 
-  // Estados para editar los campos
-  const [nombre, setNombre] = useState(name as string);
-  const [raza, setRaza] = useState(breed as string);
-  const [edad, setEdad] = useState(age as string);
+  const parsedData = data ? JSON.parse(data as string) : null;
 
-  const handleGuardarCambios = async () => {
-    if (!nombre || !raza || !edad) {
-      Alert.alert('Error', 'Por favor completa todos los campos obligatorios.');
-      return;
-    }
+  // ---------------------------------------
+  // Valores iniciales del formulario
+  // ---------------------------------------
+  const [formValues, setFormValues] = useState({
+    nombre: parsedData?.name ?? '',
+    raza: parsedData?.breed ?? '',
+    especie: parsedData?.species ?? '',
+    tamano: parsedData?.size ?? '',
+    edad: parsedData?.age ? String(parsedData.age) : '',
+    estadoSalud: parsedData?.estadoMedico ?? '',
+    descripcionMedica: parsedData?.descripcionMedica ?? '',
+  });
 
-    const updatedData = {
-      nombre_animal: nombre,
-      edad_animal: Number(edad),
-      edad_aproximada: String(edad + ' meses'),
-      id_estado_salud: 1,
-      id_raza: Number(raza),
-    };
-
-    console.log('Actualizar animal ID:', id);
-    console.log('Datos enviados:', updatedData);
-
-    try {
-      setLoading(true);
-      await updateAnimal(Number(id), updatedData);
-      Alert.alert('Éxito', 'El perfil del animal ha sido actualizado.');
-      router.back();
-    } catch (error: any) {
-      console.error('Error al actualizar el animal:', error);
-      const message =
-        error?.error || 'No se pudo actualizar la información del animal.';
-      Alert.alert('Error', message);
-    } finally {
-      setLoading(false);
-    }
+  const handleValueChange = (name: string, value: any) => {
+    setFormValues((prev) => ({ ...prev, [name]: value }));
   };
 
-  if (loading) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#4A90E2" />
-      </View>
-    );
-  }
-  return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
-    >
-      <View style={styles.container}>
-        {/* Barra superior */}
-        <View style={styles.topBar}>
-          <TouchableOpacity
-            onPress={() => router.back()}
-            style={styles.backButton}
-          >
-            <Ionicons name="arrow-back" size={26} color="#333" />
-          </TouchableOpacity>
-          <AppText style={styles.title}>Editar Perfil</AppText>
-          <View style={{ width: 40 }} /> {/* Espaciador simétrico */}
-        </View>
-
-        {/* Campos del formulario */}
-        <View style={styles.form}>
-          <AppText style={styles.label}>Nombre</AppText>
-          <TextInput
-            style={styles.input}
-            value={nombre}
-            onChangeText={setNombre}
-            placeholder="Nombre del animal"
-          />
-
-          <AppText style={styles.label}>Raza</AppText>
-          <TextInput
-            style={styles.input}
-            value={raza}
-            onChangeText={setRaza}
-            placeholder="Raza"
-          />
-
-          <AppText style={styles.label}>Edad (meses)</AppText>
-          <TextInput
-            style={styles.input}
-            value={edad}
-            onChangeText={setEdad}
-            keyboardType="numeric"
-            placeholder="Edad en meses"
-          />
-        </View>
-
-        {/* Botón de guardar */}
-        <TouchableOpacity
-          style={styles.saveButton}
-          onPress={handleGuardarCambios}
-        >
-          <Ionicons
-            name="save-outline"
-            size={22}
-            color="#fff"
-            style={{ marginRight: 8 }}
-          />
-          <AppText style={styles.saveButtonText}>Guardar Cambios</AppText>
-        </TouchableOpacity>
-      </View>
-    </KeyboardAvoidingView>
+  // ---------------------------------------
+  // Campos del DynamicForm
+  // ---------------------------------------
+  const fields: FormField[] = useMemo(
+    () => [
+      {
+        name: 'nombre',
+        label: 'Nombre',
+        type: 'text',
+        icon: 'paw',
+        placeholder: 'Nombre del animal',
+      },
+      {
+        name: 'raza',
+        label: 'Raza',
+        type: 'picker',
+        icon: 'list',
+        options: RAZAS.map((r) => ({ label: r, value: r })),
+      },
+      {
+        name: 'especie',
+        label: 'Especie',
+        type: 'picker',
+        icon: 'logo-octocat',
+        options: ESPECIES.map((r) => ({ label: r, value: r })),
+      },
+      {
+        name: 'tamano',
+        label: 'Tamaño',
+        type: 'picker',
+        icon: 'resize-outline',
+        options: TAMANIOS.map((r) => ({ label: r, value: r })),
+      },
+      {
+        name: 'edad',
+        label: 'Edad (meses)',
+        type: 'text',
+        keyboardType: 'numeric',
+        icon: 'time',
+        placeholder: 'Ej: 12',
+      },
+      {
+        name: 'estadoSalud',
+        label: 'Estado de Salud',
+        type: 'picker',
+        icon: 'medkit',
+        options: ESTADOS_SALUD.map((r) => ({ label: r, value: r })),
+      },
+      {
+        name: 'descripcionMedica',
+        label: 'Descripción Médica',
+        type: 'text',
+        icon: 'document-text',
+        multiline: true,
+        numberOfLines: 4,
+        placeholder: 'Descripción del estado médico',
+      },
+    ],
+    [],
   );
-};
 
+  // ---------------------------------------
+  // Guardar cambios
+  // ---------------------------------------
+  const handleGuardar = () => {
+    const updated = {
+      ...parsedData,
+      name: formValues.nombre,
+      breed: formValues.raza,
+      species: formValues.especie,
+      size: formValues.tamano,
+      age: formValues.edad,
+      estadoMedico: formValues.estadoSalud,
+      descripcionMedica: formValues.descripcionMedica,
+    };
+
+    router.push({
+      pathname: '/adoption/perfilCan',
+      params: { data: JSON.stringify(updated) },
+    });
+  };
+
+  return (
+    <View style={styles.container}>
+      <CustomHeader title="Editar Perfil" />
+
+      <ScrollView contentContainerStyle={styles.scroll}>
+        {/* 🔹 Imagen no editable */}
+        <View style={styles.imageContainer}>
+          {parsedData?.imageUrl ? (
+            <Image source={{ uri: parsedData.imageUrl }} style={styles.image} />
+          ) : (
+            <AppText>No hay imagen disponible</AppText>
+          )}
+        </View>
+
+        {/* 🔹 Form dinámico */}
+        <DynamicForm
+          fields={fields}
+          values={formValues}
+          onValueChange={handleValueChange}
+          onSubmit={handleGuardar}
+          buttonText="Guardar Cambios"
+          buttonIcon="save"
+        />
+
+        <View style={{ height: 40 }} />
+      </ScrollView>
+    </View>
+  );
+}
+
+// -----------------------------------
+// Estilos
+// -----------------------------------
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#dbe8d3',
+    backgroundColor: Colors.background,
+  },
+  scroll: {
     padding: 20,
+    paddingBottom: 60,
+  },
+  imageContainer: {
     alignItems: 'center',
-  },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    width: '100%',
-    marginBottom: 10,
-  },
-  backButton: {
-    padding: 8,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: fontWeightBold,
-    color: '#4A90E2',
+    marginBottom: 20,
   },
   image: {
-    width: 200,
-    height: 200,
-    borderRadius: 16,
-    borderWidth: 3,
-    borderColor: '#4A90E2',
-    marginVertical: 20,
-  },
-  form: {
-    width: '100%',
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    padding: 15,
-    marginBottom: 25,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  label: {
-    fontSize: 14,
-    color: '#333',
-    fontWeight: fontWeightMedium,
-    marginTop: 10,
-  },
-  input: {
-    backgroundColor: '#f3f3f3',
-    borderRadius: 8,
-    padding: 10,
-    marginTop: 5,
-    fontSize: 14,
-  },
-  saveButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#4A90E2',
-    paddingVertical: 15,
-    paddingHorizontal: 25,
-    borderRadius: 25,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  saveButtonText: {
-    color: '#fff',
-    fontWeight: fontWeightBold,
-    fontSize: 16,
+    width: 160,
+    height: 160,
+    borderRadius: 14,
+    backgroundColor: '#ccc',
   },
 });
-
-export default EditarPerfilCan;

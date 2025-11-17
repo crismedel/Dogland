@@ -25,6 +25,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { checkAlertExists } from '@/src/api/alerts';
 import { checkSightingExists } from '@/src/api/sightings';
 import NotificationOptionsModal from './NotificationOptionsModal';
+import Spinner from '@/src/components/UI/Spinner';
 
 const PAGE_SIZE = 20;
 
@@ -373,7 +374,6 @@ export default function NotificationsScreen() {
     if (loading) return null;
     return (
       <View style={styles.empty}>
-        <Text style={styles.emptyEmoji}>🔔</Text>
         <Text style={styles.emptyText}>No hay notificaciones</Text>
         <Pressable
           onPress={() => load(1)}
@@ -407,9 +407,7 @@ export default function NotificationsScreen() {
         }
       />
       {loading && items.length === 0 ? (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" />
-        </View>
+        <Spinner />
       ) : (
         <FlatList
           data={items}
@@ -544,7 +542,7 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#0a84ff',
+    backgroundColor: Colors.primary,
   },
   unreadPlaceholder: { width: 10, height: 10, borderRadius: 5, opacity: 0 },
 
@@ -562,7 +560,7 @@ const styles = StyleSheet.create({
   emptyEmoji: { fontSize: 42, marginBottom: 8 },
   emptyText: { color: '#666', fontSize: 16, marginBottom: 12 },
   reloadButton: {
-    backgroundColor: '#0a84ff',
+    backgroundColor: Colors.primary,
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 8,

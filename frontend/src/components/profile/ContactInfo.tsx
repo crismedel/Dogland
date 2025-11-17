@@ -3,6 +3,7 @@ import React from 'react';
 import { View, StyleSheet, Pressable } from 'react-native';
 import { Colors } from '@/src/constants/colors';
 import { fontWeightMedium, AppText } from '@/src/components/AppText';
+import { Ionicons } from '@expo/vector-icons';
 
 interface ContactInfoProps {
   user: any;
@@ -26,20 +27,26 @@ export default function ContactInfo({ user, showInfo }: ContactInfoProps) {
     <View style={styles.card}>
       <AppText style={styles.sectionTitle}>Información de Contacto</AppText>
 
-      <View style={{ marginBottom: 16 }}>
+      {/* EMAIL */}
+      <View style={{ marginBottom: 18 }}>
         <AppText style={styles.infoLabel}>Email</AppText>
-        <View style={styles.infoValueWrap}>
-          <AppText numberOfLines={2} style={styles.infoValue}>
-            {user.email}
-          </AppText>
+
+        <View style={styles.row}>
+          <View style={styles.chip}>
+            <Ionicons name="mail-outline" size={16} color={Colors.secondary} />
+            <AppText numberOfLines={2} style={styles.chipText}>
+              {user.email}
+            </AppText>
+          </View>
+
           <Pressable
             onPress={() => showInfo('Copiado', user.email)}
-            accessibilityLabel="Copiar Email"
             style={({ pressed }) => [
               styles.copyPill,
-              pressed && { transform: [{ scale: 0.98 }] },
+              pressed && { transform: [{ scale: 0.95 }] },
             ]}
           >
+            <Ionicons name="copy-outline" size={14} color={Colors.secondary} />
             <AppText style={styles.copyPillText}>Copiar</AppText>
           </Pressable>
         </View>
@@ -47,20 +54,26 @@ export default function ContactInfo({ user, showInfo }: ContactInfoProps) {
 
       <View style={styles.divider} />
 
-      <View style={{ marginBottom: 16 }}>
+      {/* PHONE */}
+      <View style={{ marginBottom: 18 }}>
         <AppText style={styles.infoLabel}>Teléfono</AppText>
-        <View style={styles.infoValueWrap}>
-          <AppText numberOfLines={1} style={styles.infoValue}>
-            {formatPhone(user.telefono)}
-          </AppText>
+
+        <View style={styles.row}>
+          <View style={styles.chip}>
+            <Ionicons name="call-outline" size={16} color={Colors.secondary} />
+            <AppText numberOfLines={1} style={styles.chipText}>
+              {formatPhone(user.telefono)}
+            </AppText>
+          </View>
+
           <Pressable
             onPress={() => showInfo('Copiado', String(user.telefono))}
-            accessibilityLabel="Copiar Teléfono"
             style={({ pressed }) => [
               styles.copyPill,
-              pressed && { transform: [{ scale: 0.98 }] },
+              pressed && { transform: [{ scale: 0.95 }] },
             ]}
           >
+            <Ionicons name="copy-outline" size={14} color={Colors.secondary} />
             <AppText style={styles.copyPillText}>Copiar</AppText>
           </Pressable>
         </View>
@@ -68,13 +81,13 @@ export default function ContactInfo({ user, showInfo }: ContactInfoProps) {
 
       <View style={styles.divider} />
 
-      <View>
-        <AppText style={styles.infoLabel}>Ciudad</AppText>
-        <View style={styles.infoValueWrap}>
-          <AppText numberOfLines={1} style={styles.infoValue}>
-            {user.nombre_ciudad}
-          </AppText>
-        </View>
+      {/* CIUDAD */}
+      <AppText style={styles.infoLabel}>Ciudad</AppText>
+      <View style={styles.chip}>
+        <Ionicons name="location-outline" size={16} color={Colors.secondary} />
+        <AppText numberOfLines={1} style={styles.chipText}>
+          {user.nombre_ciudad}
+        </AppText>
       </View>
     </View>
   );
@@ -82,13 +95,20 @@ export default function ContactInfo({ user, showInfo }: ContactInfoProps) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#FFFDF4',
-    borderRadius: 14,
-    padding: 16,
-    marginTop: 16,
+    backgroundColor: Colors.cardBackground,
+    borderRadius: 20,
+    paddingVertical: 16,
+    paddingHorizontal: 18,
+    marginTop: 20,
     borderWidth: 1,
-    borderColor: 'rgba(242,216,167,0.28)',
+    borderColor: Colors.secondary,
+    shadowColor: '#000',
+    shadowOpacity: 0.045,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 4,
   },
+
   sectionTitle: {
     color: Colors.secondary,
     fontSize: 16,
@@ -101,20 +121,45 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginBottom: 6,
   },
-  infoValueWrap: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  infoValue: { color: Colors.text, fontSize: 14, flexShrink: 1 },
+
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+
+  // CHIP NUEVO
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: Colors.background,
+    borderWidth: 1,
+    borderColor: Colors.backgroundSecon,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    flexShrink: 1,
+  },
+  chipText: { color: Colors.text, fontSize: 14, flexShrink: 1 },
+
+  // Pill copiar
   copyPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     backgroundColor: Colors.lightText,
     borderWidth: 1,
     borderColor: 'rgba(242,216,167,0.28)',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
     borderRadius: 999,
   },
   copyPillText: { color: Colors.text, fontSize: 12 },
+
   divider: {
     height: 1,
-    backgroundColor: 'rgba(0,0,0,0.04)',
-    marginVertical: 10,
+    backgroundColor: 'rgba(0,0,0,0.05)',
+    marginVertical: 12,
   },
 });

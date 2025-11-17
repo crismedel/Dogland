@@ -204,12 +204,12 @@ export default AlertCard;
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.cardBackground,
     padding: 14,
     marginBottom: 14,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#F3F4F6',
+    borderColor: Colors.secondary,
     // Sombra sutil
     shadowColor: '#000',
     shadowOpacity: 0.08,

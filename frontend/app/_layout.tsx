@@ -17,6 +17,7 @@ import { RefreshProvider } from '@/src/contexts/RefreshContext';
 
 // React Query
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import Spinner from '@/src/components/UI/Spinner';
 
 // Silenciar warning específico de expo-notifications
 LogBox.ignoreLogs(['expo-notifications was removed', 'Notifications']);
@@ -41,11 +42,7 @@ function AppContent() {
   }, [fontsLoaded, isAuthenticated, isLoading, pathname]);
 
   if (!fontsLoaded || isLoading) {
-    return (
-      <View style={[styles.background, styles.loadingContainer]}>
-        <ActivityIndicator size="large" color={Colors.primary} />
-      </View>
-    );
+    return <Spinner />;
   }
 
   const showTabBar = pathname && !pathname.startsWith('/auth');

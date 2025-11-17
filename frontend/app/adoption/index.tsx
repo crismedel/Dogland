@@ -32,6 +32,7 @@ import {
   SIZES_MAPPING,
   BREED_MAPPING,
 } from '@/src/utils/animalUtils';
+import Spinner from '@/src/components/UI/Spinner';
 
 const { width } = Dimensions.get('window');
 const SPACING = 10;
@@ -204,12 +205,7 @@ const AdoptionIndex = () => {
   const keyExtractor = useCallback((item: Animal) => String(item.id), []);
 
   if (isLoading) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color={Colors.primary} />
-        <AppText style={{ marginTop: 10 }}>Cargando animales...</AppText>
-      </View>
-    );
+    return <Spinner />;
   }
 
   return (
