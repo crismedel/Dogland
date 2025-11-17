@@ -7,7 +7,7 @@ import {
   getMedicalHistoryDetail,
   updateMedicalHistory
 } from '../controllers/medicalHistoryController.js';
-import { authenticateToken } from '../middlewares/auth.js';
+import { authenticateToken, authorizeRol } from '../middlewares/auth.js';
 import { validateSchema } from '../middlewares/validateSchema.js';
 import {
   createMedicalHistorySchema,
@@ -42,6 +42,7 @@ router.get(
 router.post(
   '/medicalHistory/:animalId',
   authenticateToken,
+  authorizeRol(['Trabajador', 'Admin']),
   validateSchema(createMedicalHistorySchema),
   createMedicalHistory
 );
@@ -49,6 +50,7 @@ router.post(
 router.put(
   '/medicalHistory/:animalId/:historyId',
   authenticateToken,
+  authorizeRol(['Trabajador', 'Admin']),
   validateSchema(updateMedicalHistorySchema),
   updateMedicalHistory
 );
@@ -56,6 +58,7 @@ router.put(
 router.delete(
   '/medicalHistory/:animalId/:historyId',
   authenticateToken,
+  authorizeRol(['Trabajador', 'Admin']),
   validateSchema(deleteMedicalHistorySchema),
   deleteMedicalHistory
 );

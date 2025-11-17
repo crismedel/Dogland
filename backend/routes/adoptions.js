@@ -9,8 +9,7 @@ import {
   createAdoptionPost,
 } from '../controllers/adoptionsController.js';
 
-import { authenticateToken } from '../middlewares/auth.js';
-import { checkPermissions } from '../middlewares/permissions.js';
+import { authenticateToken, authorizeRol } from '../middlewares/auth.js';
 import { validateSchema } from '../middlewares/validateSchema.js';
 import {
   createAdoptionRequestSchema,
@@ -38,24 +37,24 @@ router.get(
 router.post(
   '/adoption-requests',
   authenticateToken,
+  authorizeRol(['Usuario', 'Trabajador', 'Admin']),
   validateSchema(createAdoptionRequestSchema),
-  checkPermissions('create_adoption'),
   createAdoptionRequest
 );
 
 router.put(
   '/adoption-requests/:id',
   authenticateToken,
+  authorizeRol(['Trabajador', 'Admin']),
   validateSchema(updateAdoptionRequestSchema),
-  checkPermissions('update_adoption'),
   updateAdoptionRequest
 );
 
 router.delete(
   '/adoption-requests/:id',
   authenticateToken,
+  authorizeRol(['Trabajador', 'Admin']),
   validateSchema(deleteAdoptionRequestSchema),
-  checkPermissions('delete_adoption'),
   deleteAdoptionRequest
 );
 
@@ -65,7 +64,7 @@ router.get('/adoptions', getAvailableAdoptions); // Ver adopciones disponibles
 router.post(
   '/adoptions',
   authenticateToken,
-  checkPermissions('create_adoption_post'),
+  authorizeRol(['Trabajador', 'Admin']),
   createAdoptionPost, // Crear publicación de adopción
 );
 

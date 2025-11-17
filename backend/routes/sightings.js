@@ -12,7 +12,7 @@ import {
   getMySightings, 
   getEstadosAvistamiento 
 } from '../controllers/sightingsController.js';
-import { authenticateToken } from '../middlewares/auth.js';
+import { authenticateToken, authorizeRol } from '../middlewares/auth.js';
 import { validateSchema } from '../middlewares/validateSchema.js';
 import {
   createSightingSchema,
@@ -68,6 +68,7 @@ router.get(
 router.post(
   '/sightings',
   authenticateToken,
+  authorizeRol(['Usuario', 'Trabajador', 'Admin']),
   validateSchema(createSightingSchema),
   createSighting
 );
@@ -75,6 +76,7 @@ router.post(
 router.put(
   '/sightings/:id',
   authenticateToken,
+  authorizeRol(['Trabajador', 'Admin']),
   validateSchema(updateSightingSchema),
   updateSighting
 );
@@ -82,6 +84,7 @@ router.put(
 router.delete(
   '/sightings/:id',
   authenticateToken,
+  authorizeRol(['Trabajador', 'Admin']),
   validateSchema(deleteSightingSchema),
   deleteSighting
 );

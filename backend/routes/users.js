@@ -30,7 +30,12 @@ router.get(
  * GET /api/users/profile - Obtener datos del usuario logeado
  * Requiere autenticacion
  */
-router.get('/users/profile', authenticateToken, usersController.getUserProfile);
+router.get(
+  '/users/profile',
+  authenticateToken,
+  authorizeRol(['Usuario', 'Trabajador', 'Admin']),
+  usersController.getUserProfile,
+);
 
 /**
  * PUT /api/users/profile - Actualizar perfil propio
@@ -39,6 +44,7 @@ router.get('/users/profile', authenticateToken, usersController.getUserProfile);
 router.put(
   '/users/profile',
   authenticateToken,
+  authorizeRol(['Usuario', 'Trabajador', 'Admin']),
   validateSchema(updateOwnProfileSchema),
   usersController.updateOwnProfile,
 );

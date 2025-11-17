@@ -26,6 +26,10 @@ export const authenticateToken = (req, res, next) => {
 
 export const authorizeRol = (allowedRoles) => {
     return (req, res, next) => {
+        if (!req.user) {
+            return res.status(403).json({ success: false, error: 'Usuario no autenticado en el token' });
+        }
+
         const userRole = req.user.role;
 
         if (!userRole) {
@@ -35,7 +39,7 @@ export const authorizeRol = (allowedRoles) => {
         if (!allowedRoles.includes(userRole)) {
             return res.status(403).json({ success: false, error: 'Acceso denegado. No tienes los permisos requeridos' });
         }
-        
+
         next();
     };
 };

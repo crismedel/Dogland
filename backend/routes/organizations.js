@@ -1,6 +1,7 @@
 import express from 'express';
 import * as organizationsController from '../controllers/organizationsController.js';
 import { validateSchema } from '../middlewares/validateSchema.js';
+import { authenticateToken, authorizeRol } from '../middlewares/auth.js';
 import {
   createOrganizationSchema,
   updateOrganizationSchema,
@@ -31,6 +32,8 @@ router.get(
 // POST /api/organizations - Crear nueva organización
 router.post(
   '/organizations',
+  authenticateToken,
+  authorizeRol(['Admin']),
   validateSchema(createOrganizationSchema),
   organizationsController.createOrganization
 );
@@ -38,6 +41,8 @@ router.post(
 // PUT /api/organizations/:id - Actualizar organización
 router.put(
   '/organizations/:id',
+  authenticateToken,
+  authorizeRol(['Admin']),
   validateSchema(updateOrganizationSchema),
   organizationsController.updateOrganization
 );
@@ -45,6 +50,8 @@ router.put(
 // DELETE /api/organizations/:id - Eliminar organización
 router.delete(
   '/organizations/:id',
+  authenticateToken,
+  authorizeRol(['Admin']),
   validateSchema(deleteOrganizationSchema),
   organizationsController.deleteOrganization
 );
@@ -52,6 +59,8 @@ router.delete(
 // GET /api/organizations/:id/users - Usuarios de la org
 router.get(
   '/organizations/:id/users',
+  authenticateToken,
+  authorizeRol(['Admin', 'Trabajador']),
   validateSchema(getOrganizationUsersSchema),
   organizationsController.getOrganizationUsers
 );

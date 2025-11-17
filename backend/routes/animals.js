@@ -14,8 +14,7 @@ import {
   updateMedicalHistory,
   deleteMedicalHistory,
 } from '../controllers/medicalHistoryController.js'
-import { authenticateToken } from '../middlewares/auth.js';
-import { checkPermissions } from '../middlewares/permissions.js';
+import { authenticateToken, authorizeRol } from '../middlewares/auth.js';
 import { validateSchema } from '../middlewares/validateSchema.js';
 import {
   createAnimalSchema,
@@ -50,32 +49,32 @@ router.get(
 router.get(
   '/animals/organization/:id',
   authenticateToken,
+  authorizeRol(['Usuario', 'Trabajador', 'Admin']),
   validateSchema(getAnimalsByOrganizationSchema),
-  checkPermissions('view_organization_animals'),
   getAnimalsByOrganization
 );
 
 router.post(
   '/animals',
   authenticateToken,
+  authorizeRol(['Usuario', 'Trabajador', 'Admin']),
   validateSchema(createAnimalSchema),
-  checkPermissions('create_animal'),
   createAnimal
 );
 
 router.put(
   '/animals/:id',
   authenticateToken,
+  authorizeRol(['Usuario', 'Trabajador', 'Admin']),
   validateSchema(updateAnimalSchema),
-  checkPermissions('update_animal'),
   updateAnimal
 );
 
 router.delete(
   '/animals/:id',
   authenticateToken,
+  authorizeRol(['Usuario', 'Trabajador', 'Admin']),
   validateSchema(deleteAnimalSchema),
-  checkPermissions('delete_animal'),
   deleteAnimal
 );
 
@@ -92,6 +91,7 @@ router.get(
 router.post(
   '/animals/:animalId/medicalHistory',
   authenticateToken,
+  authorizeRol(['Usuario', 'Trabajador', 'Admin']),
   validateSchema(createMedicalHistorySchema),
   createMedicalHistory
 );
@@ -105,6 +105,7 @@ router.get(
 router.put(
   '/animals/:animalId/medicalHistory/:historyId',
   authenticateToken,
+  authorizeRol(['Usuario', 'Trabajador', 'Admin']),
   validateSchema(updateMedicalHistorySchema),
   updateMedicalHistory
 );
@@ -112,6 +113,7 @@ router.put(
 router.delete(
   '/animals/:animalId/medicalHistory/:historyId',
   authenticateToken,
+  authorizeRol(['Usuario', 'Trabajador', 'Admin']),
   validateSchema(deleteMedicalHistorySchema),
   deleteMedicalHistory
 );

@@ -5,8 +5,7 @@ import {
   uploadProfilePhoto,
   deleteProfilePhoto,
 } from '../controllers/userPhotoController.js';
-import { authenticateToken } from '../middlewares/auth.js';
-import { checkPermissions } from '../middlewares/permissions.js';
+import { authenticateToken, authorizeRol } from '../middlewares/auth.js';
 import {
   uploadProfileMemory,
   processProfileImage,
@@ -18,7 +17,7 @@ const router = express.Router();
 router.get(
   '/user/profile-image/:userId',
   authenticateToken,
-  checkPermissions('read_user'),
+  authorizeRol(['Usuario', 'Trabajador', 'Admin']),
   getProfilePhoto,
 );
 
@@ -29,7 +28,7 @@ router.get('/user/profile-image/:userId/file', getProfilePhotoFile);
 router.post(
   '/user/profile-image/upload/:userId',
   authenticateToken,
-  checkPermissions('update_user'),
+  authorizeRol(['Usuario', 'Trabajador', 'Admin']),
   uploadProfileMemory.single('image'),
   processProfileImage,
   uploadProfilePhoto,
@@ -39,7 +38,7 @@ router.post(
 router.delete(
   '/user/profile-image/:userId',
   authenticateToken,
-  checkPermissions('update_user'),
+  authorizeRol(['Usuario', 'Trabajador', 'Admin']),
   deleteProfilePhoto,
 );
 
