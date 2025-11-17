@@ -218,12 +218,12 @@ const styles = StyleSheet.create({
   },
   userCard: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
+    backgroundColor: Colors.cardBackground,
     padding: 16,
     borderRadius: 12,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: Colors.secondary,
     alignItems: 'center',
   },
   userInfo: {

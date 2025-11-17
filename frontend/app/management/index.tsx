@@ -72,11 +72,7 @@ const ManagementScreen = () => {
         style={[styles.tabButton, isActive && styles.tabButtonActive]}
         onPress={() => setActiveTab(tab)}
       >
-        <Ionicons
-          name={icon as any}
-          size={20}
-          color={isActive ? Colors.primary : Colors.secondary}
-        />
+        <Ionicons name={icon as any} size={20} color={Colors.secondary} />
         <AppText style={[styles.tabLabel, isActive && styles.tabLabelActive]}>
           {label}
         </AppText>
@@ -214,9 +210,9 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 12,
-    backgroundColor: '#fff',
-    borderWidth: 2,
-    borderColor: 'transparent',
+    backgroundColor: Colors.cardBackground,
+    borderWidth: 1,
+    borderColor: Colors.secondary,
   },
   tabButtonActive: {
     backgroundColor: `rgba(251, 191, 36, 0.1)`,
@@ -228,7 +224,7 @@ const styles = StyleSheet.create({
     fontWeight: fontWeightMedium,
   },
   tabLabelActive: {
-    color: Colors.primary,
+    color: Colors.secondary,
     fontWeight: fontWeightSemiBold,
   },
   center: {
@@ -271,16 +267,16 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   retryText: {
-    color: '#fff',
+    color: Colors.cardBackground,
     fontWeight: fontWeightMedium,
   },
   sightingCard: {
-    backgroundColor: '#fff',
+    backgroundColor: Colors.cardBackground,
     padding: 16,
     borderRadius: 12,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: Colors.secondary,
   },
   sightingTitle: {
     fontSize: 16,

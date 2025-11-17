@@ -3,7 +3,6 @@ import { useNotification } from '@/src/components/notifications';
 import CustomHeader from '@/src/components/UI/CustomHeader';
 import { Colors } from '@/src/constants/colors';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
@@ -20,6 +19,7 @@ import {
   obtenerNombreEspecie,
   obtenerNombreEstadoSalud,
 } from '../../src/types/report';
+import Spinner from '@/src/components/UI/Spinner';
 
 // --- Interfaz (Asegúrate que tu API en '/sightings' devuelva estos campos) ---
 interface ApiSighting {
@@ -33,9 +33,9 @@ interface ApiSighting {
   id_estado_avistamiento: number;
   latitude?: number;
   longitude?: number;
-  id_usuario: number; 
-  titulo: string; 
-  motivo_cierre?: string; 
+  id_usuario: number;
+  titulo: string;
+  motivo_cierre?: string;
 }
 
 interface Sighting extends ApiSighting {
@@ -186,49 +186,41 @@ const AvistamientosScreen: React.FC = () => {
 
   const renderDashboard = () => (
     <View style={styles.dashboardWrap}>
-      <LinearGradient
-        colors={[Colors.background, Colors.backgroundSecon]}
-        start={[0, 0]}
-        end={[1, 1]}
-        style={styles.dashboard}
-      >
+      <View style={styles.dashboard}>
         <View style={styles.metricItem}>
-          <LinearGradient
-            colors={[Colors.accent, Colors.primary]}
-            style={styles.metricIconBg}
+          <View
+            style={[styles.metricIconBg, { backgroundColor: Colors.accent }]}
           >
             <Ionicons name="list" size={20} color={Colors.lightText} />
-          </LinearGradient>
+          </View>
           <AppText style={styles.metricValue}>{totalCount}</AppText>
           <AppText style={styles.metricLabel}>Total</AppText>
         </View>
 
         <View style={styles.metricItem}>
-          <LinearGradient
-            colors={[Colors.danger, '#ffb3b3']}
-            style={styles.metricIconBg}
+          <View
+            style={[styles.metricIconBg, { backgroundColor: Colors.danger }]}
           >
             <Ionicons name="alert-circle" size={20} color={Colors.lightText} />
-          </LinearGradient>
+          </View>
           <AppText style={styles.metricValue}>{criticalCount}</AppText>
           <AppText style={styles.metricLabel}>Críticos</AppText>
         </View>
 
         <View style={styles.metricItem}>
-          <LinearGradient
-            colors={[Colors.success, '#b8f5b8']}
-            style={styles.metricIconBg}
+          <View
+            style={[styles.metricIconBg, { backgroundColor: Colors.success }]}
           >
             <Ionicons
               name="checkmark-circle"
               size={20}
               color={Colors.lightText}
             />
-          </LinearGradient>
+          </View>
           <AppText style={styles.metricValue}>{activeCount}</AppText>
           <AppText style={styles.metricLabel}>Activos</AppText>
         </View>
-      </LinearGradient>
+      </View>
     </View>
   );
 
@@ -239,36 +231,30 @@ const AvistamientosScreen: React.FC = () => {
       obtenerNombreEstadoSalud(item.id_estado_salud) || 'Desconocido';
     const speciesName =
       obtenerNombreEspecie(item.id_especie) || 'Especie desconocida';
-    
+
     // Nueva lógica de estado
-    const sightingStatusName = getSightingStatusName(item.id_estado_avistamiento);
+    const sightingStatusName = getSightingStatusName(
+      item.id_estado_avistamiento,
+    );
     const isClosed = item.id_estado_avistamiento === CERRADO_STATUS_ID;
 
     return (
       <TouchableOpacity
         activeOpacity={0.9}
         onPress={() => handlePressSighting(item.id_avistamiento)} // <-- LLAMA A NAVEGACIÓN
-        style={[styles.card, isClosed && styles.closedCard, { borderColor: palette.accent + '100' }]}
+        style={[styles.card, isClosed && styles.closedCard]}
       >
-        <LinearGradient
-          colors={[`${palette.start}10`, `${palette.end}05`]}
-          start={[0, 0]}
-          end={[1, 1]}
-          style={styles.gradientBackground} 
-        >
+        <View style={styles.gradientBackground}>
           <View style={styles.cardLeft}>
-            <LinearGradient
-              colors={[palette.start, palette.end]}
-              style={styles.stateBadge}
-              start={[0, 0]}
-              end={[1, 1]}
+            <View
+              style={[styles.stateBadge, { backgroundColor: palette.start }]}
             >
               <Ionicons
                 name={item.id_estado_salud === 3 ? 'warning' : 'leaf'}
                 size={20}
                 color="#fff"
               />
-            </LinearGradient>
+            </View>
           </View>
 
           <View style={styles.cardBody}>
@@ -284,8 +270,16 @@ const AvistamientosScreen: React.FC = () => {
             {/* --- MUESTRA MOTIVO DE CIERRE SI EXISTE --- */}
             {isClosed && item.motivo_cierre && (
               <View style={styles.reasonContainer}>
-                <Ionicons name="information-circle-outline" size={16} color={Colors.gray} />
-                <AppText style={styles.reasonText} numberOfLines={1}>
+                <Ionicons
+                  name="information-circle-outline"
+                  size={16}
+                  color={Colors.gray}
+                  style={{ marginRight: 6 }}
+                />
+                <AppText
+                  style={[styles.chipText, { color: Colors.gray }]}
+                  numberOfLines={1}
+                >
                   Motivo: {item.motivo_cierre}
                 </AppText>
               </View>
@@ -303,7 +297,7 @@ const AvistamientosScreen: React.FC = () => {
                   {speciesName}
                 </AppText>
               </View>
-              
+
               <View style={[styles.chip, { backgroundColor: palette.chipBg }]}>
                 <Ionicons
                   name="heart"
@@ -316,36 +310,38 @@ const AvistamientosScreen: React.FC = () => {
                 </AppText>
               </View>
 
-              <View style={[styles.chip, isClosed ? styles.chipClosed : styles.chipActive]}>
+              <View
+                style={[
+                  styles.chip,
+                  isClosed ? styles.chipClosed : styles.chipActive,
+                ]}
+              >
                 <Ionicons
-                  name={isClosed ? "lock-closed" : "eye"}
+                  name={isClosed ? 'lock-closed' : 'eye'}
                   size={14}
                   color={isClosed ? Colors.darkGray : Colors.success}
                   style={{ marginRight: 6 }}
                 />
-                <AppText style={[styles.chipText, isClosed ? {color: Colors.darkGray} : {color: Colors.success}]}>
+                <AppText
+                  style={[
+                    styles.chipText,
+                    isClosed
+                      ? { color: Colors.darkGray }
+                      : { color: Colors.success },
+                  ]}
+                >
                   {sightingStatusName}
                 </AppText>
               </View>
             </View>
           </View>
-        </LinearGradient>
+        </View>
       </TouchableOpacity>
     );
   };
 
   if (loading && sightings.length === 0) {
-    return (
-      <View style={styles.container}>
-        {renderHeader()}
-        <View style={styles.loadingWrap}>
-          <ActivityIndicator size="large" color={Colors.primary} />
-          <AppText style={styles.loadingText}>
-            Cargando avistamientos...
-          </AppText>
-        </View>
-      </View>
-    );
+    return <Spinner />;
   }
 
   return (
@@ -451,20 +447,23 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 16,
     borderWidth: 1,
+    borderColor: Colors.secondary,
+    backgroundColor: Colors.cardBackground || '#fff',
     shadowColor: '#000',
     shadowOpacity: 0.06,
     shadowRadius: 8,
     elevation: 3,
     marginBottom: 20,
-    overflow: 'hidden', 
+    overflow: 'hidden',
   },
-  closedCard: { 
+  closedCard: {
     opacity: 0.7,
   },
   gradientBackground: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 10,
+    backgroundColor: 'transparent',
   },
   cardLeft: {
     width: 62,
@@ -536,26 +535,24 @@ const styles = StyleSheet.create({
   chipText: {
     fontSize: 13,
   },
-  chipGradient: { 
+  chipActive: {
+    backgroundColor: 'rgba(40,167,69,0.12)',
     borderRadius: 999,
-    padding: 1.5,
-    marginRight: 8,
-    marginBottom: 6,
-  },
-  chipInner: { 
-    flexDirection: 'row',
-    alignItems: 'center',
     paddingHorizontal: 10,
     paddingVertical: 6,
-    borderRadius: 999,
-    backgroundColor: Colors.background,
+    marginRight: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  chipActive: { 
-    backgroundColor: 'rgba(40,167,69,0.12)',
-  },
-  chipClosed: { 
+  chipClosed: {
     backgroundColor: Colors.gray,
     opacity: 0.5,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    marginRight: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   emptyWrap: {
     paddingTop: 40,

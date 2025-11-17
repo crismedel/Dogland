@@ -22,6 +22,7 @@ import {
   fontWeightMedium,
   AppText,
 } from '@/src/components/AppText';
+import Spinner from '@/src/components/UI/Spinner';
 
 const { width } = Dimensions.get('window');
 
@@ -85,8 +86,7 @@ const AlertDetailScreen = () => {
           }
         />
         <View style={styles.center}>
-          <ActivityIndicator size="large" color={Colors.secondary} />
-          <AppText style={styles.loadingText}>Cargando alerta...</AppText>
+          <Spinner />
         </View>
       </View>
     );

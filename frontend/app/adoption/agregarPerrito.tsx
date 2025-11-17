@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import React from 'react';
 import { Image, StyleSheet, TouchableOpacity, View } from 'react-native';
 import FormAgregarPerrito from './component/formAgregarPerrito';
+import { Colors } from '@/src/constants/colors';
 
 const AgregarPerrito = () => {
   const router = useRouter();
@@ -23,7 +24,7 @@ const AgregarPerrito = () => {
       />
 
       {/* 👇 Aquí simplemente renderizamos el componente del formulario */}
-      <FormAgregarPerrito /> 
+      <FormAgregarPerrito />
     </View>
   );
 };
@@ -31,7 +32,7 @@ const AgregarPerrito = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f4f6f9', // Un color de fondo consistente
+    backgroundColor: Colors.background, // Un color de fondo consistente
   },
 });
 

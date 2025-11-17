@@ -98,15 +98,15 @@ const openInMaps = async (
 const SightingDetailScreen = () => {
   const { id } = useLocalSearchParams();
   const router = useRouter();
-  const { user } = useAuth(); 
-  const { showSuccess, showError } = useNotification(); 
-  
+  const { user } = useAuth();
+  const { showSuccess, showError } = useNotification();
+
   const [sighting, setSighting] = useState<Sighting | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   const scrollY = useRef(new Animated.Value(0)).current;
-  
+
   // --- Estados para Modales ---
   const [isCloseModalVisible, setCloseModalVisible] = useState(false);
   const [closeReason, setCloseReason] = useState<string | null>(null);
@@ -153,11 +153,13 @@ const SightingDetailScreen = () => {
 
   const handleConfirmCloseSighting = async () => {
     if (!closeReason || !sighting) {
-      showError("Error", "Debes seleccionar un motivo.");
+      showError('Error', 'Debes seleccionar un motivo.');
       return;
     }
     setIsClosing(true);
-    const fullReason = closeComment ? `${closeReason}: ${closeComment}` : closeReason;
+    const fullReason = closeComment
+      ? `${closeReason}: ${closeComment}`
+      : closeReason;
 
     let newStatusId;
     if (closeReason === 'Rescatado') newStatusId = 4;
@@ -169,13 +171,13 @@ const SightingDetailScreen = () => {
         newStatusId: newStatusId,
         reason: fullReason,
       });
-      showSuccess("Éxito", "Reporte actualizado.");
+      showSuccess('Éxito', 'Reporte actualizado.');
       setCloseModalVisible(false);
       setCloseReason(null);
       setCloseComment('');
       fetchSightingDetails(); // Recarga los datos de la pantalla actual
     } catch (err) {
-      showError("Error", "No se pudo actualizar el reporte.");
+      showError('Error', 'No se pudo actualizar el reporte.');
     } finally {
       setIsClosing(false);
     }
@@ -195,7 +197,7 @@ const SightingDetailScreen = () => {
       </View>
     );
   }
-  
+
   // --- LÓGICA DE PERMISOS ---
   // @ts-ignore - 'id_usuario' puede no estar en el tipo 'Sighting' importado
   const canModify = user?.role === 'Admin' || user?.id === sighting?.id_usuario;
@@ -235,7 +237,7 @@ const SightingDetailScreen = () => {
     const direccion =
       // @ts-ignore
       s.direccion || s.address || (s as any).ubicacion_text || 'Sin dirección';
-      
+
     // --- LÓGICA DE ESTADO CORREGIDA ---
     const estadoDisplay = getSightingStatusName(s.id_estado_avistamiento);
     const estaActivo = s.id_estado_avistamiento === 1; // <-- ¡ESTA ES LA CORRECCIÓN!
@@ -245,7 +247,7 @@ const SightingDetailScreen = () => {
     const coordsDisplay = formatCoords(lat, lon) || 'Sin coordenadas';
     const riesgo = (s as any).nivel_riesgo || null;
     // @ts-ignore - 'motivo_cierre' puede no estar en el tipo 'Sighting' importado
-    const motivoCierre = s.motivo_cierre || null; 
+    const motivoCierre = s.motivo_cierre || null;
 
     return (
       <View style={styles.infoSectionWrap}>
@@ -364,12 +366,18 @@ const SightingDetailScreen = () => {
                 </View>
               </View>
             </View>
-            
+
             {/* --- NUEVO: Mostrar Motivo de Cierre --- */}
             {!estaActivo && motivoCierre && (
               <View style={styles.infoRow}>
-                <View style={[styles.iconCircle, { backgroundColor: '#f4f4f6' }]}>
-                  <Ionicons name="document-text-outline" size={18} color="#5b6b82" />
+                <View
+                  style={[styles.iconCircle, { backgroundColor: '#f4f4f6' }]}
+                >
+                  <Ionicons
+                    name="document-text-outline"
+                    size={18}
+                    color="#5b6b82"
+                  />
                 </View>
                 <View style={styles.infoTextWrap}>
                   <AppText style={styles.rowLabel}>Motivo de Cierre</AppText>
@@ -518,9 +526,11 @@ const SightingDetailScreen = () => {
 
           <View style={styles.titleRow}>
             {/* Título principal (si lo quieres añadir) */}
-            <View style={{flex: 1}}>
+            <View style={{ flex: 1 }}>
               {/* @ts-ignore */}
-              <AppText style={styles.mainTitle} numberOfLines={2}>{sighting.titulo || "Detalle del Avistamiento"}</AppText>
+              <AppText style={styles.mainTitle} numberOfLines={2}>
+                Detalle del Avistamiento
+              </AppText>
             </View>
 
             {/* --- BOTONES CONDICIONALES --- */}
@@ -536,10 +546,17 @@ const SightingDetailScreen = () => {
             {!isClosed && canModify && (
               <TouchableOpacity
                 onPress={() => setCloseModalVisible(true)} // <-- ABRE EL MODAL
-                style={[styles.editFab, { backgroundColor: Colors.success, marginLeft: 10 }]}
+                style={[
+                  styles.editFab,
+                  { backgroundColor: Colors.success, marginLeft: 10 },
+                ]}
                 accessibilityLabel="Cerrar Reporte"
               >
-                <Ionicons name="shield-checkmark-outline" size={18} color="#fff" />
+                <Ionicons
+                  name="shield-checkmark-outline"
+                  size={18}
+                  color="#fff"
+                />
               </TouchableOpacity>
             )}
           </View>
@@ -574,35 +591,39 @@ const SightingDetailScreen = () => {
               dropDownContainerStyle={styles.dropdownContainer}
               zIndex={3000}
             />
-            
+
             <TextInput
               style={styles.modalTextInput}
               placeholder="Comentario adicional (opcional)"
               value={closeComment}
               onChangeText={setCloseComment}
             />
-            
-            <TouchableOpacity 
-              style={[styles.modalButton, {backgroundColor: Colors.primary}]} 
+
+            <TouchableOpacity
+              style={[styles.modalButton, { backgroundColor: Colors.primary }]}
               onPress={handleConfirmCloseSighting}
               disabled={isClosing}
             >
-              {isClosing 
-                ? <ActivityIndicator color="#fff" /> 
-                : <AppText style={styles.modalButtonText}>Confirmar Cierre</AppText>
-              }
+              {isClosing ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <AppText style={styles.modalButtonText}>
+                  Confirmar Cierre
+                </AppText>
+              )}
             </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={[styles.modalButton, {backgroundColor: Colors.gray}]} 
+
+            <TouchableOpacity
+              style={[styles.modalButton, { backgroundColor: Colors.gray }]}
               onPress={() => setCloseModalVisible(false)}
             >
-              <AppText style={[styles.modalButtonText, {color: '#000'}]}>Cancelar</AppText>
+              <AppText style={[styles.modalButtonText, { color: '#000' }]}>
+                Cancelar
+              </AppText>
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
-
     </View>
   );
 };
@@ -700,7 +721,7 @@ const styles = StyleSheet.create({
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 0, 
+    paddingHorizontal: 0,
     marginBottom: 8,
   },
   mainTitle: {
@@ -720,10 +741,12 @@ const styles = StyleSheet.create({
   },
   infoSectionWrap: { marginTop: 12 },
   infoCardNew: {
-    backgroundColor: '#fff',
+    backgroundColor: Colors.cardBackground,
     borderRadius: 18,
     paddingVertical: 16,
     paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: Colors.secondary,
     shadowColor: '#000',
     shadowOpacity: 0.07,
     shadowOffset: { width: 0, height: 3 },
@@ -797,10 +820,12 @@ const styles = StyleSheet.create({
     fontWeight: fontWeightSemiBold,
   },
   descriptionBox: {
-    backgroundColor: '#fff',
+    backgroundColor: Colors.cardBackground,
     marginBottom: 16,
     borderRadius: 18,
     padding: 16,
+    borderWidth: 1,
+    borderColor: Colors.secondary,
   },
   descTitle: {
     fontSize: 16,
@@ -813,7 +838,7 @@ const styles = StyleSheet.create({
     color: Colors.darkGray,
     lineHeight: 20,
   },
-  
+
   // --- ESTILOS PARA LOS MODALES ---
   modalOverlay: {
     flex: 1,

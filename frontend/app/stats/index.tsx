@@ -113,6 +113,8 @@ const StatsScreen = () => {
     };
   });
 
+  const chartWidth = width - 40 - 20;
+
   if (loading) {
     return <Spinner />;
   }
@@ -190,14 +192,14 @@ const StatsScreen = () => {
                 labels: trend.labels,
                 datasets: [{ data: trend.data }],
               }}
-              width={width - 40}
+              width={chartWidth}
               height={220}
               yAxisLabel=""
               yAxisSuffix=""
               chartConfig={{
-                backgroundColor: Colors.lightText,
-                backgroundGradientFrom: Colors.lightText,
-                backgroundGradientTo: Colors.lightText,
+                backgroundColor: Colors.cardBackground,
+                backgroundGradientFrom: Colors.cardBackground,
+                backgroundGradientTo: Colors.cardBackground,
                 decimalPlaces: 0,
                 color: (opacity = 1) => `rgba(255, 99, 71, ${opacity})`,
                 labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
@@ -224,14 +226,14 @@ const StatsScreen = () => {
           {speciesChartData.labels.length > 0 ? (
             <BarChart
               data={speciesChartData}
-              width={width - 40}
+              width={chartWidth}
               height={220}
               yAxisLabel=""
               yAxisSuffix=""
               chartConfig={{
-                backgroundColor: Colors.lightText,
-                backgroundGradientFrom: Colors.lightText,
-                backgroundGradientTo: Colors.lightText,
+                backgroundColor: Colors.cardBackground,
+                backgroundGradientFrom: Colors.cardBackground,
+                backgroundGradientTo: Colors.cardBackground,
                 decimalPlaces: 0,
                 color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
                 style: { borderRadius: 16 },
@@ -254,12 +256,12 @@ const StatsScreen = () => {
           {healthStatesPieData.length > 0 ? (
             <PieChart
               data={healthStatesPieData}
-              width={width - 40}
+              width={chartWidth}
               height={220}
               chartConfig={{
-                backgroundColor: Colors.lightText,
-                backgroundGradientFrom: Colors.lightText,
-                backgroundGradientTo: Colors.lightText,
+                backgroundColor: Colors.cardBackground,
+                backgroundGradientFrom: Colors.cardBackground,
+                backgroundGradientTo: Colors.cardBackground,
                 color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
               }}
               accessor="population"
@@ -297,7 +299,7 @@ const styles = StyleSheet.create({
   },
   summaryCard: {
     flex: 1,
-    backgroundColor: Colors.lightText,
+    backgroundColor: Colors.cardBackground,
     borderRadius: 12,
     padding: 15,
     alignItems: 'center',
@@ -317,7 +319,7 @@ const styles = StyleSheet.create({
   },
   summaryLabel: {
     fontSize: 14,
-    color: Colors.gray,
+    color: Colors.text,
     textAlign: 'center',
     marginTop: 5,
   },
@@ -328,12 +330,14 @@ const styles = StyleSheet.create({
   },
   impactCard: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.cardBackground,
     borderRadius: 12,
     paddingVertical: 15,
     paddingHorizontal: 5,
     alignItems: 'center',
     elevation: 2,
+    borderWidth: 1,
+    borderColor: Colors.secondary,
     shadowColor: '#000',
     shadowOpacity: 0.05,
     shadowRadius: 5,
@@ -346,14 +350,17 @@ const styles = StyleSheet.create({
   },
   impactLabel: {
     fontSize: 12,
-    color: Colors.gray,
+    color: Colors.text,
     textAlign: 'center',
     marginTop: 4,
   },
   chartContainer: {
-    backgroundColor: Colors.lightText,
+    overflow: 'hidden',
+    backgroundColor: Colors.cardBackground,
     borderRadius: 16,
+    borderWidth: 1,
     padding: 10,
+    borderColor: Colors.secondary,
     marginTop: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
