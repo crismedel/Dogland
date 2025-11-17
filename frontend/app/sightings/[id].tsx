@@ -4,33 +4,51 @@ import {
   fontWeightMedium,
   fontWeightSemiBold,
 } from '@/src/components/AppText';
+import Spinner from '@/src/components/UI/Spinner';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   Animated,
   Dimensions,
   ImageBackground,
+  Linking,
+  Modal,
   Platform,
-  View,
   StatusBar,
   StyleSheet,
+  TextInput,
   TouchableOpacity,
-  Linking,
+  View,
 } from 'react-native';
 import apiClient from '../../src/api/client';
 import { Colors } from '../../src/constants/colors';
-import { Sighting } from '../../src/types/sighting';
 import {
   obtenerNombreEspecie,
   obtenerNombreEstadoSalud,
 } from '../../src/types/report';
-import Spinner from '@/src/components/UI/Spinner';
+import { Sighting } from '../../src/types/sighting';
+
+// --- AÑADIDOS ---
+import { useNotification } from '@/src/components/notifications';
+import { useAuth } from '@/src/contexts/AuthContext';
+import DropDownPicker from 'react-native-dropdown-picker';
 
 const { width } = Dimensions.get('window');
 const HERO_HEIGHT = Math.round(width * 0.58);
+
+// --- Helpers de Estado ---
+const getSightingStatusName = (id: number) => {
+  if (id === 1) return 'Activo';
+  if (id === 2) return 'Desaparecido';
+  if (id === 3) return 'Observado';
+  if (id === 4) return 'Recuperado';
+  if (id === 5) return 'Cerrado';
+  return 'Desconocido';
+};
+const CERRADO_STATUS_ID = 5;
 
 const formatDateDDMMYYYY = (input?: string | null) => {
   if (!input) return 'N/A';
@@ -80,39 +98,89 @@ const openInMaps = async (
 const SightingDetailScreen = () => {
   const { id } = useLocalSearchParams();
   const router = useRouter();
+  const { user } = useAuth(); 
+  const { showSuccess, showError } = useNotification(); 
+  
   const [sighting, setSighting] = useState<Sighting | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
+  
   const scrollY = useRef(new Animated.Value(0)).current;
+  
+  // --- Estados para Modales ---
+  const [isCloseModalVisible, setCloseModalVisible] = useState(false);
+  const [closeReason, setCloseReason] = useState<string | null>(null);
+  const [closeComment, setCloseComment] = useState('');
+  const [isClosing, setIsClosing] = useState(false);
+  const [openReasonPicker, setOpenReasonPicker] = useState(false);
+  const [reasonItems, setReasonItems] = useState([
+    { label: 'Animal Rescatado', value: 'Rescatado' },
+    { label: 'No Encontrado / Desaparecido', value: 'No Encontrado' },
+    { label: 'Falsa Alarma', value: 'Falsa Alarma' },
+    { label: 'Reporte Duplicado', value: 'Duplicado' },
+    { label: 'Otro (ver comentario)', value: 'Otro' },
+  ]);
 
-  useEffect(() => {
-    const fetchSightingDetails = async () => {
-      try {
-        if (!id) {
-          setError('ID de avistamiento no proporcionado.');
-          setLoading(false);
-          return;
-        }
-        const response = await apiClient.get(`/sightings/${id}`);
-        setSighting(response.data.data);
-      } catch (err) {
-        console.error('Error fetching sighting details:', err);
-        Alert.alert(
-          'Error',
-          'No se pudo cargar la información del avistamiento.',
-        );
-        setError('No se pudo cargar la información del avistamiento.');
-      } finally {
+  const fetchSightingDetails = useCallback(async () => {
+    try {
+      if (!id) {
+        setError('ID de avistamiento no proporcionado.');
         setLoading(false);
+        return;
       }
-    };
-    fetchSightingDetails();
+      const response = await apiClient.get(`/sightings/${id}`);
+      setSighting(response.data.data);
+    } catch (err) {
+      console.error('Error fetching sighting details:', err);
+      Alert.alert(
+        'Error',
+        'No se pudo cargar la información del avistamiento.',
+      );
+      setError('No se pudo cargar la información del avistamiento.');
+    } finally {
+      setLoading(false);
+    }
   }, [id]);
 
+  useEffect(() => {
+    fetchSightingDetails();
+  }, [fetchSightingDetails]);
+
+  // --- NUEVOS HANDLERS ---
   const handleEdit = () => {
     router.push(`/sightings/edit/${id}`);
   };
+
+  const handleConfirmCloseSighting = async () => {
+    if (!closeReason || !sighting) {
+      showError("Error", "Debes seleccionar un motivo.");
+      return;
+    }
+    setIsClosing(true);
+    const fullReason = closeComment ? `${closeReason}: ${closeComment}` : closeReason;
+
+    let newStatusId;
+    if (closeReason === 'Rescatado') newStatusId = 4;
+    else if (closeReason === 'No Encontrado') newStatusId = 2;
+    else newStatusId = 5;
+
+    try {
+      await apiClient.patch(`/sightings/${sighting.id_avistamiento}/close`, {
+        newStatusId: newStatusId,
+        reason: fullReason,
+      });
+      showSuccess("Éxito", "Reporte actualizado.");
+      setCloseModalVisible(false);
+      setCloseReason(null);
+      setCloseComment('');
+      fetchSightingDetails(); // Recarga los datos de la pantalla actual
+    } catch (err) {
+      showError("Error", "No se pudo actualizar el reporte.");
+    } finally {
+      setIsClosing(false);
+    }
+  };
+  // --- FIN NUEVOS HANDLERS ---
 
   if (loading) {
     return <Spinner />;
@@ -127,6 +195,11 @@ const SightingDetailScreen = () => {
       </View>
     );
   }
+  
+  // --- LÓGICA DE PERMISOS ---
+  // @ts-ignore - 'id_usuario' puede no estar en el tipo 'Sighting' importado
+  const canModify = user?.role === 'Admin' || user?.id === sighting?.id_usuario;
+  const isClosed = sighting?.id_estado_avistamiento !== 1; // 1 = Activo
 
   const primaryImageUrl =
     sighting.fotos_url && sighting.fotos_url.length > 0
@@ -151,6 +224,7 @@ const SightingDetailScreen = () => {
     extrapolate: 'clamp',
   });
 
+  // --- Componente InfoSection (Modificado) ---
   const InfoSection = ({ s }: { s: Sighting }) => {
     const fecha = formatDateDDMMYYYY(s.fecha_creacion);
     const especieDisplay =
@@ -161,12 +235,17 @@ const SightingDetailScreen = () => {
     const direccion =
       // @ts-ignore
       s.direccion || s.address || (s as any).ubicacion_text || 'Sin dirección';
-    const estaActivo = (s as any).activa === true;
-    const estadoDisplay = estaActivo ? 'Activo' : 'Inactivo';
+      
+    // --- LÓGICA DE ESTADO CORREGIDA ---
+    const estadoDisplay = getSightingStatusName(s.id_estado_avistamiento);
+    const estaActivo = s.id_estado_avistamiento === 1; // <-- ¡ESTA ES LA CORRECCIÓN!
+
     const lat = (s as any).latitude ?? (s as any).lat ?? null;
     const lon = (s as any).longitude ?? (s as any).lng ?? null;
     const coordsDisplay = formatCoords(lat, lon) || 'Sin coordenadas';
     const riesgo = (s as any).nivel_riesgo || null;
+    // @ts-ignore - 'motivo_cierre' puede no estar en el tipo 'Sighting' importado
+    const motivoCierre = s.motivo_cierre || null; 
 
     return (
       <View style={styles.infoSectionWrap}>
@@ -243,7 +322,7 @@ const SightingDetailScreen = () => {
                 ]}
               >
                 <Ionicons
-                  name={estaActivo ? 'checkmark-circle' : 'close-circle'}
+                  name={estaActivo ? 'checkmark-circle' : 'lock-closed-outline'} // <-- Icono cambiado
                   size={18}
                   color={estaActivo ? Colors.success : Colors.darkGray}
                 />
@@ -285,6 +364,19 @@ const SightingDetailScreen = () => {
                 </View>
               </View>
             </View>
+            
+            {/* --- NUEVO: Mostrar Motivo de Cierre --- */}
+            {!estaActivo && motivoCierre && (
+              <View style={styles.infoRow}>
+                <View style={[styles.iconCircle, { backgroundColor: '#f4f4f6' }]}>
+                  <Ionicons name="document-text-outline" size={18} color="#5b6b82" />
+                </View>
+                <View style={styles.infoTextWrap}>
+                  <AppText style={styles.rowLabel}>Motivo de Cierre</AppText>
+                  <AppText style={styles.rowValue}>{motivoCierre}</AppText>
+                </View>
+              </View>
+            )}
 
             <View style={styles.infoRow}>
               <View style={[styles.iconCircle, { backgroundColor: '#fff5f3' }]}>
@@ -344,7 +436,6 @@ const SightingDetailScreen = () => {
     <View style={styles.fullScreenContainer}>
       <StatusBar barStyle="light-content" backgroundColor={Colors.text} />
 
-      {/* TODO SE MUEVE JUNTOS */}
       <Animated.ScrollView
         contentContainerStyle={{
           paddingHorizontal: 0,
@@ -426,18 +517,92 @@ const SightingDetailScreen = () => {
           <View style={styles.sheetHandle} />
 
           <View style={styles.titleRow}>
-            <TouchableOpacity
-              onPress={handleEdit}
-              style={styles.editFab}
-              accessibilityLabel="Editar"
-            >
-              <Ionicons name="pencil" size={18} color="#fff" />
-            </TouchableOpacity>
+            {/* Título principal (si lo quieres añadir) */}
+            <View style={{flex: 1}}>
+              {/* @ts-ignore */}
+              <AppText style={styles.mainTitle} numberOfLines={2}>{sighting.titulo || "Detalle del Avistamiento"}</AppText>
+            </View>
+
+            {/* --- BOTONES CONDICIONALES --- */}
+            {canModify && (
+              <TouchableOpacity
+                onPress={handleEdit}
+                style={styles.editFab}
+                accessibilityLabel="Editar"
+              >
+                <Ionicons name="pencil" size={18} color="#fff" />
+              </TouchableOpacity>
+            )}
+            {!isClosed && canModify && (
+              <TouchableOpacity
+                onPress={() => setCloseModalVisible(true)} // <-- ABRE EL MODAL
+                style={[styles.editFab, { backgroundColor: Colors.success, marginLeft: 10 }]}
+                accessibilityLabel="Cerrar Reporte"
+              >
+                <Ionicons name="shield-checkmark-outline" size={18} color="#fff" />
+              </TouchableOpacity>
+            )}
           </View>
 
           <InfoSection s={sighting} />
         </View>
       </Animated.ScrollView>
+
+      {/* --- MODAL DE CIERRE AÑADIDO --- */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={isCloseModalVisible}
+        onRequestClose={() => setCloseModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <AppText style={styles.modalTitle}>Cerrar Avistamiento</AppText>
+            <AppText style={styles.modalSubtitle}>
+              Selecciona un motivo para cerrar este reporte.
+            </AppText>
+
+            <DropDownPicker
+              open={openReasonPicker}
+              value={closeReason}
+              items={reasonItems}
+              setOpen={setOpenReasonPicker}
+              setValue={setCloseReason}
+              setItems={setReasonItems}
+              placeholder="Selecciona un motivo"
+              style={styles.dropdown}
+              dropDownContainerStyle={styles.dropdownContainer}
+              zIndex={3000}
+            />
+            
+            <TextInput
+              style={styles.modalTextInput}
+              placeholder="Comentario adicional (opcional)"
+              value={closeComment}
+              onChangeText={setCloseComment}
+            />
+            
+            <TouchableOpacity 
+              style={[styles.modalButton, {backgroundColor: Colors.primary}]} 
+              onPress={handleConfirmCloseSighting}
+              disabled={isClosing}
+            >
+              {isClosing 
+                ? <ActivityIndicator color="#fff" /> 
+                : <AppText style={styles.modalButtonText}>Confirmar Cierre</AppText>
+              }
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={[styles.modalButton, {backgroundColor: Colors.gray}]} 
+              onPress={() => setCloseModalVisible(false)}
+            >
+              <AppText style={[styles.modalButtonText, {color: '#000'}]}>Cancelar</AppText>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
     </View>
   );
 };
@@ -535,7 +700,7 @@ const styles = StyleSheet.create({
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
+    paddingHorizontal: 0, 
     marginBottom: 8,
   },
   mainTitle: {
@@ -647,6 +812,60 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.darkGray,
     lineHeight: 20,
+  },
+  
+  // --- ESTILOS PARA LOS MODALES ---
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  modalContent: {
+    width: '90%',
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 20,
+    elevation: 5,
+    zIndex: 2000,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: fontWeightBold,
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    textAlign: 'center',
+    color: Colors.gray,
+    marginBottom: 20,
+  },
+  dropdown: {
+    marginBottom: 15,
+    borderColor: Colors.gray,
+  },
+  dropdownContainer: {
+    borderColor: Colors.gray,
+  },
+  modalTextInput: {
+    borderWidth: 1,
+    borderColor: Colors.gray,
+    borderRadius: 8,
+    padding: 10,
+    marginTop: 10,
+    minHeight: 80,
+    textAlignVertical: 'top',
+  },
+  modalButton: {
+    padding: 15,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  modalButtonText: {
+    color: 'white',
+    fontWeight: fontWeightBold,
   },
 });
 

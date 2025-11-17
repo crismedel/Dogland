@@ -20,15 +20,22 @@ interface ReporteDetailsProps {
   reporte: any; // Puedes cambiar 'any' por tu tipo 'Reporte' si lo tienes
   onClose: () => void;
   onDelete: () => void;
-  distance: string | null; // <-- ¡AQUÍ ESTÁ LA NUEVA PROP!
+  distance: string | null;
+  onCloseSighting: () => void; // <-- Prop para abrir el modal de cierre
+  canModify: boolean; // <-- Prop de permisos
 }
 
 export const ReporteDetails = ({
   reporte,
   onClose,
   onDelete,
-  distance, // <-- Recibimos la prop
+  distance,
+  onCloseSighting, // <-- Recibimos la prop
+  canModify, // <-- Recibimos la prop
 }: ReporteDetailsProps) => {
+  // Un reporte se considera 'cerrado' si su estado no es 'Activo' (ID 1)
+  const isClosed = reporte.id_estado_avistamiento !== 1; 
+
   return (
     <View style={styles.floatingDetailsContainer}>
       <TouchableOpacity onPress={onClose} style={styles.closeButton}>
@@ -96,9 +103,29 @@ export const ReporteDetails = ({
         </View>
       </ScrollView>
 
-      <TouchableOpacity onPress={onDelete} style={styles.deleteButton}>
-        <AppText style={styles.deleteButtonText}>🗑️ Eliminar Reporte</AppText>
-      </TouchableOpacity>
+      {/* --- BOTONES CONDICIONALES POR PERMISO --- */}
+      {canModify && (
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity
+            onPress={onDelete}
+            style={[styles.actionButton, styles.deleteButton]}
+          >
+            <Ionicons name="trash-outline" size={16} color="white" />
+            <AppText style={styles.actionButtonText}>Eliminar</AppText>
+          </TouchableOpacity>
+
+          {/* El botón de CERRAR solo aparece si el reporte está ACTIVO */}
+          {!isClosed && (
+            <TouchableOpacity
+              onPress={onCloseSighting}
+              style={[styles.actionButton, styles.closeReportButton]}
+            >
+              <Ionicons name="shield-checkmark-outline" size={16} color="white" />
+              <AppText style={styles.actionButtonText}>Cerrar Reporte</AppText>
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
     </View>
   );
 };
@@ -119,9 +146,7 @@ const styles = StyleSheet.create({
     elevation: 5, // Añadido para Android
   },
   closeButton: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
+    position: 'absolute', top: 10, right: 10,
     zIndex: 10, // Asegura que esté por encima
   },
   closeButtonText: { fontSize: 18, color: '#999' },
@@ -139,18 +164,34 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     paddingVertical: 2, // Espaciado
   },
-  detailIcon: { marginRight: 8, width: 20, textAlign: 'center' }, // Ancho fijo para alinear
+  detailIcon: { marginRight: 8, width: 20, textAlign: 'center' },
   detailValue: { fontSize: 14, flexShrink: 1 }, // flexShrink para que el texto no se desborde
-  deleteButton: {
-    backgroundColor: Colors.danger || '#f44336', // Fallback
+
+  // --- ESTILOS MODIFICADOS/NUEVOS PARA BOTONES ---
+  buttonContainer: {
+    flexDirection: 'row',
+    marginTop: 10,
+    gap: 10, // Espacio entre botones
+  },
+  actionButton: {
+    flex: 1, // Para que ocupen el espacio
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     padding: 12,
     borderRadius: 8,
-    marginTop: 10,
   },
-  deleteButtonText: {
+  actionButtonText: {
     color: 'white',
     fontWeight: fontWeightBold,
     textAlign: 'center',
+    marginLeft: 8,
+  },
+  deleteButton: {
+    backgroundColor: Colors.danger || '#f44336',
+  },
+  closeReportButton: {
+    backgroundColor: Colors.success || '#4CAF50', // O el color que prefieras
   },
 
   // --- ESTILOS AÑADIDOS PARA LA DISTANCIA ---
