@@ -54,10 +54,11 @@ function AppContent() {
     <View style={styles.background}>
       <Stack
         screenOptions={{
-          contentStyle: { backgroundColor: 'transparent' },
+          contentStyle: { backgroundColor: Colors.background },
           animation: Platform.select({ ios: 'default', android: 'fade' }),
         }}
       >
+        <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="auth" options={{ headerShown: false }} />
         <Stack.Screen name="home" options={{ headerShown: false }} />
         <Stack.Screen name="alerts" options={{ headerShown: false }} />
