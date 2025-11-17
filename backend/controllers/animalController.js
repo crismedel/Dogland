@@ -1,3 +1,4 @@
+// backend/controllers/animalController.js
 import pool from '../db/db.js';
 import {
   auditCreate,
@@ -6,21 +7,31 @@ import {
 } from '../services/auditService.js';
 import { getOldValuesForAudit } from '../utils/audit.js';
 
-// ✅ Obtener todos los animales
+// ✅ Obtener todos los animales (Con fotos y nombres reales)
 export const getAnimals = async (req, res, next) => {
   try {
     const result = await pool.query(`
-      SELECT a.id_animal,
-             a.nombre_animal,
-             a.edad_animal,
-             a.edad_aproximada,
-             a.tamaño,
-             es.id_estado_salud AS estado_salud,
-             r.id_raza
+      SELECT 
+        a.id_animal,
+        a.nombre_animal,
+        a.edad_animal,
+        a.edad_aproximada,
+        a.tamaño,
+        es.estado_salud,   
+        r.nombre_raza,     
+        e.nombre_especie,
+        COALESCE(
+          json_agg(json_build_object('id', af.id_foto, 'url', af.url)) 
+          FILTER (WHERE af.id_foto IS NOT NULL), 
+          '[]'
+        ) AS fotos
       FROM animal a
-      INNER JOIN estado_salud es ON a.id_estado_salud = es.id_estado_salud
-      INNER JOIN raza r ON a.id_raza = r.id_raza
-      ORDER BY a.id_animal ASC
+      LEFT JOIN estado_salud es ON a.id_estado_salud = es.id_estado_salud
+      LEFT JOIN raza r ON a.id_raza = r.id_raza
+      LEFT JOIN especie e ON r.id_especie = e.id_especie
+      LEFT JOIN animal_foto af ON a.id_animal = af.id_animal
+      GROUP BY a.id_animal, es.id_estado_salud, r.id_raza, e.id_especie
+      ORDER BY a.id_animal DESC
     `);
     res.json({ success: true, data: result.rows, count: result.rowCount });
   } catch (error) {
@@ -28,22 +39,32 @@ export const getAnimals = async (req, res, next) => {
   }
 };
 
-// ✅ Obtener un animal específico por ID
+// ✅ Obtener un animal específico por ID (Con fotos)
 export const getAnimalById = async (req, res, next) => {
   try {
     const result = await pool.query(
       `
-      SELECT a.id_animal,
-             a.nombre_animal,
-             a.edad_animal,
-             a.edad_aproximada,
-             a.tamaño,
-             es.id_estado_salud AS estado_salud,
-             r.id_raza
+      SELECT 
+        a.id_animal,
+        a.nombre_animal,
+        a.edad_animal,
+        a.edad_aproximada,
+        a.tamaño,
+        es.estado_salud,
+        r.nombre_raza,
+        e.nombre_especie,
+        COALESCE(
+          json_agg(json_build_object('id', af.id_foto, 'url', af.url)) 
+          FILTER (WHERE af.id_foto IS NOT NULL), 
+          '[]'
+        ) AS fotos
       FROM animal a
-      INNER JOIN estado_salud es ON a.id_estado_salud = es.id_estado_salud
-      INNER JOIN raza r ON a.id_raza = r.id_raza
+      LEFT JOIN estado_salud es ON a.id_estado_salud = es.id_estado_salud
+      LEFT JOIN raza r ON a.id_raza = r.id_raza
+      LEFT JOIN especie e ON r.id_especie = e.id_especie
+      LEFT JOIN animal_foto af ON a.id_animal = af.id_animal
       WHERE a.id_animal = $1
+      GROUP BY a.id_animal, es.id_estado_salud, r.id_raza, e.id_especie
     `,
       [req.params.id],
     );
@@ -60,7 +81,7 @@ export const getAnimalById = async (req, res, next) => {
   }
 };
 
-// ✅ Obtener animales por organización
+// ✅ Obtener animales por organización (Con fotos)
 export const getAnimalsByOrganization = async (req, res, next) => {
   try {
     const orgResult = await pool.query(
@@ -87,17 +108,24 @@ export const getAnimalsByOrganization = async (req, res, next) => {
       a.nombre_animal,
       a.edad_animal,
       a.tamaño,
-      r.id_raza,
-      s.id_estado_salud,
+      r.nombre_raza,
+      s.estado_salud,
       o.nombre_organizacion,
-      u.nombre_usuario
+      u.nombre_usuario,
+      COALESCE(
+          json_agg(json_build_object('id', af.id_foto, 'url', af.url)) 
+          FILTER (WHERE af.id_foto IS NOT NULL), 
+          '[]'
+        ) AS fotos
      FROM animal a
      JOIN adopcion ad ON ad.id_animal = a.id_animal
      JOIN usuario u ON u.id_usuario = ad.id_usuario_rescatista
      JOIN organizacion o ON o.id_organizacion = u.id_organizacion
      LEFT JOIN raza r ON r.id_raza = a.id_raza
      LEFT JOIN estado_salud s ON s.id_estado_salud = a.id_estado_salud
-     WHERE o.id_organizacion = $1;
+     LEFT JOIN animal_foto af ON a.id_animal = af.id_animal
+     WHERE o.id_organizacion = $1
+     GROUP BY a.id_animal, o.id_organizacion, u.id_usuario, r.id_raza, s.id_estado_salud
     `,
       [id_organizacion],
     );
@@ -115,9 +143,13 @@ export const getAnimalsByOrganization = async (req, res, next) => {
   }
 };
 
-// ✅ Crear un nuevo animal
+// ... (Las funciones createAnimal, updateAnimal, deleteAnimal, etc. se mantienen igual)
+// ... Solo asegúrate de copiar el resto del archivo original debajo de esto.
 export const createAnimal = async (req, res, next) => {
-  const client = await pool.connect();
+    // ... (Mantener código original)
+    // NOTA: Copia aquí el resto de las funciones create, update, delete que ya tenías
+    // para no borrarlas.
+    const client = await pool.connect();
 
   try {
     const {

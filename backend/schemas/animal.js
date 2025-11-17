@@ -28,7 +28,7 @@ const animalBaseSchema = z.object({
     ])
     .optional(),
 
-  id_estado_salud: z
+id_estado_salud: z
     .number({
       required_error: 'El estado de salud es obligatorio',
       invalid_type_error: 'El ID de estado de salud debe ser un número'
@@ -36,6 +36,7 @@ const animalBaseSchema = z.object({
     .int('El ID de estado de salud debe ser un número entero')
     .positive('El ID de estado de salud debe ser positivo'),
 
+  // CAMBIO AQUÍ: Agregamos .nullable() y .optional() para permitir animales sin raza
   id_raza: z
     .number({
       required_error: 'La raza es obligatoria',
@@ -43,6 +44,8 @@ const animalBaseSchema = z.object({
     })
     .int('El ID de raza debe ser un número entero')
     .positive('El ID de raza debe ser positivo')
+    .nullable() 
+    .optional() 
 });
 
 /**
