@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { Link, usePathname } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,17 +11,19 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '@/src/constants/colors';
 import { fontWeightSemiBold, AppText } from '@/src/components/AppText';
+import { useAuth } from '@/src/contexts/AuthContext';
 
 type IoniconName = ComponentProps<typeof Ionicons>['name'];
 
 type NavItem = {
-  name: 'home' | 'alerts' | 'adoption' | 'community_maps' | 'profile';
+  name: 'home' | 'alerts' | 'adoption' | 'community_maps' | 'profile' | 'stats' | 'users' | 'management';
   icon: IoniconName;
   iconOutline: IoniconName;
   label: string;
 };
 
-const navItems: NavItem[] = [
+// Tabs para usuarios normales y trabajadores
+const defaultNavItems: NavItem[] = [
   { name: 'home', icon: 'home', iconOutline: 'home-outline', label: 'Inicio' },
   {
     name: 'alerts',
@@ -49,6 +51,35 @@ const navItems: NavItem[] = [
   },
 ];
 
+// Tabs para administradores
+const adminNavItems: NavItem[] = [
+  { name: 'home', icon: 'home', iconOutline: 'home-outline', label: 'Inicio' },
+  {
+    name: 'stats',
+    icon: 'stats-chart',
+    iconOutline: 'stats-chart-outline',
+    label: 'Stats',
+  },
+  {
+    name: 'users',
+    icon: 'people',
+    iconOutline: 'people-outline',
+    label: 'Usuarios',
+  },
+  {
+    name: 'management',
+    icon: 'clipboard',
+    iconOutline: 'clipboard-outline',
+    label: 'Gestión',
+  },
+  {
+    name: 'profile',
+    icon: 'person',
+    iconOutline: 'person-outline',
+    label: 'Perfil',
+  },
+];
+
 const TAB_HEIGHT = 64;
 const PRIMARY_RGB = '251,191,36'; // #fbbf24
 const SECONDARY_RGB = '217,119,6'; // #d97706
@@ -57,6 +88,15 @@ export default function BottomNavBar() {
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
   const bottomInset = Math.max(insets.bottom, Platform.OS === 'ios' ? 8 : 10);
+  const { user } = useAuth();
+
+  // Determinar qué tabs mostrar según el rol
+  const navItems = useMemo(() => {
+    if (user?.role === 'Admin') {
+      return adminNavItems;
+    }
+    return defaultNavItems;
+  }, [user?.role]);
 
   // ✅ Colores fijos (solo modo claro)
   const containerBg = Colors.backgroundSecon;
