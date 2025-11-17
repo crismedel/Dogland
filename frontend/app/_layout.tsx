@@ -69,6 +69,7 @@ function AppContent() {
         <Stack.Screen name="stats" options={{ headerShown: false }} />
         <Stack.Screen name="users" options={{ headerShown: false }} />
         <Stack.Screen name="management" options={{ headerShown: false }} />
+        <Stack.Screen name="my-sightings" options={{ headerShown: false }} />
       </Stack>
 
       {showTabBar && <BottomNavBar />}

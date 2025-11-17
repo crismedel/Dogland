@@ -1,4 +1,9 @@
-import { AppText, fontWeightBold, fontWeightMedium, fontWeightSemiBold } from '@/src/components/AppText';
+import {
+  AppText,
+  fontWeightBold,
+  fontWeightMedium,
+  fontWeightSemiBold,
+} from '@/src/components/AppText';
 import { useNotification } from '@/src/components/notifications';
 import CustomHeader from '@/src/components/UI/CustomHeader';
 import { Colors } from '@/src/constants/colors';
@@ -64,38 +69,64 @@ const MySightingCard = ({
 }) => {
   const estadoSaludNombre = obtenerNombreEstadoSalud(sighting.id_estado_salud);
   const especieNombre = obtenerNombreEspecie(sighting.id_especie);
-  const estadoAvistamientoNombre = getSightingStatusName(sighting.id_estado_avistamiento);
-  
+  const estadoAvistamientoNombre = getSightingStatusName(
+    sighting.id_estado_avistamiento,
+  );
+
   const isCritical = sighting.id_estado_salud === 3;
   const isClosed = sighting.id_estado_avistamiento === CERRADO_STATUS_ID;
 
   const formatDate = (dateString: string) => {
     try {
-      return new Date(dateString).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      return new Date(dateString).toLocaleDateString('es-ES', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      });
     } catch {
       return 'Fecha inválida';
     }
   };
-
   return (
     <TouchableOpacity
-      style={[styles.card, isCritical && styles.criticalCard, isClosed && styles.closedCard]}
+      style={[
+        styles.card,
+        isCritical && styles.criticalCard,
+        isClosed && styles.closedCard,
+      ]}
       onPress={onPress}
-      activeOpacity={0.8}
+      activeOpacity={0.9}
     >
       <View style={styles.cardHeader}>
         <AppText style={styles.cardTitle} numberOfLines={1}>
           {sighting.titulo || sighting.descripcion}
         </AppText>
-        <View style={[styles.badge, isClosed ? styles.badgeClosed : (isCritical ? styles.badgeCritical : styles.badgeActive)]}>
+
+        <View
+          style={[
+            styles.badge,
+            isClosed
+              ? styles.badgeClosed
+              : isCritical
+              ? styles.badgeCritical
+              : styles.badgeActive,
+          ]}
+        >
           <AppText style={styles.badgeText}>{estadoAvistamientoNombre}</AppText>
         </View>
       </View>
-      
-      <AppText style={styles.cardDescription} numberOfLines={2}>{sighting.descripcion}</AppText>
+
+      <AppText style={styles.cardDescription} numberOfLines={2}>
+        {sighting.descripcion}
+      </AppText>
 
       <View style={styles.infoRow}>
-        <Ionicons name="paw-outline" size={16} color={Colors.darkGray} style={styles.icon} />
+        <Ionicons
+          name="paw-outline"
+          size={16}
+          color="#6b7280"
+          style={styles.icon}
+        />
         <AppText style={styles.label}>Especie:</AppText>
         <AppText style={styles.value}>{especieNombre}</AppText>
       </View>
@@ -104,11 +135,16 @@ const MySightingCard = ({
         <Ionicons
           name="medkit-outline"
           size={16}
-          color={isCritical ? Colors.danger : Colors.darkGray}
+          color={isCritical ? Colors.danger : '#6b7280'}
           style={styles.icon}
         />
         <AppText style={styles.label}>Salud:</AppText>
-        <AppText style={[styles.value, isCritical && { color: Colors.danger, fontWeight: '700' }]}>
+        <AppText
+          style={[
+            styles.value,
+            isCritical && { color: Colors.danger, fontWeight: '700' },
+          ]}
+        >
           {estadoSaludNombre}
         </AppText>
       </View>
@@ -116,7 +152,11 @@ const MySightingCard = ({
       {/* Mostrar motivo de cierre si está cerrado */}
       {isClosed && sighting.motivo_cierre && (
         <View style={styles.reasonContainer}>
-          <Ionicons name="information-circle-outline" size={16} color={Colors.gray} />
+          <Ionicons
+            name="information-circle-outline"
+            size={16}
+            color="#6b7280"
+          />
           <AppText style={styles.reasonText}>
             Motivo: {sighting.motivo_cierre}
           </AppText>
@@ -143,12 +183,16 @@ const MySightingsScreen = () => {
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
 
   // --- Estados para Modales ---
-  const [selectedSighting, setSelectedSighting] = useState<MySighting | null>(null);
+  const [selectedSighting, setSelectedSighting] = useState<MySighting | null>(
+    null,
+  );
+
   const [isCloseModalVisible, setCloseModalVisible] = useState(false);
   const [closeReason, setCloseReason] = useState<string | null>(null);
   const [closeComment, setCloseComment] = useState('');
   const [isClosing, setIsClosing] = useState(false);
   const [openReasonPicker, setOpenReasonPicker] = useState(false);
+
   const [reasonItems, setReasonItems] = useState([
     { label: 'Animal Rescatado', value: 'Rescatado' },
     { label: 'No Encontrado / Desaparecido', value: 'No Encontrado' },
@@ -162,19 +206,20 @@ const MySightingsScreen = () => {
       if (loading && !refreshing && initialLoadComplete) return;
       if (!refreshing) setLoading(true);
       setError(null);
-      
+
       try {
         // Asumimos que /sightings/me devuelve el array
-        const response = await apiClient.get('/sightings/me'); 
+        const response = await apiClient.get('/sightings/me');
         setSightings(response.data.data);
         if (showNotification) {
           showSuccess('Actualización', 'Tus reportes han sido actualizados.');
         }
       } catch (err: any) {
         console.error('Error fetching my sightings:', err);
-        const errorMessage = err.response?.status === 401
-          ? 'Sesión expirada. Por favor, inicia sesión.'
-          : 'No se pudieron cargar tus avistamientos.';
+        const errorMessage =
+          err.response?.status === 401
+            ? 'Sesión expirada. Por favor, inicia sesión.'
+            : 'No se pudieron cargar tus avistamientos.';
         setError(errorMessage);
       } finally {
         setLoading(false);
@@ -216,40 +261,44 @@ const MySightingsScreen = () => {
 
   const handleConfirmCloseSighting = async () => {
     if (!closeReason || !selectedSighting) {
-      showError("Error", "Debes seleccionar un motivo.");
+      showError('Error', 'Debes seleccionar un motivo.');
       return;
     }
     setIsClosing(true);
-    const fullReason = closeComment ? `${closeReason}: ${closeComment}` : closeReason;
+    const fullReason = closeComment
+      ? `${closeReason}: ${closeComment}`
+      : closeReason;
 
     let newStatusId;
-    if (closeReason === 'Rescatado') newStatusId = 4; // Recuperado [cite: 580-585]
-    else if (closeReason === 'No Encontrado') newStatusId = 2; // Desaparecido [cite: 580-585]
+    if (closeReason === 'Rescatado')
+      newStatusId = 4; // Recuperado [cite: 580-585]
+    else if (closeReason === 'No Encontrado')
+      newStatusId = 2; // Desaparecido [cite: 580-585]
     else newStatusId = 5; // Cerrado
 
     try {
-      await apiClient.patch(`/sightings/${selectedSighting.id_avistamiento}/close`, {
-        newStatusId: newStatusId,
-        reason: fullReason,
-      });
-      showSuccess("Éxito", "Reporte actualizado.");
+      await apiClient.patch(
+        `/sightings/${selectedSighting.id_avistamiento}/close`,
+        {
+          newStatusId: newStatusId,
+          reason: fullReason,
+        },
+      );
+      showSuccess('Éxito', 'Reporte actualizado.');
       setCloseModalVisible(false);
       setSelectedSighting(null);
       setCloseReason(null);
       setCloseComment('');
       fetchMySightings(); // Recargar lista
     } catch (err) {
-      showError("Error", "No se pudo actualizar el reporte.");
+      showError('Error', 'No se pudo actualizar el reporte.');
     } finally {
       setIsClosing(false);
     }
   };
 
   const renderItem = ({ item }: { item: MySighting }) => (
-    <MySightingCard
-      sighting={item}
-      onPress={() => handlePressSighting(item)}
-    />
+    <MySightingCard sighting={item} onPress={() => handlePressSighting(item)} />
   );
 
   if (loading && sightings.length === 0 && !error) {
@@ -267,9 +316,10 @@ const MySightingsScreen = () => {
     <SafeAreaView style={styles.container}>
       <CustomHeader
         title="Mis Avistamientos"
-        leftComponent={ // Botón de Volver
+        leftComponent={
+          // Botón de Volver
           <TouchableOpacity onPress={() => router.back()}>
-             <Image
+            <Image
               source={require('../../assets/images/volver.png')}
               style={{ width: 24, height: 24, tintColor: '#fff' }}
             />
@@ -277,7 +327,7 @@ const MySightingsScreen = () => {
         }
         rightComponent={
           <TouchableOpacity onPress={handleRefresh}>
-            <Ionicons name="refresh-outline" size={24} color={'#fff'} />
+            <Ionicons name="refresh-outline" size={24} color="#fff" />
           </TouchableOpacity>
         }
       />
@@ -330,14 +380,15 @@ const MySightingsScreen = () => {
 
       {/* --- MODAL DE CIERRE --- */}
       <Modal
-        animationType="slide"
-        transparent={true}
+        animationType="fade"
+        transparent
         visible={isCloseModalVisible}
         onRequestClose={() => setCloseModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <AppText style={styles.modalTitle}>Cerrar Avistamiento</AppText>
+
             <AppText style={styles.modalSubtitle}>
               Selecciona un motivo para cerrar este reporte.
             </AppText>
@@ -354,30 +405,36 @@ const MySightingsScreen = () => {
               dropDownContainerStyle={styles.dropdownContainer}
               zIndex={3000}
             />
-            
+
             <TextInput
               style={styles.modalTextInput}
               placeholder="Comentario adicional (opcional)"
               value={closeComment}
               onChangeText={setCloseComment}
+              multiline
             />
-            
-            <TouchableOpacity 
-              style={[styles.modalButton, {backgroundColor: Colors.primary}]} 
+
+            <TouchableOpacity
+              style={[styles.modalButton, { backgroundColor: Colors.primary }]}
               onPress={handleConfirmCloseSighting}
               disabled={isClosing}
             >
-              {isClosing 
-                ? <ActivityIndicator color="#fff" /> 
-                : <AppText style={styles.modalButtonText}>Confirmar Cierre</AppText>
-              }
+              {isClosing ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <AppText style={styles.modalButtonText}>
+                  Confirmar Cierre
+                </AppText>
+              )}
             </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={[styles.modalButton, {backgroundColor: Colors.gray}]} 
+
+            <TouchableOpacity
+              style={[styles.modalButton, { backgroundColor: '#e5e7eb' }]}
               onPress={() => setCloseModalVisible(false)}
             >
-              <AppText style={[styles.modalButtonText, {color: '#000'}]}>Cancelar</AppText>
+              <AppText style={[styles.modalButtonText, { color: '#111827' }]}>
+                Cancelar
+              </AppText>
             </TouchableOpacity>
           </View>
         </View>
@@ -387,173 +444,238 @@ const MySightingsScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f0f4f7' },
+  container: { flex: 1, backgroundColor: Colors.background },
+
   centered: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
+    gap: 12,
   },
-  loadingText: { marginTop: 10, fontSize: 16, color: Colors.primary },
-  listContent: { padding: 10 },
+
+  loadingText: { fontSize: 16, color: Colors.primary, marginTop: 10 },
+  listContent: { padding: 12 },
+
+  // CARDS
   card: {
-    backgroundColor: Colors.lightText,
-    padding: 15,
-    borderRadius: 12,
-    marginBottom: 10,
+    backgroundColor: Colors.cardBackground,
+    padding: 16,
+    borderRadius: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: Colors.secondary,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
   },
+
   criticalCard: {
-    backgroundColor: '#FFE5E5',
-    borderColor: Colors.danger || 'red',
+    backgroundColor: '#fff5f5',
+    borderColor: '#ef4444',
     borderWidth: 1,
   },
-  closedCard: { // Estilo para reportes cerrados
-    backgroundColor: '#f1f1f1',
-    opacity: 0.7,
+
+  closedCard: {
+    backgroundColor: '#f3f4f6',
+    opacity: 0.55,
   },
+
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
     marginBottom: 8,
+    alignItems: 'center',
   },
+
   cardTitle: {
     fontSize: 18,
     fontWeight: fontWeightSemiBold,
-    color: '#1f2937',
+    color: '#111827',
     flex: 1,
     marginRight: 10,
   },
+
   cardDescription: {
     fontSize: 14,
-    color: Colors.gray,
+    color: '#6b7280',
     marginBottom: 10,
+    lineHeight: 18,
   },
+
+  // BADGES
   badge: {
-    paddingVertical: 4,
+    paddingVertical: 3,
     paddingHorizontal: 10,
-    borderRadius: 20,
+    borderRadius: 10,
+    borderWidth: 1,
   },
+
   badgeActive: {
-    backgroundColor: "rgba(76, 175, 80, 0.2)", // Color 'success' con opacidad
+    backgroundColor: '#ecfdf5',
+    borderColor: '#34d399',
   },
+
   badgeCritical: {
-    backgroundColor: "rgba(244, 67, 54, 0.2)", // Color 'danger' con opacidad
+    backgroundColor: '#fef2f2',
+    borderColor: '#ef4444',
   },
+
   badgeClosed: {
-    backgroundColor: Colors.gray,
+    backgroundColor: '#f3f4f6',
+    borderColor: '#9ca3af',
   },
+
   badgeText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: fontWeightMedium,
-    color: 'black',
+    color: '#111827',
   },
-  infoRow: { flexDirection: 'row', marginBottom: 5, alignItems: 'center' },
+
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+
   icon: {
-    marginRight: 8,
+    marginRight: 6,
+    opacity: 0.75,
   },
+
   label: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#4b5563',
-    width: 60, // Ancho fijo para 'Especie:' 'Salud:'
+    fontWeight: fontWeightSemiBold,
+    color: '#6b7280',
+    marginRight: 4,
   },
-  value: { fontSize: 14, color: '#374151', flexShrink: 1 },
+
+  value: {
+    fontSize: 14,
+    color: '#374151',
+  },
+
   reasonContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f9fafb',
     padding: 8,
-    borderRadius: 6,
+    borderRadius: 8,
     marginTop: 8,
   },
+
   reasonText: {
     fontSize: 13,
-    color: Colors.darkGray,
-    marginLeft: 8,
+    color: '#6b7280',
+    marginLeft: 6,
     fontStyle: 'italic',
     flex: 1,
   },
+
   cardDate: {
     fontSize: 12,
-    color: Colors.gray,
-    marginTop: 10,
+    color: '#6b7280',
+    marginTop: 12,
     textAlign: 'right',
   },
-  emptyText: { fontSize: 16, color: Colors.gray, textAlign: 'center' },
+
+  emptyText: {
+    fontSize: 16,
+    color: '#6b7280',
+    textAlign: 'center',
+  },
+
   errorText: {
     color: Colors.danger,
-    textAlign: 'center',
-    marginBottom: 15,
     fontSize: 16,
     fontWeight: '700',
+    marginBottom: 10,
   },
+
   retryButton: {
     backgroundColor: Colors.primary,
     paddingVertical: 10,
     paddingHorizontal: 20,
-    borderRadius: 8,
+    borderRadius: 10,
     marginTop: 15,
   },
-  retryText: { color: 'white', fontWeight: 'bold' },
-  
-  // --- ESTILOS PARA LOS MODALES ---
+
+  retryText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+
+  // MODAL
   modalOverlay: {
     flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.55)',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    padding: 20,
   },
+
   modalContent: {
     width: '90%',
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 20,
-    elevation: 5,
-    zIndex: 2000,
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 22,
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowOffset: { width: 0, height: 7 },
+    shadowRadius: 15,
+    elevation: 12,
   },
+
   modalTitle: {
     fontSize: 20,
     fontWeight: fontWeightBold,
     textAlign: 'center',
-    marginBottom: 10,
+    marginBottom: 8,
+    color: '#111827',
   },
+
   modalSubtitle: {
     fontSize: 14,
     textAlign: 'center',
-    color: Colors.gray,
-    marginBottom: 20,
+    color: '#6b7280',
+    marginBottom: 18,
   },
+
   dropdown: {
     marginBottom: 15,
-    borderColor: Colors.gray,
+    borderColor: '#d1d5db',
+    borderRadius: 10,
   },
+
   dropdownContainer: {
-    borderColor: Colors.gray,
+    borderColor: '#d1d5db',
   },
+
   modalTextInput: {
     borderWidth: 1,
-    borderColor: Colors.gray,
-    borderRadius: 8,
-    padding: 10,
-    marginTop: 10,
-    minHeight: 80,
+    borderColor: '#d1d5db',
+    backgroundColor: '#f9fafb',
+    borderRadius: 12,
+    padding: 12,
+    minHeight: 90,
     textAlignVertical: 'top',
-  },
-  modalButton: {
-    padding: 15,
-    borderRadius: 8,
-    alignItems: 'center',
     marginTop: 10,
   },
+
+  modalButton: {
+    paddingVertical: 14,
+    borderRadius: 12,
+    marginTop: 12,
+    alignItems: 'center',
+  },
+
   modalButtonText: {
-    color: 'white',
+    fontSize: 16,
     fontWeight: fontWeightBold,
+    color: '#fff',
   },
 });
 
