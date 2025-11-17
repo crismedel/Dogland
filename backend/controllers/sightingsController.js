@@ -849,3 +849,57 @@ export const getEstadosAvistamiento = async (req, res) => {
     });
   }
 };
+
+export const closeSighting = async (req, res) => {
+  // --- AÑADIR ESTOS LOGS ---
+  console.log('--- INTENTO DE CERRAR REPORTE ---');
+  console.log('ID del reporte (params):', req.params.id);
+  console.log('Datos del body (body):', req.body);
+  console.log('Datos del usuario (token):', req.user);
+  // -------------------------
+
+  const { id } = req.params;
+  const { newStatusId, reason } = req.body;
+  
+  // ¡Cuidado! Si 'req.user' es undefined, esto fallará.
+  const userId = req.user?.id; // Usamos '?' para evitar que crashee si req.user no existe
+
+  if (!userId) {
+    console.error('Error: No se pudo obtener el ID del usuario desde el token.');
+    return res.status(401).json({ success: false, message: 'Usuario no autenticado.' });
+  }
+
+  if (!newStatusId || !reason) {
+    return res.status(400).json({ 
+      success: false, 
+      message: 'Se requiere un nuevo estado y un motivo.' 
+    });
+  }
+
+  try {
+    const result = await pool.query(
+      `UPDATE avistamiento 
+       SET 
+         id_estado_avistamiento = $1, 
+         motivo_cierre = $2
+       WHERE id_avistamiento = $3
+       RETURNING *`,
+      [newStatusId, reason, id]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ success: false, message: 'Avistamiento no encontrado.' });
+    }
+
+    console.log('--- ÉXITO: REPORTE CERRADO ---');
+    res.status(200).json({ 
+      success: true, 
+      message: 'Avistamiento cerrado exitosamente.',
+      data: result.rows[0] 
+    });
+
+  } catch (error) {
+    console.error('Error al cerrar el avistamiento (catch):', error); // <--- ESTE ES EL ERROR QUE NECESITO VER
+    res.status(500).json({ success: false, error: 'Error interno del servidor.' });
+  }
+};
