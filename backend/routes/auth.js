@@ -42,7 +42,6 @@ router.post('/register', async (req, res) => {
     if (
       !nombre_usuario ||
       !apellido_paterno ||
-      !apellido_materno ||
       !id_sexo ||
       !fecha_nacimiento ||
       !id_ciudad ||
