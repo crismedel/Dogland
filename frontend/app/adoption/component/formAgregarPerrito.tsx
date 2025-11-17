@@ -1,281 +1,249 @@
-import { AppText, fontWeightBold } from '@/src/components/AppText';
-import { Picker } from '@react-native-picker/picker';
 import React, { useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  ScrollView,
-  StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { Alert, ScrollView, StyleSheet, View } from 'react-native';
+import { useRouter } from 'expo-router';
 
-// Importa tus funciones de la capa de API
-import { createFullAnimal } from '@/src/api/envioAnimalesAdop';
-import { fetchHealthStates } from '@/src/api/historialMedicoAdopt';
-import { fetchRaces } from '@/src/api/razaAnimalesAdop';
+// Componentes UI
+import DynamicForm, { FormField } from '@/src/components/UI/DynamicForm';
+import { AppText, fontWeightBold } from '@/src/components/AppText';
 
-const initialState = {
-  nombre_animal: '',
-  edad_animal: '',
-  size: '',
-  id_raza: '',
-  id_estado_salud: '',
-  descripcion_adopcion: '',
-  foto_url: '',
-  historial_medico: {
-    diagnostico: '',
-    tratamiento: '',
-    fecha_examen: new Date().toISOString().split('T')[0],
-  },
-};
+// API
+import { 
+  createFullAnimal, 
+  fetchHealthStates, 
+  fetchRaces, 
+  fetchSpecies 
+} from '@/src/api/animals'; 
 
 const FormAgregarPerrito = () => {
-  const [form, setForm] = useState(initialState);
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [razas, setRazas] = useState<any[]>([]);
-  const [estadosSalud, setEstadosSalud] = useState<any[]>([]);
-  const [loadingOptions, setLoadingOptions] = useState(true);
+  
+  // Estados para las opciones de los selectores
+  const [speciesOptions, setSpeciesOptions] = useState<{ label: string; value: any }[]>([]);
+  const [racesOptions, setRacesOptions] = useState<{ label: string; value: any }[]>([]);
+  const [healthOptions, setHealthOptions] = useState<{ label: string; value: any }[]>([]);
 
+  // Estado del formulario
+  const [formValues, setFormValues] = useState({
+    nombre_animal: '',
+    edad_animal: '',
+    edad_aproximada: '',
+    id_especie: '', // Controla el filtro de razas
+    id_raza: '',
+    id_estado_salud: '',
+    foto_url: '', 
+  });
+
+  // 1. Carga inicial de catálogos (Especies y Salud)
   useEffect(() => {
-    const loadOptions = async () => {
+    const loadInitialData = async () => {
       try {
-        const [racesData, healthStatesData] = await Promise.all([
-          fetchRaces(),
-          fetchHealthStates(),
+        const [species, health] = await Promise.all([
+          fetchSpecies(),
+          fetchHealthStates()
         ]);
-        setRazas(racesData);
-        setEstadosSalud(healthStatesData);
+
+        // Mapeamos la data al formato que DynamicForm entiende { label, value }
+        setSpeciesOptions(species.map((s: any) => ({ label: s.nombre_especie, value: s.id_especie })));
+        setHealthOptions(health.map((h: any) => ({ label: h.estado_salud, value: h.id_estado_salud })));
+        
       } catch (error) {
-        console.error('Error cargando opciones:', error);
-        Alert.alert('Error de Carga', 'No se pudieron obtener los datos. Revisa la consola o el estado del servidor.');
-      } finally {
-        setLoadingOptions(false);
+        console.error('Error cargando datos iniciales:', error);
+        Alert.alert('Error', 'No se pudieron cargar las listas de opciones. Revisa tu conexión.');
       }
     };
-    loadOptions();
+    loadInitialData();
   }, []);
 
-  const handleChange = (field: string, value: any) => {
-    if (field.startsWith('historial_medico.')) {
-      const subField = field.split('.')[1];
-      setForm(prevForm => ({ ...prevForm, historial_medico: { ...prevForm.historial_medico, [subField]: value } }));
-    } else {
-      setForm({ ...form, [field]: value });
-    }
+  // 2. Efecto: Cargar Razas cuando cambia la Especie
+  useEffect(() => {
+    const loadRaces = async () => {
+      // Si no hay especie seleccionada, limpiamos las razas
+      if (!formValues.id_especie) {
+        setRacesOptions([]);
+        return;
+      }
+
+      try {
+        // Llamamos al endpoint con el filtro ?id_especie=X
+        const races = await fetchRaces(formValues.id_especie);
+        setRacesOptions(races.map((r: any) => ({ label: r.nombre_raza, value: r.id_raza })));
+      } catch (error) {
+        console.error('Error cargando razas:', error);
+      }
+    };
+    loadRaces();
+  }, [formValues.id_especie]); // Se ejecuta cada vez que id_especie cambia
+
+  // Manejador de cambios
+  const handleValueChange = (name: string, value: any) => {
+    setFormValues((prev) => {
+      const newValues = { ...prev, [name]: value };
+      
+      // Si el usuario cambia la especie, limpiamos la raza seleccionada para evitar incoherencias
+      if (name === 'id_especie') {
+        newValues.id_raza = '';
+      }
+      return newValues;
+    });
   };
 
+  // Configuración de los campos del formulario
+  const formFields: FormField[] = [
+    {
+      name: 'nombre_animal',
+      label: 'Nombre del Animal *',
+      placeholder: 'Ej: Fido',
+      type: 'text',
+      icon: 'paw',
+    },
+    {
+      name: 'id_especie',
+      label: 'Especie *',
+      type: 'picker',
+      icon: 'layers',
+      options: [{ label: 'Seleccione Especie', value: '' }, ...speciesOptions],
+    },
+    {
+      name: 'id_raza',
+      label: 'Raza',
+      type: 'picker',
+      icon: 'git-branch',
+      // Las opciones de raza se llenan dinámicamente según la especie
+      options: [{ label: 'Seleccione Raza', value: '' }, ...racesOptions],
+    },
+    {
+      name: 'id_estado_salud',
+      label: 'Estado de Salud *',
+      type: 'picker',
+      icon: 'medkit',
+      options: [{ label: 'Seleccione Estado', value: '' }, ...healthOptions],
+    },
+    {
+      name: 'edad_animal',
+      label: 'Edad Exacta (Años)',
+      placeholder: 'Ej: 2',
+      type: 'text',
+      keyboardType: 'numeric',
+      icon: 'calendar-number',
+      // La base de datos acepta max 30 años según el esquema Zod
+      maxLength: 2, 
+    },
+    {
+      name: 'edad_aproximada',
+      label: 'Edad Aproximada (Texto)',
+      placeholder: 'Ej: Cachorro, Adulto', // Texto corto
+      type: 'text',
+      icon: 'time',
+      maxLength: 20, // <--- ¡ESTO ES CRUCIAL! Evita errores del backend
+    },
+    {
+      name: 'foto_url',
+      label: 'Foto (URL)',
+      placeholder: 'Pega el enlace de la imagen aquí',
+      type: 'text',
+      icon: 'image',
+      autoCapitalize: 'none',
+    },
+  ];
+
   const handleSubmit = async () => {
-    if (!form.nombre_animal || !form.id_raza || !form.id_estado_salud || !form.size) {
-      Alert.alert('Campos Incompletos', 'Por favor, completa la información general del animal marcada con *.');
+    // Validación básica en frontend
+    if (!formValues.nombre_animal || !formValues.id_estado_salud || !formValues.id_especie) {
+      Alert.alert('Campos incompletos', 'Nombre, Especie y Estado de Salud son obligatorios.');
       return;
     }
 
     setLoading(true);
+
     try {
+      // Preparar el objeto para enviar al backend
+      // Convertimos los strings de los pickers a números
       const payload = {
-        ...form,
-        edad_animal: form.edad_animal ? parseInt(form.edad_animal, 10) : null,
+        nombre_animal: formValues.nombre_animal,
+        id_estado_salud: parseInt(String(formValues.id_estado_salud), 10),
+        // Si hay raza, la convertimos a int, si no, null
+        id_raza: formValues.id_raza ? parseInt(String(formValues.id_raza), 10) : null,
+        // Si hay edad, la convertimos a int, si no, null
+        edad_animal: formValues.edad_animal ? parseInt(String(formValues.edad_animal), 10) : null,
+        edad_aproximada: formValues.edad_aproximada || null,
+        // Convertimos la URL única en un array de strings
+        fotos: formValues.foto_url ? [formValues.foto_url] : [],
       };
+
+      console.log('Enviando datos:', payload);
+
       const response = await createFullAnimal(payload);
 
       if (response.success) {
-        Alert.alert('¡Éxito!', 'Animal agregado correctamente 🎉');
-        setForm(initialState);
+        Alert.alert('¡Éxito! 🎉', 'El animal ha sido registrado correctamente.', [
+          { text: 'OK', onPress: () => router.back() }
+        ]);
       } else {
-        Alert.alert('Error al Guardar', response.message || 'Ocurrió un error en el servidor.');
+        // Manejo de errores del backend
+        const errorMsg = response.errors 
+          ? response.errors.map((e: any) => e.message).join('\n') 
+          : response.message || 'Error desconocido al guardar.';
+        Alert.alert('Error', errorMsg);
       }
     } catch (error: any) {
-      console.error('❌ Error en handleSubmit:', error);
-      Alert.alert('Error de Conexión', error.message || 'No se pudo contactar con el servidor.');
+      console.error(error);
+      Alert.alert('Error de Conexión', 'No se pudo conectar con el servidor.');
     } finally {
       setLoading(false);
     }
   };
 
-  if (loadingOptions) {
-    return <ActivityIndicator size="large" color="#1976d2" style={{ marginTop: 50 }} />;
-  }
-
   return (
-    <ScrollView contentContainerStyle={styles.scroll}>
+    <ScrollView contentContainerStyle={styles.container}>
       <View style={styles.card}>
-        <AppText style={styles.sectionTitle}>Información General</AppText>
-
-        <TextInput
-          style={styles.input}
-          placeholder="Nombre del animal *"
-          value={form.nombre_animal}
-          onChangeText={(text) => handleChange('nombre_animal', text)}
-        />
-
-        <TextInput
-          style={styles.input}
-          placeholder="Edad (meses)"
-          keyboardType="numeric"
-          value={form.edad_animal}
-          onChangeText={(text) => handleChange('edad_animal', text)}
-        />
+        <AppText style={styles.title}>Registrar Nuevo Animal</AppText>
+        <AppText style={styles.subtitle}>
+          Completa los datos para añadir un nuevo integrante a Dogland.
+        </AppText>
         
-        <View style={styles.pickerContainer}>
-          <Picker
-            selectedValue={form.size}
-            onValueChange={(itemValue) => handleChange('size', itemValue)}
-          >
-            <Picker.Item label="Selecciona un tamaño... *" value="" />
-            <Picker.Item label="Pequeño" value="Pequeño" />
-            <Picker.Item label="Mediano" value="Mediano" />
-            <Picker.Item label="Grande" value="Grande" />
-          </Picker>
-        </View>
-
-        <View style={styles.pickerContainer}>
-          <Picker
-            selectedValue={form.id_raza}
-            onValueChange={(value) => handleChange('id_raza', value)}
-          >
-            <Picker.Item label="Selecciona raza *" value="" />
-            {razas.map((raza) => (
-              <Picker.Item key={raza.id_raza} label={raza.nombre_raza} value={raza.id_raza} />
-            ))}
-          </Picker>
-        </View>
-          
-        <View style={styles.pickerContainer}>
-          <Picker
-            selectedValue={form.id_estado_salud}
-            onValueChange={(value) => handleChange('id_estado_salud', value)}
-          >
-            <Picker.Item label="Selecciona estado de salud *" value="" />
-            {estadosSalud.map((estado) => (
-              <Picker.Item key={estado.id_estado_salud} label={estado.estado_salud} value={estado.id_estado_salud} />
-            ))}
-          </Picker>
-        </View>
-          
-        <AppText style={styles.sectionTitle}>Adopción</AppText>
-        <TextInput
-          style={styles.textArea}
-          placeholder="Descripción de adopción"
-          multiline
-          value={form.descripcion_adopcion}
-          onChangeText={(text) => handleChange('descripcion_adopcion', text)}
+        <DynamicForm
+          fields={formFields}
+          values={formValues}
+          onValueChange={handleValueChange}
+          onSubmit={handleSubmit}
+          loading={loading}
+          buttonText="Guardar Animal"
+          buttonIcon="save"
         />
-
-        <AppText style={styles.sectionTitle}>Fotografía</AppText>
-        <TextInput
-          style={styles.input}
-          placeholder="URL de la foto"
-          value={form.foto_url}
-          onChangeText={(text) => handleChange('foto_url', text)}
-        />
-
-        <AppText style={styles.sectionTitle}>Historial Médico</AppText>
-          
-        <TextInput
-          style={styles.input}
-          placeholder="Diagnóstico"
-          value={form.historial_medico.diagnostico}
-          onChangeText={(text) => handleChange('historial_medico.diagnostico', text)}
-        />
-
-        <TextInput
-          style={styles.input}
-          placeholder="Tratamiento"
-          value={form.historial_medico.tratamiento}
-          onChangeText={(text) => handleChange('historial_medico.tratamiento', text)}
-        />
-
-        <TextInput
-          style={styles.input}
-          placeholder="Fecha de examen (YYYY-MM-DD)"
-          value={form.historial_medico.fecha_examen}
-          onChangeText={(text) => handleChange('historial_medico.fecha_examen', text)}
-        />
-
-        <TouchableOpacity
-          style={[styles.button, loading && styles.buttonDisabled]}
-          onPress={handleSubmit}
-          disabled={loading}
-        >
-          <AppText style={styles.buttonText}>
-            {loading ? 'Guardando...' : 'Guardar'}
-          </AppText>
-        </TouchableOpacity>
       </View>
     </ScrollView>
   );
 };
 
+export default FormAgregarPerrito;
+
 const styles = StyleSheet.create({
-  scroll: { 
-    padding: 16, 
-    backgroundColor: '#f0f4f8' 
+  container: {
+    padding: 16,
+    paddingBottom: 40,
   },
-  card: { 
-    backgroundColor: '#fff', 
-    borderRadius: 12, 
-    padding: 20, 
-    elevation: 3, 
-    shadowColor: '#000', 
-    shadowOffset: { width: 0, height: 2 }, 
-    shadowOpacity: 0.1, 
-    shadowRadius: 4, 
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  sectionTitle: { 
-    fontSize: 18, 
-    fontWeight: fontWeightBold, 
-    marginTop: 20, 
-    marginBottom: 12, 
-    color: '#333', 
-    borderBottomWidth: 1, 
-    borderBottomColor: '#eee', 
-    paddingBottom: 6, 
+  title: {
+    fontSize: 22,
+    fontWeight: fontWeightBold,
+    color: '#1F2937',
+    marginBottom: 4,
+    textAlign: 'center',
   },
-  input: { 
-    backgroundColor: '#f9f9f9', 
-    borderRadius: 8, 
-    padding: 12, 
-    marginBottom: 12, 
-    borderWidth: 1, 
-    borderColor: '#ddd', 
-    fontSize: 16, 
-  },
-  pickerContainer: { 
-    backgroundColor: '#f9f9f9', 
-    borderRadius: 8, 
-    borderWidth: 1, 
-    borderColor: '#ddd', 
-    marginBottom: 12, 
-    justifyContent: 'center', 
-  },
-  textArea: { 
-    backgroundColor: '#f9f9f9', 
-    borderRadius: 8, 
-    padding: 12, 
-    marginBottom: 12, 
-    borderWidth: 1, 
-    borderColor: '#ddd', 
-    fontSize: 16, 
-    height: 100, 
-    textAlignVertical: 'top', 
-  },
-  button: { 
-    backgroundColor: '#1976d2', 
-    paddingVertical: 14, 
-    borderRadius: 8, 
-    alignItems: 'center', 
-    marginTop: 20, 
-  },
-  buttonDisabled: { 
-    backgroundColor: '#a0c0e0', 
-  },
-  buttonText: { 
-    color: '#fff', 
-    fontWeight: fontWeightBold, 
-    fontSize: 16, 
+  subtitle: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginBottom: 24,
+    textAlign: 'center',
   },
 });
-
-export default FormAgregarPerrito;
