@@ -16,15 +16,14 @@ import {
 } from '@/src/components/AppText';
 import { Colors } from '@/src/constants/colors';
 import {
-  getHealthLabel,
-  getBreedLabel,
   getAgeInYearsDisplay,
   FALLBACK_IMAGE,
 } from '@/src/utils/animalUtils';
-import { Animal } from '@/src/types/animals';
+// Asegúrate de que tu interfaz Animal en src/types/animals tenga las propiedades nuevas (healthStatus, breed string, etc)
+// Si no, usa 'any' temporalmente en la prop abajo.
 
 interface Props {
-  animal: Animal;
+  animal: any; 
   currentPage: number;
   isFavorited?: boolean;
   onToggleFavorite?: () => void;
@@ -33,9 +32,15 @@ interface Props {
 const AnimalCard: React.FC<Props> = memo(
   ({ animal, currentPage, isFavorited, onToggleFavorite }) => {
     const router = useRouter();
-    const healthLabel = getHealthLabel(animal);
-    const breedLabel = getBreedLabel(animal.breed);
-    const AgeInYearsDisplay = getAgeInYearsDisplay(animal.age);
+    
+    // Datos directos del mapeo
+    const healthLabel = animal.healthStatus || ''; 
+    const breedLabel = animal.breed || '';
+    
+    // Edad: numérica o texto aproximado
+    const ageDisplay = (animal.age !== null && animal.age !== undefined)
+      ? getAgeInYearsDisplay(animal.age)
+      : (animal.ageText || '');
 
     const handlePress = useCallback(() => {
       router.push({
@@ -55,13 +60,13 @@ const AnimalCard: React.FC<Props> = memo(
       [onToggleFavorite],
     );
 
+    // Colores según el texto del estado
     const primaryColor = (() => {
-      if (animal.estadoMedico === 1 || healthLabel === 'Sano') return '#2e7d32';
-      if (animal.estadoMedico === 2 || healthLabel === 'En tratamiento')
-        return '#ef6c00';
-      if (animal.estadoMedico === 3 || healthLabel === 'Recuperado')
-        return '#0288d1';
-      if (healthLabel === 'Discapacitado') return '#6a1b9a';
+      const status = healthLabel.toLowerCase();
+      if (status.includes('sano') || status.includes('saludable')) return '#2e7d32';
+      if (status.includes('tratamiento') || status.includes('enfermo')) return '#ef6c00';
+      if (status.includes('recuperado')) return '#0288d1';
+      if (status.includes('herido') || status.includes('crítico')) return '#c62828';
       return '#455a64';
     })();
 
@@ -94,22 +99,12 @@ const AnimalCard: React.FC<Props> = memo(
             />
           </TouchableOpacity>
 
-          {(healthLabel || animal.estadoMedico) && (
-            <View
-              style={[styles.healthBadge, { backgroundColor: primaryColor }]}
-            >
-              <AppText style={styles.healthText}>
-                {healthLabel ??
-                  (animal.estadoMedico === 1
-                    ? 'Sano'
-                    : animal.estadoMedico === 2
-                    ? 'En tratamiento'
-                    : animal.estadoMedico === 3
-                    ? 'Recuperado'
-                    : 'Sin datos')}
-              </AppText>
+          {/* Solo mostramos el badge si hay texto de salud */}
+          {healthLabel ? (
+            <View style={[styles.healthBadge, { backgroundColor: primaryColor }]}>
+              <AppText style={styles.healthText}>{healthLabel}</AppText>
             </View>
-          )}
+          ) : null}
 
           <View style={styles.titleOnImage}>
             <AppText numberOfLines={1} style={styles.nameOnImage}>
@@ -120,20 +115,17 @@ const AnimalCard: React.FC<Props> = memo(
 
         <View style={styles.infoContainer}>
           <View style={styles.rowChips}>
-            {/* SIZE */}
             {animal.size ? (
               <View style={styles.tagChip}>
                 <AppText style={styles.tagChipText}>{animal.size}</AppText>
               </View>
             ) : null}
 
-            <View style={styles.ageChip}>
-              <AppText style={styles.ageChipText}>
-                {typeof AgeInYearsDisplay === 'number'
-                  ? `${AgeInYearsDisplay}`
-                  : String(AgeInYearsDisplay)}
-              </AppText>
-            </View>
+            {ageDisplay ? (
+              <View style={styles.ageChip}>
+                <AppText style={styles.ageChipText}>{ageDisplay}</AppText>
+              </View>
+            ) : null}
           </View>
 
           <View style={styles.metaRow}>
@@ -143,12 +135,6 @@ const AnimalCard: React.FC<Props> = memo(
               </AppText>
             </View>
           </View>
-
-          {animal.descripcionMedica ? (
-            <AppText numberOfLines={2} style={styles.medicalNote}>
-              {animal.descripcionMedica}
-            </AppText>
-          ) : null}
         </View>
       </TouchableOpacity>
     );
@@ -177,15 +163,12 @@ const styles = StyleSheet.create({
       },
     }),
   },
-
   imageWrapper: {
     width: '100%',
     aspectRatio: 4 / 3,
     backgroundColor: '#eceff1',
   },
-
   image: { width: '100%', height: '100%' },
-
   gradient: {
     position: 'absolute',
     bottom: 0,
@@ -193,7 +176,6 @@ const styles = StyleSheet.create({
     right: 0,
     height: '45%',
   },
-
   favoriteButton: {
     position: 'absolute',
     top: 8,
@@ -203,7 +185,6 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     zIndex: 10,
   },
-
   healthBadge: {
     position: 'absolute',
     top: 10,
@@ -212,21 +193,18 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     borderRadius: 20,
   },
-
   healthText: {
     color: '#fff',
     fontSize: 11,
     fontWeight: fontWeightMedium,
     letterSpacing: 0.2,
   },
-
   titleOnImage: {
     position: 'absolute',
     bottom: 10,
     left: 10,
     right: 10,
   },
-
   nameOnImage: {
     color: '#fff',
     fontSize: 20,
@@ -235,18 +213,15 @@ const styles = StyleSheet.create({
     textShadowRadius: 8,
     textShadowOffset: { width: 0, height: 2 },
   },
-
   infoContainer: {
     padding: 12,
     gap: 8,
   },
-
   rowChips: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
   },
-
   breedChip: {
     flexShrink: 1,
     maxWidth: '100%',
@@ -255,13 +230,11 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 16,
   },
-
   breedChipText: {
     fontSize: 13,
     color: '#0d47a1',
     fontWeight: fontWeightMedium,
   },
-
   ageChip: {
     marginLeft: 'auto',
     backgroundColor: '#f0f0f0',
@@ -271,20 +244,17 @@ const styles = StyleSheet.create({
     minWidth: 80,
     alignItems: 'center',
   },
-
   ageChipText: {
     fontSize: 13,
     color: '#37474f',
     fontWeight: fontWeightMedium,
   },
-
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
     marginLeft: 0,
   },
-
   tagChip: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -295,13 +265,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ffcc80',
   },
-
   tagChipText: {
     fontSize: 10,
     color: '#ff8f00',
     fontWeight: fontWeightMedium,
   },
-
   medicalNote: {
     fontSize: 13,
     color: '#455a64',
