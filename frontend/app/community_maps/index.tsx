@@ -13,15 +13,20 @@ import { CommunityMapView } from '../../src/components/community_maps/CommunityM
 import { MapControlButtons } from '../../src/components/community_maps/MapControlButtons';
 import MapsFilterModal from '../../src/components/community_maps/MapsFilterModal';
 import { MapStatusOverlay } from '../../src/components/community_maps/MapStatusOverlay';
-import { CurrentFilters, HeatmapPoint, Reporte } from '../../src/components/community_maps/types';
+import {
+  CurrentFilters,
+  HeatmapPoint,
+  Reporte,
+} from '../../src/components/community_maps/types';
 import { ReporteDetails } from '../../src/components/report/ReporteDetails';
 import { Colors } from '../../src/constants/colors';
 import { getHaversineDistance } from '../../src/utils/geo';
+import { Header } from '@react-navigation/elements';
 
 const CommunityMapScreen = () => {
   const router = useRouter();
   const mapRef = useRef<MapView | null>(null);
-  const { showError, showSuccess, confirm, showInfo } = useNotification(); 
+  const { showError, showSuccess, confirm, showInfo } = useNotification();
 
   // --- ESTADOS ---
   const [filterModalVisible, setFilterModalVisible] = useState(false);
@@ -30,14 +35,16 @@ const CommunityMapScreen = () => {
   const [loading, setLoading] = useState(false);
   const [hasSearchedWithFilters, setHasSearchedWithFilters] = useState(false);
 
-
-  const [calculatedDistance, setCalculatedDistance] = useState<string | null>(null);
+  const [calculatedDistance, setCalculatedDistance] = useState<string | null>(
+    null,
+  );
   const [currentUserLocation, setCurrentUserLocation] = useState<{
     latitude: number;
     longitude: number;
   } | null>(null);
-  const [locationSubscription, setLocationSubscription] = useState<Location.LocationSubscription | null>(null);
-  
+  const [locationSubscription, setLocationSubscription] =
+    useState<Location.LocationSubscription | null>(null);
+
   const [mapRegion, setMapRegion] = useState<Region>({
     latitude: -38.7369,
     longitude: -72.5994,
@@ -69,7 +76,6 @@ const CommunityMapScreen = () => {
     setHasActiveFilters(!!hasFilters);
   }, [currentFilters]);
 
-
   const startLocationTracking = useCallback(async () => {
     let { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== 'granted') {
@@ -81,13 +87,13 @@ const CommunityMapScreen = () => {
     const subscription = await Location.watchPositionAsync(
       {
         accuracy: Location.Accuracy.BestForNavigation,
-        timeInterval: 5000, 
-        distanceInterval: 10, 
+        timeInterval: 5000,
+        distanceInterval: 10,
       },
       (location) => {
         setCurrentUserLocation(location.coords); // Actualiza el estado con la nueva ubicación
         if (!initialZoomDone) {
-           // Centra el mapa en el usuario la primera vez
+          // Centra el mapa en el usuario la primera vez
           setMapRegion({
             latitude: location.coords.latitude,
             longitude: location.coords.longitude,
@@ -96,11 +102,10 @@ const CommunityMapScreen = () => {
           });
           setInitialZoomDone(true);
         }
-      }
+      },
     );
     setLocationSubscription(subscription);
   }, [showError, initialZoomDone]);
-  
 
   useEffect(() => {
     // Retornamos una función de limpieza que se ejecuta al desmontar
@@ -194,7 +199,6 @@ const CommunityMapScreen = () => {
     }
   }, []);
 
-
   const toggleCriticalView = useCallback(async () => {
     const newState = !showCriticalReports;
     setShowCriticalReports(newState);
@@ -271,42 +275,49 @@ const CommunityMapScreen = () => {
     setMapRegion(newRegion);
   };
 
-// --- Handler para presionar un marcador 
-  const handleMarkerPress = useCallback((reporte: Reporte | null) => {
-    
-    if (!reporte) {
-      setSelectedSighting(null);
-      setCalculatedDistance(null); 
-      return;
-    }
+  // --- Handler para presionar un marcador
+  const handleMarkerPress = useCallback(
+    (reporte: Reporte | null) => {
+      if (!reporte) {
+        setSelectedSighting(null);
+        setCalculatedDistance(null);
+        return;
+      }
 
-    //  Mostrar el modal de detalles
-    setSelectedSighting(reporte);
+      //  Mostrar el modal de detalles
+      setSelectedSighting(reporte);
 
-    // Calcular y mostrar la distancia
-    if (!currentUserLocation) {
-      showInfo("Calculando...", "Espera un momento, obteniendo tu ubicación.");
-      setCalculatedDistance(null); 
-      return;
-    }
+      // Calcular y mostrar la distancia
+      if (!currentUserLocation) {
+        showInfo(
+          'Calculando...',
+          'Espera un momento, obteniendo tu ubicación.',
+        );
+        setCalculatedDistance(null);
+        return;
+      }
 
-    const distance = getHaversineDistance(
-      currentUserLocation.latitude,
-      currentUserLocation.longitude,
-      reporte.latitude,
-      reporte.longitude
-    );
+      const distance = getHaversineDistance(
+        currentUserLocation.latitude,
+        currentUserLocation.longitude,
+        reporte.latitude,
+        reporte.longitude,
+      );
 
-    let friendlyDistance: string;
-    if (distance < 1000) {
-      friendlyDistance = `${Math.round(distance)} metros`;
-    } else {
-      friendlyDistance = `${(distance / 1000).toFixed(2)} km`;
-    }
--
-    setCalculatedDistance(friendlyDistance); 
-    showInfo("Distancia al Reporte", `Estás a ${friendlyDistance} de este avistamiento.`);
-  }, [currentUserLocation, showInfo]);
+      let friendlyDistance: string;
+      if (distance < 1000) {
+        friendlyDistance = `${Math.round(distance)} metros`;
+      } else {
+        friendlyDistance = `${(distance / 1000).toFixed(2)} km`;
+      }
+      -setCalculatedDistance(friendlyDistance);
+      showInfo(
+        'Distancia al Reporte',
+        `Estás a ${friendlyDistance} de este avistamiento.`,
+      );
+    },
+    [currentUserLocation, showInfo],
+  );
   // --- EFECTOS (EFFECTS) ---
   useEffect(() => {
     if (showCriticalReports || hasActiveFilters) return;
@@ -345,7 +356,7 @@ const CommunityMapScreen = () => {
     const initializeData = async () => {
       try {
         await Promise.all([
-          startLocationTracking(), 
+          startLocationTracking(),
           obtenerReportes(currentFilters),
           fetchCriticalReports(),
           fetchHeatmapData(),
@@ -365,10 +376,10 @@ const CommunityMapScreen = () => {
     showCriticalReports,
     hasActiveFilters,
   ]);
-  
+
   const reportsToRender = showCriticalReports ? criticalReports : reportes;
 
-useEffect(() => {
+  useEffect(() => {
     if (reportsToRender.length === 0 || showHeatmap || !mapRef.current) {
       return;
     }
@@ -387,7 +398,7 @@ useEffect(() => {
         animated: true,
       });
     }, 500);
-  }, [reportsToRender, showHeatmap]); 
+  }, [reportsToRender, showHeatmap]);
   useEffect(() => {
     if (!showCriticalReports) {
       obtenerReportes(currentFilters);
@@ -450,6 +461,7 @@ useEffect(() => {
             <Ionicons name="options-outline" size={24} color="#fff" />
           </TouchableOpacity>
         }
+        style={styles.header}
       />
 
       <MapControlButtons
@@ -497,6 +509,11 @@ useEffect(() => {
           }}
           onDelete={handleDelete}
           distance={calculatedDistance}
+          onCloseSighting={() => {
+            // Aquí la función para abrir el modal de cierre o la acción que quieras
+            console.log('Cerrar avistamiento');
+          }}
+          canModify={true} // O la lógica que determines para permisos
         />
       )}
       <FloatingSpeedDial
@@ -578,7 +595,8 @@ useEffect(() => {
 
 // Estilos mínimos para el contenedor principal
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background || '#F8F8F8' },
+  container: { flex: 1, backgroundColor: Colors.background },
+  header: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 },
 });
 
 export default CommunityMapScreen;

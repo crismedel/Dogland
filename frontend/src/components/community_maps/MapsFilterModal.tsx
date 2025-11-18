@@ -5,10 +5,8 @@ import {
   TouchableOpacity,
   ScrollView,
   Platform,
-  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Picker } from '@react-native-picker/picker';
 import { Colors } from '../../constants/colors';
 import {
   obtenerNombreEspecie,
@@ -20,6 +18,7 @@ import {
   fontWeightMedium,
   AppText,
 } from '@/src/components/AppText';
+import CustomPicker from '@/src/components/UI/CustomPicker';
 
 interface FilterOption {
   id: number | string;
@@ -39,7 +38,7 @@ interface MapsFilterModalProps {
     estadoSaludId?: number | string;
     zona?: string;
   };
-  hasActiveFilters: boolean; // Nuevo prop para saber si hay filtros activos
+  hasActiveFilters: boolean;
 }
 
 const ZONAS_EJEMPLO = [
@@ -71,7 +70,7 @@ const MapsFilterModal: React.FC<MapsFilterModalProps> = ({
   onClose,
   onApplyFilter,
   currentFilters = {},
-  hasActiveFilters = false, // Valor por defecto
+  hasActiveFilters = false,
 }) => {
   const [selectedEspecie, setSelectedEspecie] = useState<number | string>(
     currentFilters.especieId || '',
@@ -111,6 +110,25 @@ const MapsFilterModal: React.FC<MapsFilterModalProps> = ({
 
   if (!isVisible) return null;
 
+  // Convertir opciones al formato { label, value } para CustomPicker
+  const especieOptions = [
+    { label: 'Todas las especies', value: '' },
+    ...ESPECIE_OPTIONS.map((opt) => ({ label: opt.nombre, value: opt.id })),
+  ];
+
+  const estadoSaludOptions = [
+    { label: 'Todos los estados', value: '' },
+    ...ESTADOS_SALUD_OPTIONS.map((opt) => ({
+      label: opt.nombre,
+      value: opt.id,
+    })),
+  ];
+
+  const zonaOptions = [
+    { label: 'Todas las zonas', value: '' },
+    ...ZONAS_EJEMPLO.map((opt) => ({ label: opt.nombre, value: opt.id })),
+  ];
+
   return (
     <View style={styles.modalOverlay}>
       <View style={styles.modalContent}>
@@ -130,51 +148,33 @@ const MapsFilterModal: React.FC<MapsFilterModalProps> = ({
           contentContainerStyle={styles.scrollContent}
         >
           <AppText style={styles.inputLabel}>Especie del Animal:</AppText>
-          <View style={styles.pickerWrapper}>
-            <Picker
-              selectedValue={selectedEspecie}
-              onValueChange={(itemValue) => setSelectedEspecie(itemValue)}
-              style={styles.picker}
-              dropdownIconColor={Colors.primary}
-            >
-              <Picker.Item label="Todas las especies" value="" />
-              {ESPECIE_OPTIONS.map((opt) => (
-                <Picker.Item key={opt.id} label={opt.nombre} value={opt.id} />
-              ))}
-            </Picker>
-          </View>
+          <CustomPicker
+            options={especieOptions}
+            selectedValue={selectedEspecie}
+            onValueChange={setSelectedEspecie}
+            placeholder="Seleccionar especie"
+            icon="paw"
+          />
 
           <AppText style={styles.inputLabel}>
             Estado de Salud del Animal:
           </AppText>
-          <View style={styles.pickerWrapper}>
-            <Picker
-              selectedValue={selectedEstadoSalud}
-              onValueChange={(itemValue) => setSelectedEstadoSalud(itemValue)}
-              style={styles.picker}
-              dropdownIconColor={Colors.primary}
-            >
-              <Picker.Item label="Todos los estados" value="" />
-              {ESTADOS_SALUD_OPTIONS.map((opt) => (
-                <Picker.Item key={opt.id} label={opt.nombre} value={opt.id} />
-              ))}
-            </Picker>
-          </View>
+          <CustomPicker
+            options={estadoSaludOptions}
+            selectedValue={selectedEstadoSalud}
+            onValueChange={setSelectedEstadoSalud}
+            placeholder="Seleccionar estado de salud"
+            icon="heart"
+          />
 
           <AppText style={styles.inputLabel}>Zona/Región:</AppText>
-          <View style={styles.pickerWrapper}>
-            <Picker
-              selectedValue={selectedZona}
-              onValueChange={(itemValue) => setSelectedZona(itemValue)}
-              style={styles.picker}
-              dropdownIconColor={Colors.primary}
-            >
-              <Picker.Item label="Todas las zonas" value="" />
-              {ZONAS_EJEMPLO.map((opt) => (
-                <Picker.Item key={opt.id} label={opt.nombre} value={opt.id} />
-              ))}
-            </Picker>
-          </View>
+          <CustomPicker
+            options={zonaOptions}
+            selectedValue={selectedZona}
+            onValueChange={setSelectedZona}
+            placeholder="Seleccionar zona"
+            icon="location"
+          />
         </ScrollView>
 
         <View style={styles.footer}>
@@ -205,7 +205,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: Colors.lightText || '#ffffff',
+    backgroundColor: Colors.cardBackground,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 20,
@@ -241,26 +241,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     marginLeft: 4,
   },
-  pickerWrapper: {
-    marginBottom: 15,
-    borderRadius: 8,
-    overflow: 'hidden',
-    backgroundColor: '#f8f9fa',
-    borderWidth: 1,
-    borderColor: '#dee2e6',
-  },
-  picker: {
-    backgroundColor: '#f8f9fa',
-    height: Platform.OS === 'ios' ? 140 : 50,
-    ...Platform.select({
-      ios: {
-        marginVertical: -8,
-      },
-      android: {
-        height: 50,
-      },
-    }),
-  },
   footer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -282,9 +262,9 @@ const styles = StyleSheet.create({
     marginLeft: 10,
   },
   clearButton: {
-    backgroundColor: Colors.background || '#F8F8F8',
+    backgroundColor: Colors.background,
     borderWidth: 1,
-    borderColor: Colors.gray || '#E0E0E0',
+    borderColor: Colors.secondary,
     marginRight: 10,
   },
   buttonText: {

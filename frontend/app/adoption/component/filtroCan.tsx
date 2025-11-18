@@ -331,7 +331,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   container: {
-    backgroundColor: '#fafafa',
+    backgroundColor: Colors.cardBackground,
     borderTopLeftRadius: 25,
     borderTopRightRadius: 25,
     overflow: 'hidden',
@@ -377,11 +377,11 @@ const styles = StyleSheet.create({
   },
   chip: {
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: Colors.primary,
     borderRadius: 20,
     paddingHorizontal: 14,
     paddingVertical: 8,
-    backgroundColor: '#fafafa',
+    backgroundColor: Colors.background,
     marginBottom: 8,
   },
   chipSelected: {
@@ -410,12 +410,14 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   reset: {
-    backgroundColor: '#fff',
+    backgroundColor: Colors.background,
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: Colors.secondary,
   },
   apply: {
     backgroundColor: Colors.primary,
+    borderWidth: 1,
+    borderColor: Colors.secondary,
   },
   applyText: { color: Colors.text, fontWeight: fontWeightBold },
   resetText: { color: Colors.text, fontWeight: fontWeightBold },

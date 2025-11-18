@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#FFF',
+    backgroundColor: Colors.cardBackground,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     maxHeight: SCREEN_HEIGHT * 0.85,
@@ -299,8 +299,8 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingBottom: 20,
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
-    backgroundColor: '#FFF',
+    borderTopColor: Colors.secondary,
+    backgroundColor: Colors.cardBackground,
     gap: 10,
   },
   resetButton: {

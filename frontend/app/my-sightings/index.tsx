@@ -30,6 +30,7 @@ import {
   obtenerNombreEspecie,
   obtenerNombreEstadoSalud,
 } from '../../src/types/report';
+import Spinner from '@/src/components/UI/Spinner';
 
 // Interfaz expandida para incluir todos los datos necesarios
 interface MySighting {
@@ -302,14 +303,7 @@ const MySightingsScreen = () => {
   );
 
   if (loading && sightings.length === 0 && !error) {
-    return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color={Colors.primary} />
-        <AppText style={styles.loadingText}>
-          Cargando tus avistamientos...
-        </AppText>
-      </View>
-    );
+    return <Spinner />;
   }
 
   return (

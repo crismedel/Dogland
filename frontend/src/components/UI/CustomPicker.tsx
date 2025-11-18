@@ -179,7 +179,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContent: {
-    backgroundColor: '#FFF',
+    backgroundColor: Colors.cardBackground,
     borderRadius: 20,
     width: '85%',
     maxHeight: '70%',

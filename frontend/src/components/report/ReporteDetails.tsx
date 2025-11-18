@@ -34,7 +34,7 @@ export const ReporteDetails = ({
   canModify, // <-- Recibimos la prop
 }: ReporteDetailsProps) => {
   // Un reporte se considera 'cerrado' si su estado no es 'Activo' (ID 1)
-  const isClosed = reporte.id_estado_avistamiento !== 1; 
+  const isClosed = reporte.id_estado_avistamiento !== 1;
 
   return (
     <View style={styles.floatingDetailsContainer}>
@@ -52,7 +52,7 @@ export const ReporteDetails = ({
               <Ionicons
                 name="location-outline"
                 size={16} // Ajustamos tamaño
-                color={Colors.primary}
+                color={Colors.secondary}
                 style={styles.detailIcon}
               />
               <AppText style={styles.distanceText}>Estás a {distance}</AppText>
@@ -61,17 +61,34 @@ export const ReporteDetails = ({
           {/* ---------------------------------- */}
 
           <View style={styles.detailRow}>
-            <AppText style={styles.detailIcon}>📍</AppText>
-            <AppText style={styles.detailValue}>{reporte.direccion}</AppText>
+            <Ionicons
+              name="location-sharp"
+              size={16}
+              color={Colors.secondary}
+              style={styles.detailIcon}
+            />
+            <AppText style={[styles.detailValue, { color: Colors.text }]}>
+              {reporte.direccion}
+            </AppText>
           </View>
           <View style={styles.detailRow}>
-            <AppText style={styles.detailIcon}>🐾</AppText>
-            <AppText style={styles.detailValue}>
+            <Ionicons
+              name="paw-outline"
+              size={16}
+              color={Colors.secondary}
+              style={styles.detailIcon}
+            />
+            <AppText style={[styles.detailValue, { color: Colors.text }]}>
               {obtenerNombreEspecie(reporte.id_especie)}
             </AppText>
           </View>
           <View style={styles.detailRow}>
-            <AppText style={styles.detailIcon}>🏥</AppText>
+            <Ionicons
+              name="medkit-outline"
+              size={16}
+              color={Colors.secondary}
+              style={styles.detailIcon}
+            />
             <AppText
               style={[
                 styles.detailValue,
@@ -85,8 +102,13 @@ export const ReporteDetails = ({
             </AppText>
           </View>
           <View style={styles.detailRow}>
-            <AppText style={styles.detailIcon}>📅</AppText>
-            <AppText style={styles.detailValue}>
+            <Ionicons
+              name="calendar-outline"
+              size={16}
+              color={Colors.secondary}
+              style={styles.detailIcon}
+            />
+            <AppText style={[styles.detailValue, { color: Colors.text }]}>
               {new Date(reporte.fecha_creacion).toLocaleDateString('es-ES', {
                 year: 'numeric',
                 month: 'long',
@@ -95,9 +117,14 @@ export const ReporteDetails = ({
             </AppText>
           </View>
           <View style={styles.detailRow}>
-            <AppText style={styles.detailIcon}>#️⃣</AppText>
-            <AppText style={styles.detailValue}>
-              {reporte.id_avistamiento}
+            <Ionicons
+              name="pricetag-outline"
+              size={16}
+              color={Colors.secondary}
+              style={styles.detailIcon}
+            />
+            <AppText style={[styles.detailValue, { color: Colors.text }]}>
+              reporte numero {reporte.id_avistamiento}
             </AppText>
           </View>
         </View>
@@ -110,7 +137,7 @@ export const ReporteDetails = ({
             onPress={onDelete}
             style={[styles.actionButton, styles.deleteButton]}
           >
-            <Ionicons name="trash-outline" size={16} color="white" />
+            <Ionicons name="trash-outline" size={16} color={Colors.lightText} />
             <AppText style={styles.actionButtonText}>Eliminar</AppText>
           </TouchableOpacity>
 
@@ -120,7 +147,11 @@ export const ReporteDetails = ({
               onPress={onCloseSighting}
               style={[styles.actionButton, styles.closeReportButton]}
             >
-              <Ionicons name="shield-checkmark-outline" size={16} color="white" />
+              <Ionicons
+                name="shield-checkmark-outline"
+                size={16}
+                color={Colors.lightText}
+              />
               <AppText style={styles.actionButtonText}>Cerrar Reporte</AppText>
             </TouchableOpacity>
           )}
@@ -133,11 +164,13 @@ export const ReporteDetails = ({
 const styles = StyleSheet.create({
   floatingDetailsContainer: {
     position: 'absolute',
-    bottom: 20,
+    bottom: 100,
     left: 20,
     right: 20,
-    backgroundColor: 'white',
+    backgroundColor: Colors.background,
     padding: 16,
+    borderWidth: 1,
+    borderColor: Colors.secondary,
     borderRadius: 12,
     shadowColor: '#000',
     shadowOpacity: 0.2,
@@ -146,18 +179,27 @@ const styles = StyleSheet.create({
     elevation: 5, // Añadido para Android
   },
   closeButton: {
-    position: 'absolute', top: 10, right: 10,
+    position: 'absolute',
+    top: 10,
+    right: 10,
     zIndex: 10, // Asegura que esté por encima
   },
-  closeButtonText: { fontSize: 18, color: '#999' },
+  closeButtonText: { fontSize: 18, color: Colors.darkGray },
   scrollableContent: { paddingTop: 20 },
   detailTitle: {
     fontSize: 18,
     fontWeight: fontWeightSemiBold,
     marginBottom: 10,
     paddingRight: 20, // Espacio para el botón de cerrar
+    color: Colors.text,
   },
-  detailCard: { padding: 10, backgroundColor: '#f5f5f5', borderRadius: 8 },
+  detailCard: {
+    padding: 10,
+    backgroundColor: Colors.cardBackground,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.secondary,
+  },
   detailRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -182,16 +224,16 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   actionButtonText: {
-    color: 'white',
+    color: Colors.lightText,
     fontWeight: fontWeightBold,
     textAlign: 'center',
     marginLeft: 8,
   },
   deleteButton: {
-    backgroundColor: Colors.danger || '#f44336',
+    backgroundColor: Colors.danger,
   },
   closeReportButton: {
-    backgroundColor: Colors.success || '#4CAF50', // O el color que prefieras
+    backgroundColor: Colors.success,
   },
 
   // --- ESTILOS AÑADIDOS PARA LA DISTANCIA ---
@@ -199,14 +241,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 8,
-    backgroundColor: '#E6F0FF', // Un fondo suave azul
+    backgroundColor: Colors.background,
     borderRadius: 8,
     padding: 10,
   },
   distanceText: {
     fontSize: 14,
     fontWeight: fontWeightBold,
-    color: Colors.primary || '#007AFF', // Fallback
+    color: Colors.secondary,
     marginLeft: 4, // Pequeño ajuste
   },
 });

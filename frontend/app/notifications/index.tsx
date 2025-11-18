@@ -371,7 +371,7 @@ export default function NotificationsScreen() {
   );
 
   const renderEmpty = () => {
-    if (loading) return null;
+    if (loading) return <Spinner />;
     return (
       <View style={styles.empty}>
         <Text style={styles.emptyText}>No hay notificaciones</Text>

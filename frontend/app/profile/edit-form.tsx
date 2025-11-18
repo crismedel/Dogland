@@ -16,6 +16,7 @@ import { fetchUserProfile, updateUserProfile } from '@/src/api/users';
 import { useNotification } from '@/src/components/notifications';
 import { useRefresh } from '@/src/contexts/RefreshContext';
 import { REFRESH_KEYS } from '@/src/constants/refreshKeys';
+import Spinner from '@/src/components/UI/Spinner';
 
 const EditProfileScreen = () => {
   const [loading, setLoading] = useState(false);
@@ -173,12 +174,7 @@ const EditProfileScreen = () => {
 
   // Pantalla de carga mientras obtiene datos
   if (initialLoading) {
-    return (
-      <View style={[styles.container, styles.centerContent]}>
-        <ActivityIndicator size="large" color={Colors.primary} />
-        <AppText style={styles.loadingText}>Cargando información...</AppText>
-      </View>
-    );
+    return <Spinner />;
   }
 
   return (
