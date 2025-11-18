@@ -1,7 +1,6 @@
 import { AppText } from '@/src/components/AppText';
-import { useNotification } from '@/src/components/notifications';
+
 import CustomHeader from '@/src/components/UI/CustomHeader';
-import { Colors } from '@/src/constants/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
@@ -206,9 +205,9 @@ const AvistamientosScreen: React.FC = () => {
       <View style={styles.dashboard}>
         <View style={styles.metricItem}>
           <View
-            style={[styles.metricIconBg, { backgroundColor: Colors.accent }]}
+            style={[styles.metricIconBg, { backgroundColor: colors.accent }]}
           >
-            <Ionicons name="list" size={20} color={Colors.lightText} />
+            <Ionicons name="list" size={20} color={colors.lightText} />
           </View>
           <AppText style={styles.metricValue}>{totalCount}</AppText>
           <AppText style={styles.metricLabel}>Total</AppText>
@@ -216,9 +215,9 @@ const AvistamientosScreen: React.FC = () => {
 
         <View style={styles.metricItem}>
           <View
-            style={[styles.metricIconBg, { backgroundColor: Colors.danger }]}
+            style={[styles.metricIconBg, { backgroundColor: colors.danger }]}
           >
-            <Ionicons name="alert-circle" size={20} color={Colors.lightText} />
+            <Ionicons name="alert-circle" size={20} color={colors.lightText} />
           </View>
           <AppText style={styles.metricValue}>{criticalCount}</AppText>
           <AppText style={styles.metricLabel}>Críticos</AppText>
@@ -226,7 +225,7 @@ const AvistamientosScreen: React.FC = () => {
 
         <View style={styles.metricItem}>
           <View
-            style={[styles.metricIconBg, { backgroundColor: Colors.success }]}
+            style={[styles.metricIconBg, { backgroundColor: colors.success }]}
           >
             <Ionicons
               name="checkmark-circle"
@@ -290,11 +289,11 @@ const AvistamientosScreen: React.FC = () => {
                 <Ionicons
                   name="information-circle-outline"
                   size={16}
-                  color={Colors.gray}
+                  color={colors.gray}
                   style={{ marginRight: 6 }}
                 />
                 <AppText
-                  style={[styles.chipText, { color: Colors.gray }]}
+                  style={[styles.chipText, { color: colors.gray }]}
                   numberOfLines={1}
                 >
                   Motivo: {item.motivo_cierre}
@@ -336,15 +335,15 @@ const AvistamientosScreen: React.FC = () => {
                 <Ionicons
                   name={isClosed ? 'lock-closed' : 'eye'}
                   size={14}
-                  color={isClosed ? Colors.darkGray : Colors.success}
+                  color={isClosed ? colors.darkGray : colors.success}
                   style={{ marginRight: 6 }}
                 />
                 <AppText
                   style={[
                     styles.chipText,
                     isClosed
-                      ? { color: Colors.darkGray }
-                      : { color: Colors.success },
+                      ? { color: colors.darkGray }
+                      : { color: colors.success },
                   ]}
                 >
                   {sightingStatusName}
@@ -404,7 +403,7 @@ const getStyles = (colors: ColorsType, isDark: boolean) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: colors.background, // Dinámico
+      backgroundColor: colors.background,
     },
     loadingWrap: {
       flex: 1,
@@ -413,7 +412,7 @@ const getStyles = (colors: ColorsType, isDark: boolean) =>
     },
     loadingText: {
       marginTop: 12,
-      color: colors.darkGray, // Dinámico
+      color: colors.darkGray,
       fontSize: 15,
     },
     dashboardWrap: {
@@ -425,7 +424,7 @@ const getStyles = (colors: ColorsType, isDark: boolean) =>
       flexDirection: 'row',
       justifyContent: 'space-around',
       alignItems: 'center',
-      backgroundColor: colors.backgroundSecon, // Dinámico
+      backgroundColor: colors.backgroundSecon,
       borderRadius: 10,
       paddingVertical: 6,
       paddingHorizontal: 8,
@@ -453,11 +452,11 @@ const getStyles = (colors: ColorsType, isDark: boolean) =>
     metricValue: {
       fontSize: 15,
       fontWeight: '600',
-      color: colors.text, // Dinámico
+      color: colors.text,
     },
     metricLabel: {
       fontSize: 10,
-      color: colors.darkGray, // Dinámico
+      color: colors.darkGray,
       marginTop: 0,
     },
 
@@ -469,15 +468,26 @@ const getStyles = (colors: ColorsType, isDark: boolean) =>
     card: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: colors.backgroundSecon, // Dinámico
+      backgroundColor: colors.backgroundSecon,
       borderRadius: 16,
       borderWidth: 1,
+      borderColor: colors.secondary,
       padding: 10,
       shadowColor: '#000',
       shadowOpacity: 0.06,
       shadowRadius: 8,
       elevation: 3,
       marginBottom: 20,
+    },
+    closedCard: {
+      opacity: 0.6,
+      backgroundColor: colors.backgroundSecon,
+      borderColor: colors.darkGray,
+    },
+    gradientBackground: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
     },
     cardLeft: {
       width: 62,
@@ -509,12 +519,22 @@ const getStyles = (colors: ColorsType, isDark: boolean) =>
       flex: 1,
       fontSize: 15,
       fontWeight: '600',
-      color: colors.text, // Dinámico
+      color: colors.text,
     },
     smallDate: {
       fontSize: 12,
-      color: colors.darkGray, // Dinámico
+      color: colors.darkGray,
       marginLeft: 8,
+    },
+    reasonContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginTop: 6,
+      marginBottom: 4,
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      backgroundColor: colors.backgroundSecon,
+      borderRadius: 12,
     },
     chipsRow: {
       marginTop: 10,
@@ -535,6 +555,15 @@ const getStyles = (colors: ColorsType, isDark: boolean) =>
       fontSize: 13,
     },
 
+    chipClosed: {
+      backgroundColor: colors.backgroundSecon,
+      borderWidth: 1,
+      borderColor: colors.darkGray,
+    },
+    chipActive: {
+      backgroundColor: colors.success,
+    },
+
     chipGradient: {
       borderRadius: 999,
       padding: 1.5,
@@ -547,7 +576,7 @@ const getStyles = (colors: ColorsType, isDark: boolean) =>
       paddingHorizontal: 10,
       paddingVertical: 6,
       borderRadius: 999,
-      backgroundColor: colors.background, // Dinámico
+      backgroundColor: colors.background,
     },
     emptyWrap: {
       paddingTop: 40,
@@ -556,6 +585,6 @@ const getStyles = (colors: ColorsType, isDark: boolean) =>
     emptyText: {
       marginTop: 12,
       fontSize: 16,
-      color: colors.darkGray, // Dinámico
+      color: colors.darkGray,
     },
   });

@@ -347,7 +347,7 @@ const EditSightingScreen = () => {
     if (formData.id_estado_salud) {
       return obtenerColorMarcador(formData.id_estado_salud);
     }
-    return Colors.accent;
+    return colors.accent;
   };
 
   // --- RENDER ---
@@ -576,7 +576,7 @@ const EditSightingScreen = () => {
                   disabled={!hasChanges() || isSubmitting}
                 >
                   {isSubmitting ? (
-                    <ActivityIndicator color={Colors.lightText} size="small" />
+                    <ActivityIndicator color={colors.lightText} size="small" />
                   ) : (
                     <AppText style={styles.buttonText}>Guardar Cambios</AppText>
                   )}

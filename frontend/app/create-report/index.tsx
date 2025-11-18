@@ -55,9 +55,8 @@ const CreateReportScreen = () => {
   // 3. Llamar al hook y generar los estilos
   const { colors, isDark } = useTheme();
   const styles = getStyles(colors, isDark);
-
   const router = useRouter();
-  const { showError, showSuccess, showInfo, confirm } = useNotification(); // Asegurarse de tener 'confirm'
+  const { showError, showSuccess, showInfo, confirm } = useNotification();
 
   // --- HOOKS OFFLINE ---
   const netInfo = useNetInfo();
@@ -69,132 +68,244 @@ const CreateReportScreen = () => {
   const [titulo, setTitulo] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [loading, setLoading] = useState(false);
+  const [loadingLocation, setLoadingLocation] = useState(false);
 
-  // ESTADOS DE DROPDOWN
-  const [especie, setEspecie] = useState<number | null>(null);
-  const [openEspecie, setOpenEspecie] = useState(false);
-  const [itemsEspecie, setItemsEspecie] = useState([
-    { label: 'Perro', value: 1 },
-    { label: 'Gato', value: 2 },
-    { label: 'Ave', value: 3 },
-    { label: 'Reptil', value: 4 },
-    { label: 'Otro', value: 5 },
-  ]);
+  const [formValues, setFormValues] = useState<Record<string, any>>({
+    titulo: '',
+    descripcion: '',
+    especie: null,
+    estadoSalud: null,
+    estadoAvistamiento: null,
+    imageUrl: '',
+    ubicacion: null,
+    direccion: '',
+  });
 
-  const [estadoSalud, setEstadoSalud] = useState<number | null>(null);
-  const [openEstadoSalud, setOpenEstadoSalud] = useState(false);
-  const [itemsEstadoSalud, setItemsEstadoSalud] = useState([
-    { label: 'Saludable', value: 1 },
-    { label: 'Herido', value: 2 },
-    { label: 'Grave', value: 3 },
-  ]);
-
-  const [estadoAvistamiento, setEstadoAvistamiento] = useState<number | null>(
-    null,
-  );
-  const [openEstadoAvistamiento, setOpenEstadoAvistamiento] = useState(false);
-  const [itemsEstadoAvistamiento, setItemsEstadoAvistamiento] = useState([
-    { label: 'Salud Pública', value: 1 },
-    { label: 'Seguridad', value: 2 },
-    { label: 'Rescate', value: 3 },
-    { label: 'Perdido', value: 4 },
-  ]);
-
-  // ESTADOS DE UBICACIÓN
-  const [ubicacion, setUbicacion] = useState<{
-    latitude: number;
-    longitude: number;
-  } | null>(null);
   const [mostrarMapa, setMostrarMapa] = useState(false);
 
-  // --- LÓGICA DE UBICACIÓN (Modificada para no usar Alert) ---
-  const obtenerUbicacionActual = async () => {
-    let { status } = await Location.requestForegroundPermissionsAsync();
-    if (status !== 'granted') {
-      showError('Permiso Denegado', 'No se puede acceder a la ubicación.');
-      return;
+  // Función para obtener dirección legible desde coordenadas (geocodificación inversa)
+  const obtenerDireccionDesdeCoordenadas = async (
+    latitude: number,
+    longitude: number,
+  ) => {
+    try {
+      const [address] = await Location.reverseGeocodeAsync({
+        latitude,
+        longitude,
+      });
+      if (!address) return '';
+      return `${address.street || ''} ${address.streetNumber || ''}, ${
+        address.city || ''
+      }, ${address.region || ''}`.trim();
+    } catch (error) {
+      console.warn('Error en geocodificación inversa:', error);
+      return '';
     }
-    let location = await Location.getCurrentPositionAsync({});
-    setUbicacion(location.coords);
-    showInfo('Ubicación Obtenida', 'Se ha usado tu ubicación actual.');
   };
 
-  const handleMapPress = (event: any) => {
+  const obtenerUbicacionActual = async () => {
+    try {
+      setLoadingLocation(true);
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        showError('Permiso Denegado', 'No se puede acceder a la ubicación.');
+        setLoadingLocation(false);
+        return;
+      }
+      let location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High,
+      });
+      const direccion = await obtenerDireccionDesdeCoordenadas(
+        location.coords.latitude,
+        location.coords.longitude,
+      );
+
+      setFormValues((prev) => ({
+        ...prev,
+        ubicacion: location.coords,
+        direccion,
+      }));
+      showInfo('Ubicación Obtenida', 'Se ha usado tu ubicación actual.');
+    } catch (error) {
+      console.error('Error obteniendo ubicación:', error);
+      showError('Error', 'No se pudo obtener la ubicación');
+    } finally {
+      setLoadingLocation(false);
+    }
+  };
+
+  const handleMapPress = async (event: any) => {
     const { coordinate } = event.nativeEvent;
-    setUbicacion(coordinate);
-    // 5. Reemplazar Alert con showInfo
+    setLoadingLocation(true);
+    const direccion = await obtenerDireccionDesdeCoordenadas(
+      coordinate.latitude,
+      coordinate.longitude,
+    );
+
+    setFormValues((prev) => ({
+      ...prev,
+      ubicacion: coordinate,
+      direccion,
+    }));
+
     showInfo(
       'Ubicación Seleccionada',
-      `Lat: ${coordinate.latitude.toFixed(4)}, Lon: ${coordinate.longitude.toFixed(
-        4,
-      )}`,
+      `Lat: ${coordinate.latitude.toFixed(
+        6,
+      )}, Lon: ${coordinate.longitude.toFixed(6)}\nDirección: ${
+        direccion || 'No disponible'
+      }`,
     );
     setMostrarMapa(false);
+    setLoadingLocation(false);
   };
 
-  // --- FUNCIÓN PARA LIMPIAR EL FORMULARIO ---
   const resetForm = () => {
-    setDescripcion('');
-    setTitulo('');
-    setImageUrl('');
-    setEspecie(null);
-    setEstadoSalud(null);
-    setEstadoAvistamiento(null);
-    setUbicacion(null);
+    setFormValues({
+      titulo: '',
+      descripcion: '',
+      especie: null,
+      estadoSalud: null,
+      estadoAvistamiento: null,
+      imageUrl: '',
+      ubicacion: null,
+      direccion: '',
+    });
     setLoading(false);
   };
 
-  // --- FUNCIÓN DE ENVÍO (MODIFICADA PARA OFFLINE Y SIN ALERTS) ---
-  const handleCreateReport = async () => {
-    // 1. Validaciones
-    if (
-      !titulo ||
-      !descripcion ||
-      especie === null ||
-      estadoSalud === null ||
-      estadoAvistamiento === null ||
-      !ubicacion
-    ) {
-      // 5. Reemplazar Alert con showError
-      showError(
-        'Error',
-        'Todos los campos (título, descripción, selecciones y ubicación) son obligatorios.',
-      );
+  const fields: FormField[] = [
+    {
+      name: 'titulo',
+      label: 'Título del Reporte',
+      required: true,
+      placeholder: 'Ej: Perro herido en Av. Principal',
+      type: 'text',
+    },
+    {
+      name: 'descripcion',
+      label: 'Descripción del Reporte',
+      required: true,
+      placeholder: 'Detalles sobre el estado, ubicación y otros avistamientos',
+      multiline: true,
+      numberOfLines: 4,
+      type: 'text',
+    },
+    {
+      name: 'especie',
+      label: 'Especie del Animal',
+      required: true,
+      type: 'picker',
+      options: [
+        { label: 'Perro', value: 1 },
+        { label: 'Gato', value: 2 },
+        { label: 'Otro', value: 3 },
+      ],
+    },
+    {
+      name: 'estadoSalud',
+      label: 'Estado de Salud del Animal',
+      required: true,
+      type: 'picker',
+      options: [
+        { label: 'Desaparecido', value: 2 },
+        { label: 'Observado', value: 3 },
+        { label: 'Recuperado', value: 4 },
+      ],
+    },
+    {
+      name: 'estadoAvistamiento',
+      label: 'Estado del Avistamiento',
+      required: true,
+      type: 'picker',
+      options: [
+        { label: 'Desaparecido', value: 2 },
+        { label: 'Observado', value: 3 },
+        { label: 'Recuperado', value: 4 },
+      ],
+    },
+    {
+      name: 'imageUrl',
+      label: 'URL de la Foto (Opcional)',
+      required: false,
+      placeholder: 'Ej: https://tudominio.com/foto.jpg',
+      type: 'text',
+      keyboardType: 'url',
+      autoCapitalize: 'none',
+    },
+    {
+      name: 'ubicacion',
+      label: 'Ubicación',
+      required: true,
+      type: 'location',
+      placeholder: 'Seleccionar ubicación',
+      onLocationPress: () => {
+        confirm({
+          title: 'Selecciona una opción',
+          message:
+            '¿Quieres seleccionar en el mapa o usar tu ubicación actual?',
+          confirmLabel: 'Usar Ubicación Actual',
+          cancelLabel: 'Ver en Mapa',
+          onConfirm: obtenerUbicacionActual,
+          onCancel: () => setMostrarMapa(true),
+          destructive: false,
+        });
+      },
+      onLocationClear: () => {
+        setFormValues((prev) => ({ ...prev, ubicacion: null, direccion: '' }));
+      },
+      formatLocation: (loc) =>
+        loc ? `${loc.latitude.toFixed(6)}, ${loc.longitude.toFixed(6)}` : null,
+    },
+    {
+      name: 'direccion',
+      label: 'Dirección',
+      placeholder: 'Dirección automática desde ubicación',
+      type: 'text',
+      autoCapitalize: 'sentences',
+    },
+  ];
+
+  const onValueChange = (name: string, value: any) => {
+    setFormValues((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleCreateReport = async (values: Record<string, any>) => {
+    if (!values.ubicacion) {
+      showError('Error', 'La ubicación es obligatoria.');
       return;
     }
 
     setLoading(true);
 
-    // 2. Pre-procesamiento de la URL
     const finalImageUrl =
-      imageUrl && imageUrl.startsWith('http') ? imageUrl : null;
-    if (imageUrl && !finalImageUrl) {
+      values.imageUrl && values.imageUrl.startsWith('http')
+        ? values.imageUrl
+        : null;
+    if (values.imageUrl && !finalImageUrl) {
       showInfo(
         'Advertencia',
         'La URL de la foto no parece ser válida. El reporte se enviará sin imagen.',
       );
     }
 
-    // 3. Preparar los datos del reporte
     const reportData = {
-      id_estado_avistamiento: estadoAvistamiento,
-      id_estado_salud: estadoSalud,
-      id_especie: especie,
-      descripcion: descripcion,
-      titulo: titulo,
+      id_estado_avistamiento: values.estadoAvistamiento,
+      id_estado_salud: values.estadoSalud,
+      id_especie: values.especie,
+      descripcion: values.descripcion,
+      titulo: values.titulo,
       ubicacion: {
-        longitude: ubicacion.longitude,
-        latitude: ubicacion.latitude,
+        longitude: values.ubicacion.longitude,
+        latitude: values.ubicacion.latitude,
       },
-      direccion: 'Ubicación seleccionada en el mapa',
+      direccion: values.direccion || 'No proporcionada',
       url: finalImageUrl,
     };
 
-    // 4. Lógica Offline/Online
     const isOnline = netInfo.isConnected && netInfo.isInternetReachable;
 
     if (isOnline) {
-      // --- INTENTO DE ENVÍO ONLINE ---
       try {
         const response = await apiClient.post('/sightings', reportData);
         if (response.status === 201) {
@@ -206,13 +317,11 @@ const CreateReportScreen = () => {
           setLoading(false);
         }
       } catch (error) {
-        // El envío online falló (ej. 500 o error de red)
         console.error(
           'Error al enviar online, preguntando para guardar offline:',
           error,
         );
         setLoading(false);
-        // 5. Reemplazar Alert con confirm
         confirm({
           title: 'Error de Envío',
           message:
@@ -224,10 +333,11 @@ const CreateReportScreen = () => {
             resetForm();
             router.back();
           },
+          onCancel: () => {},
+          destructive: false,
         });
       }
     } else {
-      // --- MODO OFFLINE (SIN CONEXIÓN) ---
       try {
         await saveReportOffline(reportData);
         showSuccess(
@@ -264,7 +374,7 @@ const CreateReportScreen = () => {
           </TouchableOpacity>
         }
         rightComponent={
-          <TouchableOpacity onPress={handleCreateReport}>
+          <TouchableOpacity onPress={() => handleCreateReport(formValues)}>
             {loading ? (
               <ActivityIndicator
                 size="small"
@@ -282,199 +392,43 @@ const CreateReportScreen = () => {
       />
 
       <ScrollView
-        contentContainerStyle={styles.scrollContainer}
-        showsVerticalScrollIndicator={false}
+        style={styles.scrollContainer}
+        contentContainerStyle={styles.contentContainer}
         keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
-        <View style={styles.formContainer}>
-          <View style={styles.inputContainer}>
-            <AppText style={styles.inputLabel}>Título del Reporte:</AppText>
-            <TextInput
-              style={styles.textInput}
-              placeholder="Ej: Perro herido en Av. Principal"
-              value={titulo}
-              onChangeText={setTitulo}
-              placeholderTextColor={colors.darkGray} // 6. Usar colores del tema
-            />
-          </View>
-
-          <View style={styles.inputContainer}>
-            <AppText style={styles.inputLabel}>
-              Descripción del Reporte:
-            </AppText>
-            <TextInput
-              style={[
-                styles.textInput,
-                { height: 100, textAlignVertical: 'top' },
-              ]}
-              placeholder="Detalles sobre el estado, ubicación y otros avistamientos"
-              value={descripcion}
-              onChangeText={setDescripcion}
-              multiline
-              placeholderTextColor={colors.darkGray} // 6. Usar colores del tema
-            />
-          </View>
-
-          <View
-            style={[
-              styles.inputContainer,
-              Platform.OS === 'ios' && { zIndex: 5000 },
-            ]}
-          >
-            <AppText style={styles.inputLabel}>Especie del Animal:</AppText>
-            <DropDownPicker
-              open={openEspecie}
-              value={especie}
-              items={itemsEspecie}
-              setOpen={setOpenEspecie}
-              setValue={setEspecie}
-              setItems={setItemsEspecie}
-              placeholder="Seleccionar Especie"
-              style={styles.dropdownStyle}
-              dropDownContainerStyle={styles.dropdownContainerStyle}
-              placeholderStyle={styles.dropdownPlaceholder} // 6. Usar estilos
-              textStyle={styles.dropdownText} // 6. Usar estilos
-              theme={isDark ? 'DARK' : 'LIGHT'}
-            />
-          </View>
-
-          <View
-            style={[
-              styles.inputContainer,
-              Platform.OS === 'ios' && { zIndex: 4000 },
-            ]}
-          >
-            <AppText style={styles.inputLabel}>
-              Estado de Salud del Animal:
-            </AppText>
-            <DropDownPicker
-              open={openEstadoSalud}
-              value={estadoSalud}
-              items={itemsEstadoSalud}
-              setOpen={setOpenEstadoSalud}
-              setValue={setEstadoSalud}
-              setItems={setItemsEstadoSalud}
-              placeholder="Seleccionar Estado de Salud"
-              style={styles.dropdownStyle}
-              dropDownContainerStyle={styles.dropdownContainerStyle}
-              placeholderStyle={styles.dropdownPlaceholder} // 6. Usar estilos
-              textStyle={styles.dropdownText} // 6. Usar estilos
-              theme={isDark ? 'DARK' : 'LIGHT'}
-            />
-          </View>
-
-          <View
-            style={[
-              styles.inputContainer,
-              Platform.OS === 'ios' && { zIndex: 3000 },
-            ]}
-          >
-            <AppText style={styles.inputLabel}>
-              Estado del Avistamiento:
-            </AppText>
-            <DropDownPicker
-              open={openEstadoAvistamiento}
-              value={estadoAvistamiento}
-              items={itemsEstadoAvistamiento}
-              setOpen={setOpenEstadoAvistamiento}
-              setValue={setEstadoAvistamiento}
-              setItems={setItemsEstadoAvistamiento}
-              placeholder="Seleccionar Estado del Avistamiento"
-              style={styles.dropdownStyle}
-              dropDownContainerStyle={styles.dropdownContainerStyle}
-              placeholderStyle={styles.dropdownPlaceholder} // 6. Usar estilos
-              textStyle={styles.dropdownText} // 6. Usar estilos
-              theme={isDark ? 'DARK' : 'LIGHT'}
-            />
-          </View>
-
-          <View style={[styles.inputContainer, { zIndex: 2000 }]}>
-            <AppText style={styles.inputLabel}>
-              URL de la Foto (Opcional):
-            </AppText>
-            <TextInput
-              style={styles.textInput}
-              placeholder="Ej: https://tudominio.com/foto.jpg"
-              value={imageUrl}
-              onChangeText={setImageUrl}
-              keyboardType="url"
-              autoCapitalize="none"
-              placeholderTextColor={colors.darkGray} // 6. Usar colores del tema
-            />
-            {imageUrl.startsWith('http') && (
-              <View style={styles.imagePreviewContainer}>
-                <Image
-                  source={{ uri: imageUrl }}
-                  style={styles.imagePreview}
-                  onError={() =>
-                    console.log('Error al cargar la URL de previsualización')
-                  }
-                />
-              </View>
-            )}
-          </View>
-
-          {/* 5. Reemplazo de Alert por botones */}
-          <View style={[styles.inputContainer, { zIndex: 1000 }]}>
-            <AppText style={styles.inputLabel}>Ubicación:</AppText>
-            <View style={styles.locationButtonRow}>
-              <CustomButton
-                title="Usar Actual"
-                onPress={obtenerUbicacionActual}
-                icon="navigate-outline"
-                style={styles.locationButton}
-                textStyle={styles.locationButtonText}
-                variant="secondary"
-              />
-              <CustomButton
-                title="Seleccionar"
-                onPress={() => setMostrarMapa(true)}
-                icon="map-outline"
-                style={styles.locationButton}
-                textStyle={styles.locationButtonText}
-                variant="secondary"
-              />
-            </View>
-            {ubicacion && (
-              <AppText style={styles.locationText}>
-                {`Lat: ${ubicacion.latitude.toFixed(
-                  4,
-                )}, Lon: ${ubicacion.longitude.toFixed(4)}`}
-              </AppText>
-            )}
-          </View>
+        <View>
+          <DynamicForm
+            fields={fields}
+            values={formValues}
+            onValueChange={onValueChange}
+            onSubmit={handleCreateReport}
+            loading={loading}
+            buttonText="Generar Reporte"
+            buttonIcon="checkmark-done-outline"
+          />
 
           {mostrarMapa && (
             <View style={styles.mapContainer}>
               <MapView
                 style={styles.map}
                 initialRegion={{
-                  latitude: ubicacion?.latitude || -38.7369,
-                  longitude: ubicacion?.longitude || -72.5994,
+                  latitude: formValues.ubicacion?.latitude || -38.7369,
+                  longitude: formValues.ubicacion?.longitude || -72.5994,
                   latitudeDelta: 0.0922,
                   longitudeDelta: 0.0421,
                 }}
                 onPress={handleMapPress}
               >
-                {ubicacion && (
+                {formValues.ubicacion && (
                   <Marker
-                    coordinate={ubicacion}
+                    coordinate={formValues.ubicacion}
                     title="Ubicación Seleccionada"
                   />
                 )}
               </MapView>
             </View>
           )}
-
-          <CustomButton
-            title="Generar Reporte"
-            onPress={handleCreateReport}
-            variant="primary"
-            icon="checkmark-done-outline"
-            loading={loading}
-            disabled={loading}
-            style={{ marginTop: 10 }}
-          />
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -489,113 +443,21 @@ const getStyles = (colors: ColorsType, isDark: boolean) =>
       flex: 1,
       backgroundColor: colors.background, // Dinámico
     },
-    loadingContainer: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      backgroundColor: colors.background, // Dinámico
-    },
-    loadingText: {
-      marginTop: 10,
-      fontSize: 16,
-      color: colors.primary, // Dinámico
-    },
     scrollContainer: {
-      flexGrow: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      paddingVertical: 30,
-      paddingBottom: 150,
+      flex: 1,
     },
-    formContainer: {
-      width: width * 0.9,
-      maxWidth: 400,
-      paddingHorizontal: 20,
-      backgroundColor: colors.cardBackground, // Dinámico
-      borderRadius: 16,
-      paddingVertical: 30,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: isDark ? 0.2 : 0.1, // Dinámico
-      shadowRadius: 3.84,
-      elevation: 5,
+    contentContainer: {
+      padding: 20,
     },
-    inputContainer: {
-      marginBottom: 20,
-    },
-    inputLabel: {
-      fontSize: 16,
-      fontWeight: fontWeightMedium,
-      color: colors.text, // Dinámico
-      marginBottom: 6,
-    },
-    textInput: {
-      borderWidth: 1,
-      borderColor: colors.gray, // Dinámico
-      borderRadius: 12,
-      paddingVertical: 14,
-      paddingHorizontal: 16,
-      fontSize: 16,
-      color: colors.text, // Dinámico
-      backgroundColor: colors.background, // Dinámico
-      justifyContent: 'center',
-      minHeight: 50, // Asegurar altura mínima
-    },
-    dropdownStyle: {
-      backgroundColor: colors.background, // Dinámico
-      borderColor: colors.gray, // Dinámico
-      borderRadius: 12,
-    },
-    dropdownContainerStyle: {
-      borderColor: colors.gray, // Dinámico
-      borderRadius: 12,
-      marginTop: 0,
-    },
-    dropdownText: {
-      color: colors.text, // Dinámico
-    },
-    dropdownPlaceholder: {
-      color: colors.darkGray, // Dinámico
-    },
+
     mapContainer: {
       width: '100%',
       height: 300,
-      marginVertical: 20,
+      marginTop: 20,
     },
     map: {
       width: '100%',
       height: '100%',
-    },
-    imagePreviewContainer: {
-      marginTop: 15,
-      borderRadius: 12,
-      overflow: 'hidden',
-      alignItems: 'center',
-      borderWidth: 1,
-      borderColor: colors.gray, // Dinámico
-    },
-    imagePreview: {
-      width: '100%',
-      height: 200,
-      resizeMode: 'cover',
-    },
-    // 5. Nuevos estilos para los botones de ubicación
-    locationButtonRow: {
-      flexDirection: 'row',
-      gap: 10,
-      zIndex: 1000,
-    },
-    locationButton: {
-      flex: 1,
-    },
-    locationButtonText: {
-      fontSize: 14,
-    },
-    locationText: {
-      textAlign: 'center',
-      marginTop: 12,
-      color: colors.darkGray, // Dinámico
-      fontSize: 14,
     },
   });
 

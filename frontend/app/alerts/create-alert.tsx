@@ -1,13 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   StyleSheet,
-  TouchableOpacity,
   ScrollView,
+  TouchableOpacity,
   Image,
-  Dimensions,
-  KeyboardAvoidingView,
-  Platform,
   ActivityIndicator,
 } from 'react-native';
 import * as Location from 'expo-location';
@@ -53,8 +50,7 @@ export default function CreateAlertScreen() {
   // 3. Llamar al hook y generar los estilos
   const { colors, isDark } = useTheme();
   const styles = getStyles(colors, isDark);
-
-  const { showError, showSuccess } = useNotification();
+  const { showError, showSuccess, confirm, showInfo } = useNotification();
   const router = useRouter();
   const { triggerRefresh } = useRefresh();
 
@@ -146,6 +142,22 @@ export default function CreateAlertScreen() {
     showSuccess('Éxito', 'Ubicación eliminada');
   };
 
+  // Función para pedir permiso y preguntar si desea usar la ubicación
+  const preguntarUsoUbicacion = () => {
+    confirm({
+      title: 'Uso de Ubicación',
+      message: '¿Deseas usar tu ubicación actual?',
+      confirmLabel: 'Sí',
+      cancelLabel: 'No',
+      onConfirm: obtenerUbicacionActual, // función que ya tienes para obtener ubicación
+      onCancel: () => {
+        showInfo('Ubicación', 'No se usará la ubicación actual.');
+        // Aquí puedes agregar lógica si quieres hacer algo cuando el usuario dice No
+      },
+      destructive: false,
+    });
+  };
+
   const formatUbicacion = (location: any) => {
     if (!location) return null;
     return location.address || `${location.latitude}, ${location.longitude}`;
@@ -200,10 +212,13 @@ export default function CreateAlertScreen() {
       label: 'Ubicación (Opcional)',
       type: 'location',
       icon: 'location-outline',
-      placeholder: 'Toca para obtener tu ubicación actual',
-      onLocationPress: obtenerUbicacionActual,
-      onLocationClear: limpiarUbicacion,
-      formatLocation: formatUbicacion,
+      placeholder: 'Seleccionar ubicación',
+      onLocationPress: preguntarUsoUbicacion, // Cambiado para mostrar confirmación
+      onLocationClear: () => {
+        setFormValues((prev) => ({ ...prev, location: null, direccion: '' }));
+      },
+      formatLocation: (loc) =>
+        loc ? `${loc.latitude.toFixed(6)}, ${loc.longitude.toFixed(6)}` : null,
     },
     {
       name: 'direccion',

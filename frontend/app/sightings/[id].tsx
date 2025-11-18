@@ -29,7 +29,6 @@ import {
   obtenerNombreEspecie,
   obtenerNombreEstadoSalud,
 } from '../../src/types/report';
-import { Sighting } from '../../src/types/sighting';
 
 // 2. Importar el hook y los tipos de tema
 import { useTheme } from '@/src/contexts/ThemeContext';
@@ -340,9 +339,7 @@ const SightingDetailScreen = () => {
               <View
                 style={[
                   styles.iconCircle,
-                  estaActivo
-                    ? styles.iconCircleSuccess
-                    : styles.iconCircleGray,
+                  estaActivo ? styles.iconCircleSuccess : styles.iconCircleGray,
                 ]}
               >
                 <Ionicons
