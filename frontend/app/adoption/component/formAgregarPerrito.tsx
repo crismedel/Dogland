@@ -81,8 +81,7 @@ const FormAgregarPerrito = () => {
         );
       } catch (error) {
         console.error('Error cargando datos iniciales:', error);
-        // 3. Reemplazar Alert
-        showError(
+        Alert.alert(
           'Error',
           'No se pudieron cargar las listas de opciones. Revisa tu conexión.',
         );
@@ -104,10 +103,7 @@ const FormAgregarPerrito = () => {
         // Llamamos al endpoint con el filtro ?id_especie=X
         const races = await fetchRaces(formValues.id_especie);
         setRacesOptions(
-          races.map((r: any) => ({
-            label: r.nombre_raza,
-            value: r.id_raza,
-          })),
+          races.map((r: any) => ({ label: r.nombre_raza, value: r.id_raza })),
         );
       } catch (error) {
         console.error('Error cargando razas:', error);
@@ -195,8 +191,7 @@ const FormAgregarPerrito = () => {
       !formValues.id_estado_salud ||
       !formValues.id_especie
     ) {
-      // 3. Reemplazar Alert
-      showError(
+      Alert.alert(
         'Campos incompletos',
         'Nombre, Especie y Estado de Salud son obligatorios.',
       );
@@ -229,9 +224,11 @@ const FormAgregarPerrito = () => {
       const response = await createFullAnimal(payload);
 
       if (response.success) {
-        // 3. Reemplazar Alert
-        showSuccess('¡Éxito! 🎉', 'El animal ha sido registrado correctamente.');
-        router.back();
+        Alert.alert(
+          '¡Éxito! 🎉',
+          'El animal ha sido registrado correctamente.',
+          [{ text: 'OK', onPress: () => router.back() }],
+        );
       } else {
         // Manejo de errores del backend
         const errorMsg = response.errors
@@ -249,7 +246,7 @@ const FormAgregarPerrito = () => {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView>
       <View style={styles.card}>
         <AppText style={styles.title}>Registrar Nuevo Animal</AppText>
         <AppText style={styles.subtitle}>

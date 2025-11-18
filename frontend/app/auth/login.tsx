@@ -32,6 +32,8 @@ import Constants from 'expo-constants';
 import { getExpoPushTokenAsync } from '@/src/utils/expoNotifications';
 import { registerPushToken } from '@/src/api/notifications';
 import * as SecureStore from 'expo-secure-store';
+import { useGoogleSignInNative } from '@/src/hooks/useGoogleSignInNative';
+import { GoogleSignInButton } from '@/src/components/GoogleSignInButton';
 
 // 2. Importar el hook y los tipos de tema
 import { useTheme } from '@/src/contexts/ThemeContext';
@@ -48,6 +50,28 @@ export default function LoginWithValidation() {
   const [showPassword, setShowPassword] = useState(false);
   const { showInfo, showError, showSuccess, showWarning } = useNotification();
   const { login } = useAuth();
+
+  // Hook para autenticación con Google (nativo)
+  const {
+    signIn: googleSignIn,
+    isLoading: googleLoading,
+    error: googleError,
+    isReady: googleReady,
+  } = useGoogleSignInNative({
+    onSuccess: async (token, user) => {
+      try {
+        await login(token);
+        showSuccess('Éxito', 'Has iniciado sesión con Google correctamente.');
+        registerPushTokenSafely();
+        router.replace('/home');
+      } catch (error) {
+        showError('Error', 'No se pudo completar el inicio de sesión.');
+      }
+    },
+    onError: (error) => {
+      showError('Error de Google', error);
+    },
+  });
 
   // React Hook Form con validación Zod
   const {
@@ -310,6 +334,25 @@ export default function LoginWithValidation() {
               </>
             )}
           </TouchableOpacity>
+
+          {/* Google Sign In - Solo en Development Build */}
+          {googleReady && (
+            <>
+              {/* Divider */}
+              <View style={styles.dividerContainer}>
+                <View style={styles.dividerLine} />
+                <AppText style={styles.dividerText}>o</AppText>
+                <View style={styles.dividerLine} />
+              </View>
+
+              {/* Google Sign In Button */}
+              <GoogleSignInButton
+                onPress={googleSignIn}
+                isLoading={googleLoading}
+                disabled={loading}
+              />
+            </>
+          )}
         </View>
 
         {/* Register Button */}

@@ -209,11 +209,13 @@ const MySightingsScreen = () => {
 
   if (loading && sightings.length === 0 && !error) {
     return (
-      <View style={styles.centered}>
-        {/* 4. Usar colores del tema */}
-        <ActivityIndicator size="large" color={colors.primary} />
-        <AppText style={styles.loadingText}>
-          Cargando tus avistamientos...
+      <TouchableOpacity
+        style={[styles.tabButton, isActive && styles.tabButtonActive]}
+        onPress={() => setActiveTab(tab)}
+      >
+        <Ionicons name={icon as any} size={20} color={Colors.secondary} />
+        <AppText style={[styles.tabLabel, isActive && styles.tabLabelActive]}>
+          {label}
         </AppText>
       </View>
     );
@@ -375,4 +377,107 @@ const getStyles = (colors: ColorsType, isDark: boolean) =>
     },
   });
 
-export default MySightingsScreen;
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: Colors.background,
+  },
+  content: {
+    flex: 1,
+    paddingHorizontal: 16,
+  },
+  tabsContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 8,
+    backgroundColor: Colors.background,
+  },
+  tabButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: Colors.cardBackground,
+    borderWidth: 1,
+    borderColor: Colors.secondary,
+  },
+  tabButtonActive: {
+    backgroundColor: `rgba(251, 191, 36, 0.1)`,
+    borderColor: Colors.primary,
+  },
+  tabLabel: {
+    fontSize: 14,
+    color: Colors.secondary,
+    fontWeight: fontWeightMedium,
+  },
+  tabLabelActive: {
+    color: Colors.secondary,
+    fontWeight: fontWeightSemiBold,
+  },
+  center: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: Colors.background,
+  },
+  loadingText: {
+    marginTop: 8,
+    color: Colors.secondary,
+  },
+  emptyState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+    gap: 8,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: fontWeightSemiBold,
+    color: Colors.text,
+    textAlign: 'center',
+    marginTop: 8,
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    color: Colors.secondary,
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  retryBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  retryText: {
+    color: Colors.cardBackground,
+    fontWeight: fontWeightMedium,
+  },
+  sightingCard: {
+    backgroundColor: Colors.cardBackground,
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: Colors.secondary,
+  },
+  sightingTitle: {
+    fontSize: 16,
+    fontWeight: fontWeightSemiBold,
+    color: Colors.text,
+    marginBottom: 4,
+  },
+  sightingDate: {
+    fontSize: 13,
+    color: Colors.secondary,
+  },
+});

@@ -53,6 +53,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         id: payload.id,
         email: payload.email,
         role: payload.role,
+        nombre: payload.nombre,
       });
       setToken(tokenString);
     } else {

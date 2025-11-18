@@ -2,11 +2,9 @@ import apiClient from '@/src/api/client';
 import {
   AppText,
   fontWeightBold,
-  fontWeightMedium,
   fontWeightSemiBold,
 } from '@/src/components/AppText';
-// 1. Quitar la importación estática
-// import { Colors } from '@/src/constants/colors';
+import Spinner from '@/src/components/UI/Spinner';
 import {
   obtenerColorMarcador,
   obtenerNombreEspecie,
@@ -65,7 +63,6 @@ const EditSightingScreen = () => {
   // 3. Llamar al hook y generar los estilos
   const { colors, isDark } = useTheme();
   const styles = getStyles(colors, isDark);
-
   const { id } = useLocalSearchParams();
   const router = useRouter();
 
@@ -138,10 +135,12 @@ const EditSightingScreen = () => {
           apiClient.get('/estados-avistamiento'),
         ]);
         // Para especies - usar obtenerNombreEspecie
-        const especiesFormateadas = speciesRes.data.data.map((item: Option) => ({
-          label: obtenerNombreEspecie(item.id), // Usar la función de report.ts
-          value: item.id,
-        }));
+        const especiesFormateadas = speciesRes.data.data.map(
+          (item: Option) => ({
+            label: obtenerNombreEspecie(item.id), // Usar la función de report.ts
+            value: item.id,
+          }),
+        );
 
         // Para estados de salud - usar obtenerNombreEstadoSalud
         const estadosSaludFormateados = healthRes.data.data.map(
@@ -213,8 +212,7 @@ const EditSightingScreen = () => {
         // VERIFICAR SI EL USUARIO ACTUAL PUEDE EDITAR
         // Esperar a que tengamos tanto el usuario actual como los datos del avistamiento
         if (currentUserId !== null) {
-          const userCanEdit =
-            isAdmin || (sighting as any).id_usuario === currentUserId; // Asumiendo que 'id_usuario' viene en Sighting
+          const userCanEdit = isAdmin || sighting.id_usuario === currentUserId;
           setCanEdit(userCanEdit);
 
           if (!userCanEdit) {
@@ -270,8 +268,7 @@ const EditSightingScreen = () => {
       formData.direccion !== originalData.direccion ||
       formData.id_especie !== originalData.id_especie ||
       formData.id_estado_salud !== originalData.id_estado_salud ||
-      formData.id_estado_avistamiento !==
-        originalData.id_estado_avistamiento ||
+      formData.id_estado_avistamiento !== originalData.id_estado_avistamiento ||
       ubicacionChanged
     );
   };
@@ -314,21 +311,16 @@ const EditSightingScreen = () => {
 
       await apiClient.put(`/sightings/${id}`, payload);
 
-      Alert.alert(
-        'Éxito',
-        'Avistamiento actualizado correctamente',
-        [{ text: 'OK', onPress: () => router.back() }],
-      );
+      Alert.alert('Éxito', 'Avistamiento actualizado correctamente', [
+        { text: 'OK', onPress: () => router.back() },
+      ]);
     } catch (err: any) {
       console.error(
         'Error updating sighting:',
         err.response?.data || err.message,
       );
       if (err.response?.status === 403) {
-        Alert.alert(
-          'Acción Prohibida',
-          'No tienes permiso para editar esto.',
-        );
+        Alert.alert('Acción Prohibida', 'No tienes permiso para editar esto.');
       } else if (err.response?.status === 404) {
         Alert.alert('Error', 'El avistamiento no fue encontrado.');
       } else if (err.response?.status === 400) {
@@ -351,24 +343,17 @@ const EditSightingScreen = () => {
     router.back();
   };
 
-  // 4. Actualizar getMarkerColor para usar 'colors'
   const getMarkerColor = () => {
     if (formData.id_estado_salud) {
       return obtenerColorMarcador(formData.id_estado_salud);
     }
-    return colors.accent;
+    return Colors.accent;
   };
 
   // --- RENDER ---
 
   if (loadingData || loadingOptions) {
-    return (
-      <View style={styles.centered}>
-        {/* 4. Usar colores del tema */}
-        <ActivityIndicator size="large" color={colors.accent} />
-        <AppText style={styles.loadingText}>Cargando datos de edición...</AppText>
-      </View>
-    );
+    return <Spinner />;
   }
 
   if (error) {
@@ -454,7 +439,6 @@ const EditSightingScreen = () => {
               onChangeText={(text) => handleInputChange('direccion', text)}
               placeholder="Ej: Cerca del parque central"
               editable={canEdit} // 🔥 Solo editable si tiene permisos
-              placeholderTextColor={colors.darkGray}
             />
 
             <AppText style={styles.label}>Descripción</AppText>
@@ -471,7 +455,6 @@ const EditSightingScreen = () => {
               numberOfLines={4}
               textAlignVertical="top"
               editable={canEdit} //  Solo editable si tiene permisos
-              placeholderTextColor={colors.darkGray}
             />
 
             {/* --- ESTADO AVISTAMIENTO --- */}
@@ -501,7 +484,6 @@ const EditSightingScreen = () => {
                 textStyle={styles.dropdownText}
                 placeholderStyle={styles.dropdownPlaceholder}
                 disabled={!canEdit} //  Deshabilitado si no puede editar
-                theme={isDark ? 'DARK' : 'LIGHT'}
               />
             </View>
 
@@ -529,7 +511,6 @@ const EditSightingScreen = () => {
                 textStyle={styles.dropdownText}
                 placeholderStyle={styles.dropdownPlaceholder}
                 disabled={!canEdit} // Deshabilitado si no puede editar
-                theme={isDark ? 'DARK' : 'LIGHT'}
               />
             </View>
 
@@ -557,7 +538,6 @@ const EditSightingScreen = () => {
                 textStyle={styles.dropdownText}
                 placeholderStyle={styles.dropdownPlaceholder}
                 disabled={!canEdit} // Deshabilitado si no puede editar
-                theme={isDark ? 'DARK' : 'LIGHT'}
               />
             </View>
 
@@ -596,10 +576,7 @@ const EditSightingScreen = () => {
                   disabled={!hasChanges() || isSubmitting}
                 >
                   {isSubmitting ? (
-                    <ActivityIndicator
-                      color={isDark ? colors.lightText : colors.text} // 4. Usar colores del tema
-                      size="small"
-                    />
+                    <ActivityIndicator color={Colors.lightText} size="small" />
                   ) : (
                     <AppText style={styles.buttonText}>Guardar Cambios</AppText>
                   )}

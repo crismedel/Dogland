@@ -24,18 +24,21 @@ interface ReporteDetailsProps {
   reporte: any; // Puedes cambiar 'any' por tu tipo 'Reporte' si lo tienes
   onClose: () => void;
   onDelete: () => void;
-  distance: string | null; // <-- ¡AQUÍ ESTÁ LA NUEVA PROP!
+  distance: string | null;
+  onCloseSighting: () => void; // <-- Prop para abrir el modal de cierre
+  canModify: boolean; // <-- Prop de permisos
 }
 
 export const ReporteDetails = ({
   reporte,
   onClose,
   onDelete,
-  distance, // <-- Recibimos la prop
+  distance,
+  onCloseSighting, // <-- Recibimos la prop
+  canModify, // <-- Recibimos la prop
 }: ReporteDetailsProps) => {
-  // 3. Llamar al hook y generar los estilos
-  const { colors } = useTheme();
-  const styles = getStyles(colors);
+  // Un reporte se considera 'cerrado' si su estado no es 'Activo' (ID 1)
+  const isClosed = reporte.id_estado_avistamiento !== 1;
 
   return (
     <View style={styles.floatingDetailsContainer}>
@@ -62,17 +65,34 @@ export const ReporteDetails = ({
           {/* ---------------------------------- */}
 
           <View style={styles.detailRow}>
-            <AppText style={styles.detailIcon}>📍</AppText>
-            <AppText style={styles.detailValue}>{reporte.direccion}</AppText>
+            <Ionicons
+              name="location-sharp"
+              size={16}
+              color={Colors.secondary}
+              style={styles.detailIcon}
+            />
+            <AppText style={[styles.detailValue, { color: Colors.text }]}>
+              {reporte.direccion}
+            </AppText>
           </View>
           <View style={styles.detailRow}>
-            <AppText style={styles.detailIcon}>🐾</AppText>
-            <AppText style={styles.detailValue}>
+            <Ionicons
+              name="paw-outline"
+              size={16}
+              color={Colors.secondary}
+              style={styles.detailIcon}
+            />
+            <AppText style={[styles.detailValue, { color: Colors.text }]}>
               {obtenerNombreEspecie(reporte.id_especie)}
             </AppText>
           </View>
           <View style={styles.detailRow}>
-            <AppText style={styles.detailIcon}>🏥</AppText>
+            <Ionicons
+              name="medkit-outline"
+              size={16}
+              color={Colors.secondary}
+              style={styles.detailIcon}
+            />
             <AppText
               style={[
                 styles.detailValue,
@@ -86,8 +106,13 @@ export const ReporteDetails = ({
             </AppText>
           </View>
           <View style={styles.detailRow}>
-            <AppText style={styles.detailIcon}>📅</AppText>
-            <AppText style={styles.detailValue}>
+            <Ionicons
+              name="calendar-outline"
+              size={16}
+              color={Colors.secondary}
+              style={styles.detailIcon}
+            />
+            <AppText style={[styles.detailValue, { color: Colors.text }]}>
               {new Date(reporte.fecha_creacion).toLocaleDateString('es-ES', {
                 year: 'numeric',
                 month: 'long',
@@ -96,17 +121,46 @@ export const ReporteDetails = ({
             </AppText>
           </View>
           <View style={styles.detailRow}>
-            <AppText style={styles.detailIcon}>#️⃣</AppText>
-            <AppText style={styles.detailValue}>
-              {reporte.id_avistamiento}
+            <Ionicons
+              name="pricetag-outline"
+              size={16}
+              color={Colors.secondary}
+              style={styles.detailIcon}
+            />
+            <AppText style={[styles.detailValue, { color: Colors.text }]}>
+              reporte numero {reporte.id_avistamiento}
             </AppText>
           </View>
         </View>
       </ScrollView>
 
-      <TouchableOpacity onPress={onDelete} style={styles.deleteButton}>
-        <AppText style={styles.deleteButtonText}>🗑️ Eliminar Reporte</AppText>
-      </TouchableOpacity>
+      {/* --- BOTONES CONDICIONALES POR PERMISO --- */}
+      {canModify && (
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity
+            onPress={onDelete}
+            style={[styles.actionButton, styles.deleteButton]}
+          >
+            <Ionicons name="trash-outline" size={16} color={Colors.lightText} />
+            <AppText style={styles.actionButtonText}>Eliminar</AppText>
+          </TouchableOpacity>
+
+          {/* El botón de CERRAR solo aparece si el reporte está ACTIVO */}
+          {!isClosed && (
+            <TouchableOpacity
+              onPress={onCloseSighting}
+              style={[styles.actionButton, styles.closeReportButton]}
+            >
+              <Ionicons
+                name="shield-checkmark-outline"
+                size={16}
+                color={Colors.lightText}
+              />
+              <AppText style={styles.actionButtonText}>Cerrar Reporte</AppText>
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
     </View>
   );
 };

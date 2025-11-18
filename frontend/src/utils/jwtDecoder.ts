@@ -7,6 +7,20 @@ export interface JWTPayload {
   id: number;
   role: string;
   email: string;
+  nombre?: string;
+  iat: number;
+  exp: number;
+}
+
+// Interfaz para el payload crudo del backend
+interface RawJWTPayload {
+  id_usuario?: number;
+  id?: number;
+  id_rol?: number;
+  role?: string;
+  email: string;
+  nombre_usuario?: string;
+  nombre?: string;
   iat: number;
   exp: number;
 }
@@ -33,7 +47,17 @@ export const decodeJWT = (token: string): JWTPayload | null => {
         .join('')
     );
 
-    return JSON.parse(jsonPayload) as JWTPayload;
+    const rawPayload = JSON.parse(jsonPayload) as RawJWTPayload;
+
+    // Mapear campos del backend al formato esperado por el frontend
+    return {
+      id: rawPayload.id_usuario || rawPayload.id || 0,
+      role: rawPayload.id_rol?.toString() || rawPayload.role || '',
+      email: rawPayload.email,
+      nombre: rawPayload.nombre_usuario || rawPayload.nombre,
+      iat: rawPayload.iat,
+      exp: rawPayload.exp,
+    } as JWTPayload;
   } catch (error) {
     console.error('Error al decodificar JWT:', error);
     return null;

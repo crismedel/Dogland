@@ -161,13 +161,7 @@ const StatsScreen = () => {
     [baseChartConfig, colors.danger, colors.primary],
   );
 
-  const barChartConfig = useMemo(
-    () => ({
-      ...baseChartConfig,
-      barPercentage: 0.8,
-    }),
-    [baseChartConfig],
-  );
+  const chartWidth = width - 40 - 20;
 
   if (loading) {
     return <Spinner />;
@@ -247,11 +241,24 @@ const StatsScreen = () => {
                 labels: trend.labels,
                 datasets: [{ data: trend.data }],
               }}
-              width={width - 40}
+              width={chartWidth}
               height={220}
               yAxisLabel=""
               yAxisSuffix=""
-              chartConfig={lineChartConfig} // 5. Usar config dinámica
+              chartConfig={{
+                backgroundColor: Colors.cardBackground,
+                backgroundGradientFrom: Colors.cardBackground,
+                backgroundGradientTo: Colors.cardBackground,
+                decimalPlaces: 0,
+                color: (opacity = 1) => `rgba(255, 99, 71, ${opacity})`,
+                labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+                style: { borderRadius: 16 },
+                propsForDots: {
+                  r: '5',
+                  strokeWidth: '2',
+                  stroke: Colors.primary,
+                },
+              }}
               bezier
               style={styles.chart}
             />
@@ -268,11 +275,19 @@ const StatsScreen = () => {
           {speciesChartData.labels.length > 0 ? (
             <BarChart
               data={speciesChartData}
-              width={width - 40}
+              width={chartWidth}
               height={220}
               yAxisLabel=""
               yAxisSuffix=""
-              chartConfig={barChartConfig} // 5. Usar config dinámica
+              chartConfig={{
+                backgroundColor: Colors.cardBackground,
+                backgroundGradientFrom: Colors.cardBackground,
+                backgroundGradientTo: Colors.cardBackground,
+                decimalPlaces: 0,
+                color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+                style: { borderRadius: 16 },
+                barPercentage: 0.8,
+              }}
               style={styles.chart}
             />
           ) : (
@@ -290,9 +305,14 @@ const StatsScreen = () => {
           {healthStatesPieData.length > 0 ? (
             <PieChart
               data={healthStatesPieData}
-              width={width - 40}
+              width={chartWidth}
               height={220}
-              chartConfig={baseChartConfig} // 5. Usar config dinámica
+              chartConfig={{
+                backgroundColor: Colors.cardBackground,
+                backgroundGradientFrom: Colors.cardBackground,
+                backgroundGradientTo: Colors.cardBackground,
+                color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+              }}
               accessor="population"
               backgroundColor="transparent"
               paddingLeft="15"

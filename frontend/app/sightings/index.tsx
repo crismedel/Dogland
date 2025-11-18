@@ -1,26 +1,26 @@
+import { AppText } from '@/src/components/AppText';
+import { useNotification } from '@/src/components/notifications';
+import CustomHeader from '@/src/components/UI/CustomHeader';
+import { Colors } from '@/src/constants/colors';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  View,
-  StyleSheet,
-  FlatList,
-  RefreshControl,
-  TouchableOpacity,
   ActivityIndicator,
+  FlatList,
   Image,
+  RefreshControl,
+  StyleSheet,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
 import apiClient from '../../src/api/client';
-// 1. Quitar la importación estática
-// import { Colors } from '@/src/constants/colors';
 import { useNotification } from '@/src/components/notifications';
 import {
   obtenerNombreEspecie,
   obtenerNombreEstadoSalud,
 } from '../../src/types/report';
-import { AppText } from '@/src/components/AppText';
-import CustomHeader from '@/src/components/UI/CustomHeader';
+import Spinner from '@/src/components/UI/Spinner';
 
 // 2. Importar el hook y los tipos de tema
 import { useTheme } from '@/src/contexts/ThemeContext';
@@ -37,11 +37,25 @@ interface ApiSighting {
   id_estado_avistamiento: number;
   latitude?: number;
   longitude?: number;
+  id_usuario: number;
+  titulo: string;
+  motivo_cierre?: string;
 }
 
 interface Sighting extends ApiSighting {
   activa: boolean;
 }
+
+// --- Helpers de Estado ---
+const getSightingStatusName = (id: number) => {
+  if (id === 1) return 'Activo';
+  if (id === 2) return 'Desaparecido';
+  if (id === 3) return 'Observado';
+  if (id === 4) return 'Recuperado';
+  if (id === 5) return 'Cerrado';
+  return 'Desconocido';
+};
+const CERRADO_STATUS_ID = 5;
 
 const AvistamientosScreen: React.FC = () => {
   // 3. Llamar al hook y generar los estilos
@@ -55,6 +69,8 @@ const AvistamientosScreen: React.FC = () => {
   const [criticalSightings, setCriticalSightings] = useState<Sighting[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  // (Se quitó la lógica de modales de este archivo)
 
   const normalizeSighting = (item: ApiSighting): Sighting => ({
     ...item,
@@ -159,6 +175,7 @@ const AvistamientosScreen: React.FC = () => {
     [colors],
   ); // Depende de 'colors'
 
+  // --- HANDLER RESTAURADO (para navegar) ---
   const handlePressSighting = (id: number) => {
     router.push({ pathname: '/sightings/[id]', params: { id: id.toString() } });
   };
@@ -186,53 +203,45 @@ const AvistamientosScreen: React.FC = () => {
   // 5. Actualizar renderDashboard para usar 'colors'
   const renderDashboard = () => (
     <View style={styles.dashboardWrap}>
-      <LinearGradient
-        colors={[colors.background, colors.backgroundSecon]}
-        start={[0, 0]}
-        end={[1, 1]}
-        style={styles.dashboard}
-      >
+      <View style={styles.dashboard}>
         <View style={styles.metricItem}>
-          <LinearGradient
-            colors={[colors.accent, colors.primary]}
-            style={styles.metricIconBg}
+          <View
+            style={[styles.metricIconBg, { backgroundColor: Colors.accent }]}
           >
-            <Ionicons name="list" size={20} color={colors.lightText} />
-          </LinearGradient>
+            <Ionicons name="list" size={20} color={Colors.lightText} />
+          </View>
           <AppText style={styles.metricValue}>{totalCount}</AppText>
           <AppText style={styles.metricLabel}>Total</AppText>
         </View>
 
         <View style={styles.metricItem}>
-          <LinearGradient
-            colors={[colors.danger, '#ffb3b3']}
-            style={styles.metricIconBg}
+          <View
+            style={[styles.metricIconBg, { backgroundColor: Colors.danger }]}
           >
-            <Ionicons name="alert-circle" size={20} color={colors.lightText} />
-          </LinearGradient>
+            <Ionicons name="alert-circle" size={20} color={Colors.lightText} />
+          </View>
           <AppText style={styles.metricValue}>{criticalCount}</AppText>
           <AppText style={styles.metricLabel}>Críticos</AppText>
         </View>
 
         <View style={styles.metricItem}>
-          <LinearGradient
-            colors={[colors.success, '#b8f5b8']}
-            style={styles.metricIconBg}
+          <View
+            style={[styles.metricIconBg, { backgroundColor: Colors.success }]}
           >
             <Ionicons
               name="checkmark-circle"
               size={20}
               color={colors.lightText}
             />
-          </LinearGradient>
+          </View>
           <AppText style={styles.metricValue}>{activeCount}</AppText>
           <AppText style={styles.metricLabel}>Activos</AppText>
         </View>
-      </LinearGradient>
+      </View>
     </View>
   );
 
-  // 5. Actualizar renderItem para usar 'colors'
+  // --- RENDER ITEM (Modificado para mostrar motivo) ---
   const renderItem = ({ item }: { item: Sighting }) => {
     const palette = getStatePalette(item.id_estado_salud);
     const stateName =
@@ -240,116 +249,116 @@ const AvistamientosScreen: React.FC = () => {
     const speciesName =
       obtenerNombreEspecie(item.id_especie) || 'Especie desconocida';
 
+    // Nueva lógica de estado
+    const sightingStatusName = getSightingStatusName(
+      item.id_estado_avistamiento,
+    );
+    const isClosed = item.id_estado_avistamiento === CERRADO_STATUS_ID;
+
     return (
       <TouchableOpacity
         activeOpacity={0.9}
-        onPress={() => handlePressSighting(item.id_avistamiento)}
+        onPress={() => handlePressSighting(item.id_avistamiento)} // <-- LLAMA A NAVEGACIÓN
+        style={[styles.card, isClosed && styles.closedCard]}
       >
-        <LinearGradient
-          colors={[`${palette.start}10`, `${palette.end}05`]}
-          start={[0, 0]}
-          end={[1, 1]}
-          style={[styles.card, { borderColor: palette.accent + '100' }]}
-        >
+        <View style={styles.gradientBackground}>
           <View style={styles.cardLeft}>
-            <LinearGradient
-              colors={[palette.start, palette.end]}
-              style={styles.stateBadge}
-              start={[0, 0]}
-              end={[1, 1]}
+            <View
+              style={[styles.stateBadge, { backgroundColor: palette.start }]}
             >
               <Ionicons
                 name={item.id_estado_salud === 3 ? 'warning' : 'leaf'}
                 size={20}
                 color={colors.lightText} // Usar color de tema
               />
-            </LinearGradient>
+            </View>
           </View>
 
           <View style={styles.cardBody}>
             <View style={styles.cardTitleRow}>
               <AppText style={styles.cardTitle} numberOfLines={2}>
-                {item.descripcion || 'Sin descripción.'}
+                {item.titulo || item.descripcion || 'Sin descripción.'}
               </AppText>
               <AppText style={styles.smallDate}>
                 {formatDate(item.fecha_creacion)}
               </AppText>
             </View>
 
-            <View style={styles.chipsRow}>
-              <LinearGradient
-                colors={[`${palette.start}33`, `${palette.end}55`]}
-                start={[0, 0]}
-                end={[1, 1]}
-                style={styles.chipGradient}
-              >
-                <View style={styles.chipInner}>
-                  <Ionicons
-                    name="paw"
-                    size={14}
-                    color={palette.accent}
-                    style={{ marginRight: 6 }}
-                  />
-                  <AppText style={[styles.chipText, { color: palette.accent }]}>
-                    {speciesName}
-                  </AppText>
-                </View>
-              </LinearGradient>
-
-              <LinearGradient
-                colors={[`${palette.start}33`, `${palette.end}55`]}
-                start={[0, 0]}
-                end={[1, 1]}
-                style={styles.chipGradient}
-              >
-                <View style={styles.chipInner}>
-                  <Ionicons
-                    name="heart"
-                    size={14}
-                    color={palette.accent}
-                    style={{ marginRight: 6 }}
-                  />
-                  <AppText style={[styles.chipText, { color: palette.accent }]}>
-                    {stateName}
-                  </AppText>
-                </View>
-              </LinearGradient>
-
-              {item.nivel_riesgo ? (
-                <View
-                  style={[styles.chip, { backgroundColor: palette.chipBg }]}
+            {/* --- MUESTRA MOTIVO DE CIERRE SI EXISTE --- */}
+            {isClosed && item.motivo_cierre && (
+              <View style={styles.reasonContainer}>
+                <Ionicons
+                  name="information-circle-outline"
+                  size={16}
+                  color={Colors.gray}
+                  style={{ marginRight: 6 }}
+                />
+                <AppText
+                  style={[styles.chipText, { color: Colors.gray }]}
+                  numberOfLines={1}
                 >
-                  <Ionicons
-                    name="flame"
-                    size={14}
-                    color={palette.accent}
-                    style={{ marginRight: 6 }}
-                  />
-                  <AppText style={[styles.chipText, { color: palette.accent }]}>
-                    {item.nivel_riesgo}
-                  </AppText>
-                </View>
-              ) : null}
+                  Motivo: {item.motivo_cierre}
+                </AppText>
+              </View>
+            )}
+
+            <View style={styles.chipsRow}>
+              <View style={[styles.chip, { backgroundColor: palette.chipBg }]}>
+                <Ionicons
+                  name="paw"
+                  size={14}
+                  color={palette.accent}
+                  style={{ marginRight: 6 }}
+                />
+                <AppText style={[styles.chipText, { color: palette.accent }]}>
+                  {speciesName}
+                </AppText>
+              </View>
+
+              <View style={[styles.chip, { backgroundColor: palette.chipBg }]}>
+                <Ionicons
+                  name="heart"
+                  size={14}
+                  color={palette.accent}
+                  style={{ marginRight: 6 }}
+                />
+                <AppText style={[styles.chipText, { color: palette.accent }]}>
+                  {stateName}
+                </AppText>
+              </View>
+
+              <View
+                style={[
+                  styles.chip,
+                  isClosed ? styles.chipClosed : styles.chipActive,
+                ]}
+              >
+                <Ionicons
+                  name={isClosed ? 'lock-closed' : 'eye'}
+                  size={14}
+                  color={isClosed ? Colors.darkGray : Colors.success}
+                  style={{ marginRight: 6 }}
+                />
+                <AppText
+                  style={[
+                    styles.chipText,
+                    isClosed
+                      ? { color: Colors.darkGray }
+                      : { color: Colors.success },
+                  ]}
+                >
+                  {sightingStatusName}
+                </AppText>
+              </View>
             </View>
           </View>
-        </LinearGradient>
+        </View>
       </TouchableOpacity>
     );
   };
 
   if (loading && sightings.length === 0) {
-    return (
-      <View style={styles.container}>
-        {renderHeader()}
-        <View style={styles.loadingWrap}>
-          {/* 6. Usar colores del tema */}
-          <ActivityIndicator size="large" color={colors.primary} />
-          <AppText style={styles.loadingText}>
-            Cargando avistamientos...
-          </AppText>
-        </View>
-      </View>
-    );
+    return <Spinner />;
   }
 
   return (
@@ -382,6 +391,8 @@ const AvistamientosScreen: React.FC = () => {
           </View>
         )}
       />
+
+      {/* --- MODALES ELIMINADOS DE ESTE ARCHIVO --- */}
     </View>
   );
 };

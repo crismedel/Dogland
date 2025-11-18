@@ -93,7 +93,24 @@ const AlertDetailScreen = () => {
 
   // 7. Usar el componente Spinner para la carga
   if (loading) {
-    return <Spinner />;
+    return (
+      <View style={styles.container}>
+        <CustomHeader
+          title="Detalle de Alerta"
+          leftComponent={
+            <TouchableOpacity onPress={() => router.back()}>
+              <Image
+                source={require('../../assets/images/volver.png')}
+                style={{ width: 24, height: 24, tintColor: '#fff' }}
+              />
+            </TouchableOpacity>
+          }
+        />
+        <View style={styles.center}>
+          <Spinner />
+        </View>
+      </View>
+    );
   }
 
   // Mostrar mensaje de error si ocurrió un problema o no se encontró la alerta

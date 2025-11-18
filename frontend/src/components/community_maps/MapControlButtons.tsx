@@ -7,8 +7,6 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-// 1. Quitar la importación estática
-// import { Colors } from '../../constants/colors';
 import { MapControlButtonsProps } from './types'; // Importar los props
 
 // 2. Importar el hook y los tipos de tema
@@ -40,7 +38,6 @@ export const MapControlButtons = ({
         <Ionicons
           name="options-outline"
           size={24}
-          // 4. Usar colores del tema
           color={showCriticalReports ? colors.gray : colors.lightText}
         />
         {hasActiveFilters && !showCriticalReports && (
@@ -62,7 +59,6 @@ export const MapControlButtons = ({
           <Ionicons
             name="warning"
             size={24}
-            // 4. Usar colores del tema
             color={showCriticalReports ? colors.lightText : colors.danger}
           />
         )}

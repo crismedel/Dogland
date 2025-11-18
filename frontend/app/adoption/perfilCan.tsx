@@ -7,7 +7,6 @@ import {
   ScrollView,
   Animated,
   Share,
-  ActivityIndicator,
   Platform,
   Pressable, // Importar Pressable
   Text, // Importar Text
@@ -26,16 +25,12 @@ import {
   fontWeightMedium, // Importar fontWeightMedium
 } from '@/src/components/AppText';
 import {
-  getHealthLabel,
-  getBreedLabel,
-  getAgeDisplay,
   getAgeInYearsDisplay,
-  normalizeAnimal,
+  FALLBACK_IMAGE, // Asegúrate de importar esto
 } from '@/src/utils/animalUtils';
-import { Animal } from '@/src/types/animals';
 import { useNotification } from '@/src/components/notifications/NotificationProvider';
 import { fetchAnimalById } from '@/src/api/animals';
-import { RoleGuard } from '@/src/components/auth'; // Importa RoleGuard
+import { RoleGuard } from '@/src/components/auth'; 
 import Spinner from '@/src/components/UI/Spinner';
 
 // 2. Importar el hook y los tipos de tema
@@ -51,7 +46,7 @@ const PerfilCan = () => {
   const router = useRouter();
   const { showError } = useNotification();
 
-  const [animal, setAnimal] = useState<Animal | null>(null);
+  const [animal, setAnimal] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
 
   const id = String(params.id ?? '');
@@ -63,8 +58,10 @@ const PerfilCan = () => {
       return;
     }
     setLoading(true);
+    
+    // Ahora fetchAnimalById devuelve los datos ya mapeados correctamente
     fetchAnimalById(Number(id))
-      .then((data) => setAnimal(normalizeAnimal(data)))
+      .then((data) => setAnimal(data))
       .catch(() => {
         showError('Error', 'No se pudo cargar el perfil del animal');
         router.back();
@@ -78,10 +75,15 @@ const PerfilCan = () => {
 
   if (!animal) return null;
 
-  const healthLabel = getHealthLabel(animal);
-  const breedLabel = getBreedLabel(animal.breed);
-  const ageDisplay = getAgeDisplay(animal);
-  const AgeInYearsDisplay = getAgeInYearsDisplay(animal.age);
+  // Datos procesados directamente del objeto animal
+  const healthLabel = animal.healthStatus || 'Sin información';
+  const breedLabel = animal.breed || 'Raza desconocida';
+  const ageDisplay = (animal.age !== null && animal.age !== undefined)
+      ? getAgeInYearsDisplay(animal.age)
+      : (animal.ageText || 'Edad desconocida');
+  
+  // Manejo de imagen con fallback
+  const displayImage = animal.imageUrl || FALLBACK_IMAGE;
 
   const handleSolicitarAdopcion = () => {
     router.push({
@@ -90,8 +92,8 @@ const PerfilCan = () => {
         idAnimal: animal.id,
         nombreAnimal: animal.name,
         breed: breedLabel,
-        age: String(animal.age),
-        imageUrl: animal.imageUrl,
+        age: String(ageDisplay),
+        imageUrl: displayImage,
       },
     });
   };
@@ -114,17 +116,15 @@ const PerfilCan = () => {
     }
   };
 
+  // Colores (misma lógica que en Card)
   const estadoColor = (() => {
-    if (animal.estadoMedico === 1 || healthLabel === 'Sano') return '#2e7d32';
-    if (animal.estadoMedico === 2 || healthLabel === 'En tratamiento')
-      return '#ef6c00';
-    if (animal.estadoMedico === 3 || healthLabel === 'Recuperado')
-      return '#0288d1';
-    if (healthLabel === 'Discapacitado') return '#6a1b9a';
+    const status = healthLabel.toLowerCase();
+    if (status.includes('sano') || status.includes('saludable')) return '#2e7d32';
+    if (status.includes('tratamiento') || status.includes('enfermo')) return '#ef6c00';
+    if (status.includes('recuperado')) return '#0288d1';
+    if (status.includes('herido') || status.includes('crítico')) return '#c62828';
     return '#455a64';
   })();
-
-  const estadoTexto = healthLabel || 'Disponible para adopción';
 
   return (
     <View style={styles.screen}>
@@ -164,7 +164,7 @@ const PerfilCan = () => {
       >
         <View style={styles.neuImageWrapper}>
           <View style={styles.imageWrap}>
-            <Image source={{ uri: animal.imageUrl }} style={styles.image} />
+            <Image source={{ uri: displayImage }} style={styles.image} />
 
             <View
               style={[
@@ -172,7 +172,7 @@ const PerfilCan = () => {
                 { backgroundColor: estadoColor + 'dd' },
               ]}
             >
-              <AppText style={styles.estadoText}>{estadoTexto}</AppText>
+              <AppText style={styles.estadoText}>{healthLabel}</AppText>
             </View>
 
             <View style={styles.innerShadowBottom} />
@@ -188,18 +188,13 @@ const PerfilCan = () => {
         <AppText style={styles.subtle}>{ageDisplay}</AppText>
 
         <View style={styles.pillsRow}>
-          {animal.species && (
-            <View style={styles.pill}>
-              <Ionicons
-                name="paw-outline"
-                size={14}
-                color={colors.info} // 4. Usar colores del tema
-              />
-              <AppText numberOfLines={1} style={styles.pillText}>
-                {animal.species}
-              </AppText>
-            </View>
-          )}
+          <View style={styles.pill}>
+             {/* Asumimos que si hay raza, sabemos la especie. O puedes agregar species al mapeo si lo tienes */}
+            <Ionicons name="paw-outline" size={14} color="#1565c0" />
+            <AppText numberOfLines={1} style={styles.pillText}>
+              {breedLabel} 
+            </AppText>
+          </View>
           {animal.size && (
             <View style={styles.pillLight}>
               <Ionicons
@@ -220,40 +215,37 @@ const PerfilCan = () => {
             onPress={handleEditPerfil}
             variant="primary"
             icon="heart"
+            style={{ marginTop: 10 }}
           />
         </RoleGuard>
 
         <NeumorphCard title="Información del Animal">
-          <Row label="Edad aproximada" value={AgeInYearsDisplay} />
-          <Divider />
-          <Row label="Edad real" value={ageDisplay} />
+          <Row label="Edad" value={String(ageDisplay)} />
           <Divider />
           <Row label="Raza" value={breedLabel} truncate />
           <Divider />
           <Row label="Tamaño" value={animal.size || 'Desconocido'} />
           <Divider />
-          <Row label="Estado" value={estadoTexto} valueColor={estadoColor} />
+          <Row label="Estado" value={healthLabel} valueColor={estadoColor} />
         </NeumorphCard>
 
-        <NeumorphCard title="Requisitos de Adopción">
+        <NeumorphCard title="Descripción de Adopción">
+           <AppText style={styles.descriptionText}>
+             {animal.descripcionMedica || "No hay descripción disponible para este animal."}
+           </AppText>
+        </NeumorphCard>
+
+        <NeumorphCard title="Requisitos Generales">
           {[
             'Compromiso de cuidado responsable',
             'Vivienda adecuada',
             'Tiempo para dedicarle',
-            'Compromiso de esterilización',
           ].map((txt, idx) => (
             <View key={idx} style={styles.bulletRow}>
               <View style={styles.bulletDot} />
               <AppText style={styles.bulletText}>{txt}</AppText>
             </View>
           ))}
-        </NeumorphCard>
-
-        <NeumorphCard title="Estado de Salud">
-          <TarjetaMedica
-            estadoMedico={Number(animal.estadoMedico)}
-            descripcion={animal.descripcionMedica || 'Sin detalles adicionales'}
-          />
         </NeumorphCard>
 
         <View style={{ height: 92 }} />
@@ -270,6 +262,9 @@ const PerfilCan = () => {
     </View>
   );
 };
+
+// ... (El resto de los subcomponentes Row, Divider, NeumorphCard y estilos se quedan IGUAL)
+// Asegúrate de copiar los estilos del archivo original, o déjalos como están si solo reemplazas el componente PerfilCan.
 
 // ---------- Subcomponentes ----------
 

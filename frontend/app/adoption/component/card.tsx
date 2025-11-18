@@ -30,7 +30,7 @@ import {
 import { Animal } from '@/src/types/animals';
 
 interface Props {
-  animal: Animal;
+  animal: any;
   currentPage: number;
   isFavorited?: boolean;
   onToggleFavorite?: () => void;
@@ -43,9 +43,16 @@ const AnimalCard: React.FC<Props> = memo(
     const styles = getStyles(colors);
 
     const router = useRouter();
-    const healthLabel = getHealthLabel(animal);
-    const breedLabel = getBreedLabel(animal.breed);
-    const AgeInYearsDisplay = getAgeInYearsDisplay(animal.age);
+
+    // Datos directos del mapeo
+    const healthLabel = animal.healthStatus || '';
+    const breedLabel = animal.breed || '';
+
+    // Edad: numérica o texto aproximado
+    const ageDisplay =
+      animal.age !== null && animal.age !== undefined
+        ? getAgeInYearsDisplay(animal.age)
+        : animal.ageText || '';
 
     const handlePress = useCallback(() => {
       router.push({
@@ -65,8 +72,6 @@ const AnimalCard: React.FC<Props> = memo(
       [onToggleFavorite],
     );
 
-    // Esta lógica de color semántico está bien dejarla aquí,
-    // ya que no depende del tema (claro/oscuro) sino del estado del animal.
     const primaryColor = (() => {
       if (animal.estadoMedico === 1 || healthLabel === 'Sano') return '#2e7d32'; // Verde (Sano)
       if (animal.estadoMedico === 2 || healthLabel === 'En tratamiento')
@@ -107,22 +112,14 @@ const AnimalCard: React.FC<Props> = memo(
             />
           </TouchableOpacity>
 
-          {(healthLabel || animal.estadoMedico) && (
+          {/* Solo mostramos el badge si hay texto de salud */}
+          {healthLabel ? (
             <View
               style={[styles.healthBadge, { backgroundColor: primaryColor }]}
             >
-              <AppText style={styles.healthText}>
-                {healthLabel ??
-                  (animal.estadoMedico === 1
-                    ? 'Sano'
-                    : animal.estadoMedico === 2
-                    ? 'En tratamiento'
-                    : animal.estadoMedico === 3
-                    ? 'Recuperado'
-                    : 'Sin datos')}
-              </AppText>
+              <AppText style={styles.healthText}>{healthLabel}</AppText>
             </View>
-          )}
+          ) : null}
 
           <View style={styles.titleOnImage}>
             <AppText numberOfLines={1} style={styles.nameOnImage}>
@@ -133,20 +130,17 @@ const AnimalCard: React.FC<Props> = memo(
 
         <View style={styles.infoContainer}>
           <View style={styles.rowChips}>
-            {/* SIZE */}
-            {animal.size ? (
-              <View style={styles.tagChip}>
-                <AppText style={styles.tagChipText}>{animal.size}</AppText>
-              </View>
-            ) : null}
-
-            <View style={styles.ageChip}>
-              <AppText style={styles.ageChipText}>
-                {typeof AgeInYearsDisplay === 'number'
-                  ? `${AgeInYearsDisplay}`
-                  : String(AgeInYearsDisplay)}
+            <View style={styles.tagChip}>
+              <AppText style={styles.tagChipText}>
+                {animal.size && animal.size.trim() !== '' ? animal.size : 'N/A'}
               </AppText>
             </View>
+
+            {ageDisplay ? (
+              <View style={styles.ageChip}>
+                <AppText style={styles.ageChipText}>{ageDisplay}</AppText>
+              </View>
+            ) : null}
           </View>
 
           <View style={styles.metaRow}>
@@ -156,12 +150,6 @@ const AnimalCard: React.FC<Props> = memo(
               </AppText>
             </View>
           </View>
-
-          {animal.descripcionMedica ? (
-            <AppText numberOfLines={2} style={styles.medicalNote}>
-              {animal.descripcionMedica}
-            </AppText>
-          ) : null}
         </View>
       </TouchableOpacity>
     );

@@ -17,11 +17,10 @@ import {
   HeatmapPoint,
   Reporte,
 } from '../../src/components/community_maps/types';
-// 1. Quitar la importación estática
-// import { Colors } from '../../src/constants/colors';
+import { ReporteDetails } from '../../src/components/report/ReporteDetails';
 import { getHaversineDistance } from '../../src/utils/geo';
+import { Header } from '@react-navigation/elements';
 import { AppText } from '@/src/components/AppText'; // Importar AppText
-import { ReporteDetails } from '@/src/components/report/ReporteDetails';
 
 // 2. Importar el hook y los tipos de tema
 import { useTheme } from '@/src/contexts/ThemeContext';
@@ -292,7 +291,7 @@ const CommunityMapScreen = () => {
         return;
       }
 
-      //  Mostrar el modal de detalles
+      //  Mostrar el modal de detalles
       setSelectedSighting(reporte);
 
       // Calcular y mostrar la distancia
@@ -480,6 +479,7 @@ const CommunityMapScreen = () => {
             />
           </TouchableOpacity>
         }
+        style={styles.header}
       />
 
       <MapControlButtons
@@ -527,6 +527,11 @@ const CommunityMapScreen = () => {
           }}
           onDelete={handleDelete}
           distance={calculatedDistance}
+          onCloseSighting={() => {
+            // Aquí la función para abrir el modal de cierre o la acción que quieras
+            console.log('Cerrar avistamiento');
+          }}
+          canModify={true} // O la lógica que determines para permisos
         />
       )}
       <FloatingSpeedDial

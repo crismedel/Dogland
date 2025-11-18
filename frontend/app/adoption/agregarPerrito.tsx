@@ -3,6 +3,7 @@ import { Image, StyleSheet, TouchableOpacity, View } from 'react-native';
 import CustomHeader from '@/src/components/UI/CustomHeader';
 import { useRouter } from 'expo-router';
 import FormAgregarPerrito from './component/formAgregarPerrito';
+import { Colors } from '@/src/constants/colors';
 
 // 1. Importar el hook y los tipos de tema
 import { useTheme } from '@/src/contexts/ThemeContext';

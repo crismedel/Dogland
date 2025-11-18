@@ -1,25 +1,64 @@
 import apiClient from "./client";
 
+// --- HELPER: Función para traducir datos del Backend al Frontend ---
+const mapBackendToFrontend = (item: any) => ({
+  id: item.id_animal,
+  name: item.nombre_animal,
+  // Priorizamos la edad exacta, si es null usamos la aproximada
+  age: item.edad_animal, 
+  ageText: item.edad_aproximada, 
+  size: item.tamaño,
+  
+  // Textos directos del backend
+  breed: item.nombre_raza || 'Desconocida', 
+  healthStatus: item.estado_salud || 'Desconocido', // "Saludable", "Herido", etc.
+  
+  // Imagen: Primera foto del array o null
+  imageUrl: (item.fotos && item.fotos.length > 0) ? item.fotos[0].url : null,
+  
+  // Descripción
+  descripcionMedica: item.descripcion_adopcion || ''
+});
+
 // ---------------------------------------------------------
-// FUNCIONES EXISTENTES (NO TOCAR)
+// FUNCIONES
 // ---------------------------------------------------------
 
 export async function fetchAnimals() {
-  const res = await apiClient.get("/animals");
-  return res.data.data;
+  try {
+    const res = await apiClient.get("/animals");
+    const rawData = res.data.data || [];
+    // Usamos el helper para mapear la lista
+    return rawData.map(mapBackendToFrontend);
+  } catch (error) {
+    console.error('Error fetching animals:', error);
+    return [];
+  }
 }
 
 export async function fetchAnimalById(id: number) {
-  const res = await apiClient.get(`/animals/${id}`);
-  return res.data.data;
+  try {
+    const res = await apiClient.get(`/animals/${id}`);
+    // ¡AHORA SÍ! Mapeamos también el detalle individual
+    return mapBackendToFrontend(res.data.data);
+  } catch (error) {
+    console.error('Error fetching animal by ID:', error);
+    throw error;
+  }
 }
 
 export async function fetchAnimalByOrganization(id: number) {
   const res = await apiClient.get(`/animals/organization/${id}`);
-  return res.data.data;
+  // Mapeamos también aquí por si acaso
+  const rawData = res.data.data || [];
+  return rawData.map(mapBackendToFrontend);
 }
 
-// Actualizar un animal
+// ... (El resto del archivo: updateAnimal, createAnimal, createFullAnimal, etc. SE QUEDA IGUAL)
+// Asegúrate de mantener las funciones de createFullAnimal, fetchSpecies, etc. que ya tenías abajo.
+// Solo reemplaza la parte superior con este código.
+
+// ... (Resto del código existente)
 export async function updateAnimal(
   id: number,
   updatedData: {
@@ -39,7 +78,6 @@ export async function updateAnimal(
   }
 }
 
-// Crear un nuevo animal
 export async function createAnimal(newAnimalData: {
   nombre_animal: string;
   edad_animal: number;
@@ -56,11 +94,6 @@ export async function createAnimal(newAnimalData: {
   }
 }
 
-// ---------------------------------------------------------
-// NUEVAS FUNCIONALIDADES (Agregadas para el formulario completo)
-// ---------------------------------------------------------
-
-// 1. Obtener catálogo de Especies
 export async function fetchSpecies() {
   try {
     const res = await apiClient.get("/species");
@@ -71,7 +104,6 @@ export async function fetchSpecies() {
   }
 }
 
-// 2. Obtener catálogo de Estados de Salud
 export async function fetchHealthStates() {
   try {
     const res = await apiClient.get("/health-states");
@@ -82,7 +114,6 @@ export async function fetchHealthStates() {
   }
 }
 
-// 3. Obtener catálogo de Razas (con filtro opcional)
 export async function fetchRaces(idEspecie?: number | string) {
   try {
     const url = idEspecie ? `/races?id_especie=${idEspecie}` : '/races';
@@ -94,19 +125,16 @@ export async function fetchRaces(idEspecie?: number | string) {
   }
 }
 
-// 4. Crear animal completo (Nuevo Endpoint con fotos)
-// Apunta a /animalsPost para no chocar con el createAnimal anterior
 export async function createFullAnimal(animalData: {
   nombre_animal: string;
   edad_animal?: number | null;
   edad_aproximada?: string | null;
   id_estado_salud: number;
   id_raza?: number | null;
-  fotos?: string[]; // Array de URLs
+  fotos?: string[];
 }) {
   try {
     const res = await apiClient.post('/animalsPost', animalData);
-    // Retornamos res.data completo porque suele traer { success, message, data }
     return res.data; 
   } catch (error: any) {
     console.error('API createFullAnimal error:', error.response?.data || error);
