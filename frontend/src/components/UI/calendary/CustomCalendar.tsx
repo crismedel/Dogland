@@ -29,7 +29,7 @@ interface CustomCalendarProps {
   minDate?: string;
   maxDate?: string;
   // 3. Eliminar la prop de theme
-  // theme?: 'light' | 'dark';
+  theme?: 'light' | 'dark';
 }
 
 const CustomCalendar: React.FC<CustomCalendarProps> = ({

@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useCallback } from 'react';
+import React from 'react';
 import {
   View,
   StyleSheet,
@@ -9,7 +9,6 @@ import {
   Image,
   ScrollView,
   Pressable,
-  ActivityIndicator,
   Text,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -46,8 +45,10 @@ export default function Index() {
   const [popupMessage, setPopupMessage] = React.useState<string>('');
   const { logout } = useAuth();
 
+  // Estado para contar notificaciones nuevas
   const [newNotificationsCount, setNewNotificationsCount] = React.useState(0);
 
+  // ✅ cargar únicamente el perfil y notificaciones nuevas
   const loadData = React.useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -57,11 +58,13 @@ export default function Index() {
       const name = user?.nombre_usuario || '';
       setUserName(name);
 
-      const notificationsResponse = await fetchNotifications(1, 100);
+      // Cargar notificaciones para contar las no vistas
+      const notificationsResponse = await fetchNotifications(1, 100); // Ajusta el límite si quieres
       const notifications = Array.isArray(notificationsResponse.rows)
         ? notificationsResponse.rows
         : [];
 
+      // Contar las que no están leídas (read === false)
       const newCount = notifications.filter((n) => !n.read).length;
       setNewNotificationsCount(newCount);
 
@@ -88,6 +91,8 @@ export default function Index() {
     [userName],
   );
 
+  const onOpenSettings = () => router.push('/settings');
+
   const openSocialMedia = (platform: 'facebook' | 'twitter' | 'instagram') => {
     const urls = {
       facebook: 'https://facebook.com',
@@ -109,8 +114,23 @@ export default function Index() {
           { justifyContent: 'center', alignItems: 'center', padding: 16 },
         ]}
       >
-        <AppText style={styles.errorText}>{error}</AppText>
-        <CustomButton title="Reintentar" onPress={loadData} variant="primary" />
+        <AppText
+          style={{ color: 'crimson', textAlign: 'center', marginBottom: 12 }}
+        >
+          {error}
+        </AppText>
+        <CustomButton
+          title="Reintentar"
+          onPress={loadData}
+          variant="primary"
+          style={{ marginBottom: 10 }}
+        />
+
+        <CustomButton
+          title="Ir a Configuraciones"
+          onPress={onOpenSettings}
+          variant="primary"
+        />
       </View>
     );
   }
@@ -357,6 +377,8 @@ const getStyles = (colors: ColorsType, isDark: boolean) =>
       justifyContent: 'space-between',
       marginHorizontal: 16,
       padding: 16,
+      borderWidth: 1,
+      borderColor: colors.secondary,
       backgroundColor: colors.cardBackground, // Dinámico
       borderTopRightRadius: 70,
       borderBottomRightRadius: 70,
@@ -378,6 +400,8 @@ const getStyles = (colors: ColorsType, isDark: boolean) =>
       justifyContent: 'space-between',
       marginHorizontal: 16,
       padding: 16,
+      borderWidth: 1,
+      borderColor: colors.secondary,
       backgroundColor: colors.cardBackground, // Dinámico
       borderTopLeftRadius: 70,
       borderBottomLeftRadius: 70,

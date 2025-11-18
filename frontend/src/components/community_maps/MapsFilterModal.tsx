@@ -1,9 +1,3 @@
-import {
-  AppText,
-  fontWeightBold,
-  fontWeightMedium,
-  fontWeightSemiBold,
-} from '@/src/components/AppText';
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -83,7 +77,7 @@ const MapsFilterModal: React.FC<MapsFilterModalProps> = ({
 }) => {
   // 3. Llamar al hook y generar los estilos
   const { colors, isDark } = useTheme();
-  const styles = getStyles(colors, isDark);
+  const styles = getStyles(colors);
 
   const [selectedEspecie, setSelectedEspecie] = useState<number | string>(
     currentFilters.especieId || '',
@@ -201,7 +195,7 @@ const MapsFilterModal: React.FC<MapsFilterModalProps> = ({
             style={[styles.button, styles.applyButton]}
             onPress={handleApply}
           >
-            <AppText style={styles.applyButtonText}>Aplicar Filtros</AppText>
+            <AppText style={styles.buttonText}>Aplicar Filtros</AppText>
           </TouchableOpacity>
         </View>
       </View>
@@ -209,80 +203,81 @@ const MapsFilterModal: React.FC<MapsFilterModalProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: Colors.cardBackground,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 20,
-    maxHeight: '80%',
-    minHeight: '60%',
-  },
-  scrollView: {
-    flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.gray || '#E0E0E0',
-    paddingBottom: 10,
-    marginBottom: 15,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: fontWeightSemiBold,
-    color: Colors.text || '#333',
-  },
-  scrollContent: {
-    paddingBottom: 20,
-    flexGrow: 1,
-  },
-  inputLabel: {
-    fontSize: 16,
-    fontWeight: fontWeightMedium,
-    color: '#374151',
-    marginTop: 20,
-    marginBottom: 8,
-    marginLeft: 4,
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 20,
-    paddingTop: 15,
-    borderTopWidth: 1,
-    borderTopColor: Colors.gray || '#E0E0E0',
-  },
-  button: {
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 10,
-    flex: 1,
-    alignItems: 'center',
-    marginHorizontal: 5,
-  },
-  applyButton: {
-    backgroundColor: Colors.primary || '#007AFF',
-    marginLeft: 10,
-  },
-  clearButton: {
-    backgroundColor: Colors.background,
-    borderWidth: 1,
-    borderColor: Colors.secondary,
-    marginRight: 10,
-  },
-  buttonText: {
-    fontSize: 16,
-    fontWeight: fontWeightSemiBold,
-    color: Colors.text || '#333',
-  },
-});
+const getStyles = (colors: ColorsType) =>
+  StyleSheet.create({
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      justifyContent: 'flex-end',
+    },
+    modalContent: {
+      backgroundColor: colors.cardBackground,
+      borderTopLeftRadius: 20,
+      borderTopRightRadius: 20,
+      padding: 20,
+      maxHeight: '80%',
+      minHeight: '60%',
+    },
+    scrollView: {
+      flex: 1,
+    },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      borderBottomWidth: 1,
+      borderBottomColor: colors.gray || colors.cardBackground,
+      paddingBottom: 10,
+      marginBottom: 15,
+    },
+    headerTitle: {
+      fontSize: 20,
+      fontWeight: fontWeightSemiBold,
+      color: colors.text,
+    },
+    scrollContent: {
+      paddingBottom: 20,
+      flexGrow: 1,
+    },
+    inputLabel: {
+      fontSize: 16,
+      fontWeight: fontWeightMedium,
+      color: colors.text,
+      marginTop: 20,
+      marginBottom: 8,
+      marginLeft: 4,
+    },
+    footer: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginTop: 20,
+      paddingTop: 15,
+      borderTopWidth: 1,
+      borderTopColor: colors.gray,
+    },
+    button: {
+      paddingVertical: 12,
+      paddingHorizontal: 20,
+      borderRadius: 10,
+      flex: 1,
+      alignItems: 'center',
+      marginHorizontal: 5,
+    },
+    applyButton: {
+      backgroundColor: colors.primary,
+      marginLeft: 10,
+    },
+    clearButton: {
+      backgroundColor: colors.background,
+      borderWidth: 1,
+      borderColor: colors.secondary,
+      marginRight: 10,
+    },
+    buttonText: {
+      fontSize: 16,
+      fontWeight: fontWeightSemiBold,
+      color: colors.text,
+    },
+  });
 
 export default MapsFilterModal;

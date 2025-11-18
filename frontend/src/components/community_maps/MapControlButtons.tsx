@@ -100,10 +100,12 @@ const getStyles = (colors: ColorsType, isDark: boolean) =>
   StyleSheet.create({
     filterButton: {
       position: 'absolute',
-      top: 100,
+      top: 130,
       left: 20,
-      backgroundColor: colors.accent, // Dinámico
+      backgroundColor: colors.primary, // Dinámico
       borderRadius: 30,
+      borderWidth: 1,
+      borderColor: colors.secondary, // Dinámico
       padding: 12,
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 2 },
@@ -114,7 +116,7 @@ const getStyles = (colors: ColorsType, isDark: boolean) =>
     },
     criticalButton: {
       position: 'absolute',
-      top: 100,
+      top: 130,
       right: 20,
       backgroundColor: colors.cardBackground, // Dinámico
       borderRadius: 30,
@@ -161,7 +163,7 @@ const getStyles = (colors: ColorsType, isDark: boolean) =>
     },
     mapHeatmapButton: {
       position: 'absolute',
-      top: 100,
+      top: 130,
       left: 80,
       backgroundColor: colors.cardBackground, // Dinámico
       borderRadius: 30,
@@ -173,7 +175,7 @@ const getStyles = (colors: ColorsType, isDark: boolean) =>
       elevation: 5,
       zIndex: 10,
       borderWidth: 2,
-      borderColor: colors.accent, // Dinámico
+      borderColor: colors.secondary, // Dinámico
     },
     mapHeatmapButtonActive: {
       backgroundColor: colors.danger, // Dinámico

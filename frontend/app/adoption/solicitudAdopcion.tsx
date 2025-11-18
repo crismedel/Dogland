@@ -12,18 +12,15 @@ import CustomHeader from '@/src/components/UI/CustomHeader';
 // 1. Quitar la importación estática
 // import { Colors } from '@/src/constants/colors';
 import { useNotification } from '@/src/components/notifications';
-import { AppText } from '@/src/components/AppText'; // Importar AppText
-
 // 2. Importar el hook y los tipos de tema
 import { useTheme } from '@/src/contexts/ThemeContext';
 import { ColorsType } from '@/src/constants/colors';
-import { Ionicons } from '@expo/vector-icons'; // Importar Ionicons
+import { FormField } from '@/src/components/UI/DynamicForm'; // Importa FormField
 
 const SolicitudAdopcion = () => {
   // 3. Llamar al hook y generar los estilos
   const { colors, isDark } = useTheme();
   const styles = getStyles(colors, isDark);
-
   const router = useRouter();
   const params = useLocalSearchParams();
 
@@ -57,7 +54,7 @@ const SolicitudAdopcion = () => {
     }));
   }, []);
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleValueChange = (field: string, value: string) => {
     setFormData((prev) => ({
       ...prev,
       [field]: value,
@@ -108,6 +105,76 @@ const SolicitudAdopcion = () => {
     });
   };
 
+  // Definición de campos para DynamicForm
+  const fields: FormField[] = [
+    {
+      name: 'nombreSolicitante',
+      label: 'Nombre',
+      type: 'text',
+      placeholder: 'Nombre',
+      maxLength: 50,
+      required: true,
+    },
+    {
+      name: 'apellidoSolicitante',
+      label: 'Apellido',
+      type: 'text',
+      placeholder: 'Apellido',
+      maxLength: 50,
+    },
+    {
+      name: 'email',
+      label: 'Email',
+      type: 'email',
+      placeholder: 'Email',
+      keyboardType: 'email-address',
+      required: true,
+    },
+    {
+      name: 'telefono',
+      label: 'Teléfono',
+      type: 'phone',
+      placeholder: 'Teléfono',
+      keyboardType: 'phone-pad',
+      required: true,
+    },
+    {
+      name: 'direccion',
+      label: 'Dirección completa',
+      type: 'text',
+      placeholder: 'Dirección completa',
+      required: true,
+    },
+    { name: 'ciudad', label: 'Ciudad', type: 'text', placeholder: 'Ciudad' },
+    {
+      name: 'motivoAdopcion',
+      label: '¿Por qué quieres adoptar?',
+      type: 'text',
+      placeholder: '¿Qué te motivó?',
+      multiline: true,
+      numberOfLines: 4,
+      required: true,
+    },
+    {
+      name: 'viviendaPropia',
+      label: '¿Es vivienda propia o alquilada?',
+      type: 'text',
+      placeholder: '¿Es vivienda propia o alquilada?',
+    },
+    {
+      name: 'espacioExterior',
+      label: '¿Tienes espacio exterior?',
+      type: 'text',
+      placeholder: '¿Tienes espacio exterior?',
+    },
+    {
+      name: 'otrasMascotas',
+      label: '¿Tienes otras mascotas?',
+      type: 'text',
+      placeholder: '¿Tienes otras mascotas?',
+    },
+  ];
+
   return (
     <View style={styles.screen}>
       {/* Header */}
@@ -128,13 +195,14 @@ const SolicitudAdopcion = () => {
         }
       />
 
-      {/* TarjetaSoli debe ser refactorizada internamente para usar useTheme */}
+      {/* Tarjeta con formulario dinámico */}
       <TarjetaSoli
         formData={formData}
         loading={loading}
-        handleInputChange={handleInputChange}
+        handleValueChange={handleValueChange}
         handleSubmit={handleSubmit}
         imageUrl={params.imageUrl as string}
+        fields={fields} // Aquí pasamos los campos
       />
     </View>
   );

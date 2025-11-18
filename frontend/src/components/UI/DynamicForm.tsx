@@ -28,6 +28,7 @@ import { ColorsType } from '@/src/constants/colors';
 export interface FormField {
   name: string;
   label: string;
+  required?: boolean; // <-- Nuevo campo para obligatorio
   placeholder?: string;
   keyboardType?: KeyboardTypeOptions;
   secureTextEntry?: boolean;
@@ -87,6 +88,20 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
   const [activeField, setActiveField] = useState<string | null>(null);
 
   const handleSubmit = () => {
+    // Validar campos obligatorios
+    for (const field of fields) {
+      if (field.required) {
+        const value = values[field.name];
+        if (
+          value === undefined ||
+          value === null ||
+          (typeof value === 'string' && value.trim() === '')
+        ) {
+          alert(`Por favor completa el campo obligatorio: ${field.label}`);
+          return;
+        }
+      }
+    }
     onSubmit(values);
   };
 
@@ -127,10 +142,20 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
       {fields.map((field) => {
         const isLoadingField = loadingFields[field.name] || false;
 
+        // Función para renderizar label con asterisco si es requerido
+        const renderLabel = () => (
+          <AppText style={styles.inputLabel}>
+            {field.label}
+            {field.required && (
+              <AppText style={styles.requiredAsterisk}> *</AppText>
+            )}
+          </AppText>
+        );
+
         if (field.type === 'picker') {
           return (
             <View key={field.name} style={styles.inputContainer}>
-              <AppText style={styles.inputLabel}>{field.label}</AppText>
+              {renderLabel()}
               {isLoadingField ? (
                 <View style={[styles.inputWrapper, styles.disabled]}>
                   {field.icon && (
@@ -172,7 +197,7 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
           if (mode === 'date') {
             return (
               <View key={field.name} style={styles.inputContainer}>
-                <AppText style={styles.inputLabel}>{field.label}</AppText>
+                {renderLabel()}
                 <TouchableOpacity
                   onPress={() => setActiveField(field.name)}
                   activeOpacity={0.7}
@@ -219,7 +244,7 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
           if (mode === 'time') {
             return (
               <View key={field.name} style={styles.inputContainer}>
-                <AppText style={styles.inputLabel}>{field.label}</AppText>
+                {renderLabel()}
                 <TouchableOpacity
                   onPress={() => setActiveField(field.name)}
                   activeOpacity={0.7}
@@ -285,8 +310,8 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
                         // ... (código de selector nativo comentado) ...
                         <AppText style={{ color: colors.text }}>
                           Habilita el selector nativo instalando
-                          @react-native-community/datetimepicker y
-                          descomentando el código.
+                          @react-native-community/datetimepicker y descomentando
+                          el código.
                         </AppText>
                       ) : (
                         <TimePickerInline
@@ -327,7 +352,7 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
           // mode === 'datetime'
           return (
             <View key={field.name} style={styles.inputContainer}>
-              <AppText style={styles.inputLabel}>{field.label}</AppText>
+              {renderLabel()}
               <TouchableOpacity
                 onPress={() => setActiveField(field.name)}
                 activeOpacity={0.7}
@@ -375,7 +400,7 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
         if (field.type === 'location') {
           return (
             <View key={field.name} style={styles.inputContainer}>
-              <AppText style={styles.inputLabel}>{field.label}</AppText>
+              {renderLabel()}
               <TouchableOpacity
                 onPress={field.onLocationPress}
                 activeOpacity={0.7}
@@ -427,7 +452,7 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
         // Text / email / phone
         return (
           <View key={field.name} style={styles.inputContainer}>
-            <AppText style={styles.inputLabel}>{field.label}</AppText>
+            {renderLabel()}
             <View style={styles.inputWrapper}>
               {field.icon && (
                 <Ionicons
@@ -488,6 +513,10 @@ const getStyles = (colors: ColorsType) =>
       color: colors.text, // Dinámico
       marginBottom: 8,
       marginLeft: 4,
+    },
+    requiredAsterisk: {
+      color: colors.danger, // Dinámico
+      fontWeight: 'bold',
     },
     inputWrapper: {
       flexDirection: 'row',

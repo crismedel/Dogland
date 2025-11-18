@@ -20,10 +20,7 @@ import CustomButton from '../../src/components/UI/CustomButton';
 // import { Colors } from '@/src/constants/colors';
 import { fetchAlertById } from '../../src/api/alerts';
 // 3. Importar la FUNCIÓN getRiskStyles y el TIPO Alert
-import {
-  Alert as AlertType,
-  getRiskStyles,
-} from '@/src/types/alert';
+import { Alert as AlertType, getRiskStyles } from '@/src/types/alert';
 import CustomHeader from '@/src/components/UI/CustomHeader';
 import {
   fontWeightBold,
@@ -101,7 +98,11 @@ const AlertDetailScreen = () => {
             <TouchableOpacity onPress={() => router.back()}>
               <Image
                 source={require('../../assets/images/volver.png')}
-                style={{ width: 24, height: 24, tintColor: '#fff' }}
+                style={{
+                  width: 24,
+                  height: 24,
+                  tintColor: isDark ? colors.lightText : colors.text,
+                }}
               />
             </TouchableOpacity>
           }

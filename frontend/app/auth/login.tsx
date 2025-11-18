@@ -311,7 +311,10 @@ export default function LoginWithValidation() {
 
           {/* Submit Button */}
           <TouchableOpacity
-            style={[styles.submitButton, loading && styles.submitButtonDisabled]}
+            style={[
+              styles.submitButton,
+              loading && styles.submitButtonDisabled,
+            ]}
             onPress={handleSubmit(onSubmit)}
             disabled={loading}
             activeOpacity={0.8}
@@ -529,5 +532,20 @@ const getStyles = (colors: ColorsType, isDark: boolean) =>
       textAlign: 'center',
       marginTop: 20,
       marginBottom: 16,
+    },
+    dividerContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginVertical: 20,
+    },
+    dividerLine: {
+      flex: 1,
+      height: 1,
+      backgroundColor: colors.cardBackground,
+    },
+    dividerText: {
+      color: colors.darkGray,
+      fontSize: 14,
+      marginHorizontal: 16,
     },
   });

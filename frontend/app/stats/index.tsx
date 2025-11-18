@@ -1,7 +1,7 @@
 import { AppText, fontWeightBold } from '@/src/components/AppText';
 import CustomHeader from '@/src/components/UI/CustomHeader';
 // 1. Quitar la importación estática
-// import { Colors } from '@/src/constants/colors';
+// import { colors } from '@/src/constants/colors';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState, useMemo } from 'react';
 import {
@@ -246,9 +246,9 @@ const StatsScreen = () => {
               yAxisLabel=""
               yAxisSuffix=""
               chartConfig={{
-                backgroundColor: Colors.cardBackground,
-                backgroundGradientFrom: Colors.cardBackground,
-                backgroundGradientTo: Colors.cardBackground,
+                backgroundColor: colors.cardBackground,
+                backgroundGradientFrom: colors.cardBackground,
+                backgroundGradientTo: colors.cardBackground,
                 decimalPlaces: 0,
                 color: (opacity = 1) => `rgba(255, 99, 71, ${opacity})`,
                 labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
@@ -256,7 +256,7 @@ const StatsScreen = () => {
                 propsForDots: {
                   r: '5',
                   strokeWidth: '2',
-                  stroke: Colors.primary,
+                  stroke: colors.primary,
                 },
               }}
               bezier
@@ -280,9 +280,9 @@ const StatsScreen = () => {
               yAxisLabel=""
               yAxisSuffix=""
               chartConfig={{
-                backgroundColor: Colors.cardBackground,
-                backgroundGradientFrom: Colors.cardBackground,
-                backgroundGradientTo: Colors.cardBackground,
+                backgroundColor: colors.cardBackground,
+                backgroundGradientFrom: colors.cardBackground,
+                backgroundGradientTo: colors.cardBackground,
                 decimalPlaces: 0,
                 color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
                 style: { borderRadius: 16 },
@@ -308,9 +308,9 @@ const StatsScreen = () => {
               width={chartWidth}
               height={220}
               chartConfig={{
-                backgroundColor: Colors.cardBackground,
-                backgroundGradientFrom: Colors.cardBackground,
-                backgroundGradientTo: Colors.cardBackground,
+                backgroundColor: colors.cardBackground,
+                backgroundGradientFrom: colors.cardBackground,
+                backgroundGradientTo: colors.cardBackground,
                 color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
               }}
               accessor="population"

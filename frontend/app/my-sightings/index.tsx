@@ -1,14 +1,3 @@
-import {
-  AppText,
-  fontWeightBold,
-  fontWeightMedium,
-  fontWeightSemiBold,
-} from '@/src/components/AppText';
-import { useNotification } from '@/src/components/notifications';
-import CustomHeader from '@/src/components/UI/CustomHeader';
-import { useAuth } from '@/src/contexts/AuthContext'; // <-- AÑADIDO
-import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -17,33 +6,37 @@ import {
   Modal,
   RefreshControl,
   SafeAreaView,
-  StyleSheet, // <-- AÑADIDO
+  StyleSheet,
   TextInput,
   TouchableOpacity,
   View,
-  Platform, // Import Platform
+  Platform,
 } from 'react-native';
-import DropDownPicker from 'react-native-dropdown-picker'; // <-- AÑADIDO
+
+import DropDownPicker from 'react-native-dropdown-picker';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+
 import apiClient from '../../src/api/client';
-import { ReporteDetails } from '../../src/components/report/ReporteDetails'; // <-- AÑADIDO
+import { ReporteDetails } from '../../src/components/report/ReporteDetails';
 import { useNotification } from '@/src/components/notifications';
+import { useAuth } from '@/src/contexts/AuthContext';
+import { useTheme } from '@/src/contexts/ThemeContext';
+import { ColorsType } from '@/src/constants/colors';
+
 import {
   obtenerNombreEspecie,
   obtenerNombreEstadoSalud,
 } from '../../src/types/report';
-import Spinner from '@/src/components/UI/Spinner';
+
 import {
   AppText,
   fontWeightSemiBold,
-  fontWeightMedium, // Importar fontWeightMedium
+  fontWeightMedium,
+  fontWeightBold,
 } from '@/src/components/AppText';
 import CustomHeader from '@/src/components/UI/CustomHeader';
-import { Ionicons } from '@expo/vector-icons';
-
-// Interfaz expandida para incluir todos los datos necesarios
-// 2. Importar el hook y los tipos de tema
-import { useTheme } from '@/src/contexts/ThemeContext';
-import { ColorsType } from '@/src/constants/colors';
+import Spinner from '@/src/components/UI/Spinner';
 
 interface MySighting {
   id_avistamiento: number;
@@ -55,24 +48,30 @@ interface MySighting {
   id_estado_avistamiento: number;
   id_especie: number;
   id_usuario: number;
-  motivo_cierre?: string; // <-- AÑADIDO
-  // Añade latitude y longitude si ReporteDetails las necesita
+  motivo_cierre?: string;
   latitude?: number;
   longitude?: number;
 }
 
-// Helper para obtener el nombre del estado (basado en IDs de tu DB)
 const getSightingStatusName = (id: number) => {
-  if (id === 1) return 'Activo'; // [cite: 580-585]
-  if (id === 2) return 'Desaparecido'; // [cite: 580-585]
-  if (id === 3) return 'Observado'; // [cite: 580-585]
-  if (id === 4) return 'Recuperado'; // [cite: 580-585]
-  if (id === 5) return 'Cerrado'; //
-  return 'Desconocido';
+  switch (id) {
+    case 1:
+      return 'Activo';
+    case 2:
+      return 'Desaparecido';
+    case 3:
+      return 'Observado';
+    case 4:
+      return 'Recuperado';
+    case 5:
+      return 'Cerrado';
+    default:
+      return 'Desconocido';
+  }
 };
-const CERRADO_STATUS_ID = 5; //
 
-// --- COMPONENTE MySightingCard (MEJORADO) ---
+const CERRADO_STATUS_ID = 5;
+
 const MySightingCard = ({
   sighting,
   onPress,
@@ -80,11 +79,9 @@ const MySightingCard = ({
   sighting: MySighting;
   onPress: () => void;
 }) => {
-  // 3. Llamar al hook y generar los estilos
   const { colors, isDark } = useTheme();
   const styles = getStyles(colors, isDark);
 
-  // Lógica de MySightingCard
   const estadoSaludNombre = obtenerNombreEstadoSalud(sighting.id_estado_salud);
   const especieNombre = obtenerNombreEspecie(sighting.id_especie);
   const estadoAvistamientoNombre = getSightingStatusName(
@@ -105,6 +102,7 @@ const MySightingCard = ({
       return 'Fecha inválida';
     }
   };
+
   return (
     <TouchableOpacity
       style={[
@@ -142,7 +140,7 @@ const MySightingCard = ({
         <Ionicons
           name="paw-outline"
           size={16}
-          color={colors.darkGray} // 4. Usar colores del tema
+          color={colors.darkGray}
           style={{ marginRight: 8 }}
         />
         <AppText style={styles.label}>Especie:</AppText>
@@ -153,27 +151,27 @@ const MySightingCard = ({
         <Ionicons
           name="medkit-outline"
           size={16}
-          color={isCritical ? colors.danger : colors.darkGray} // 4. Usar colores del tema
+          color={isCritical ? colors.danger : colors.darkGray}
           style={{ marginRight: 8 }}
         />
         <AppText style={styles.label}>Salud:</AppText>
         <AppText
           style={[
             styles.value,
-            isCritical && { color: colors.danger, fontWeight: '700' }, // 4. Usar colores del tema
+            isCritical && { color: colors.danger, fontWeight: '700' },
           ]}
         >
           {estadoSaludNombre}
         </AppText>
       </View>
 
-      {/* Mostrar motivo de cierre si está cerrado */}
       {isClosed && sighting.motivo_cierre && (
         <View style={styles.reasonContainer}>
           <Ionicons
             name="information-circle-outline"
             size={16}
-            color="#6b7280"
+            color={colors.darkGray}
+            style={{ marginRight: 6 }}
           />
           <AppText style={styles.reasonText}>
             Motivo: {sighting.motivo_cierre}
@@ -188,15 +186,13 @@ const MySightingCard = ({
   );
 };
 
-// --- PANTALLA PRINCIPAL ---
 const MySightingsScreen = () => {
-  // 3. Llamar al hook y generar los estilos
   const { colors, isDark } = useTheme();
   const styles = getStyles(colors, isDark);
 
   const router = useRouter();
   const { showSuccess, showError } = useNotification();
-  const { user } = useAuth(); // <-- Obtenemos el usuario
+  const { user } = useAuth();
 
   const [sightings, setSightings] = useState<MySighting[]>([]);
   const [loading, setLoading] = useState(true);
@@ -204,7 +200,6 @@ const MySightingsScreen = () => {
   const [error, setError] = useState<string | null>(null);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
 
-  // --- Estados para Modales ---
   const [selectedSighting, setSelectedSighting] = useState<MySighting | null>(
     null,
   );
@@ -230,7 +225,6 @@ const MySightingsScreen = () => {
       setError(null);
 
       try {
-        // Asumimos que /sightings/me devuelve el array
         const response = await apiClient.get('/sightings/me');
         setSightings(response.data.data);
         if (showNotification) {
@@ -263,19 +257,17 @@ const MySightingsScreen = () => {
     fetchMySightings(true);
   };
 
-  // --- CAMBIO: Abrir el modal en lugar de navegar ---
   const handlePressSighting = (sighting: MySighting) => {
     setSelectedSighting(sighting);
   };
 
-  // --- Lógica para los botones del Modal ---
   const handleDelete = async () => {
     if (!selectedSighting) return;
     try {
       await apiClient.delete(`/sightings/${selectedSighting.id_avistamiento}`);
       showSuccess('Éxito', 'Reporte eliminado');
       setSelectedSighting(null);
-      fetchMySightings(); // Recargar lista
+      fetchMySightings();
     } catch (err) {
       showError('Error', 'No se pudo eliminar el reporte.');
     }
@@ -292,17 +284,15 @@ const MySightingsScreen = () => {
       : closeReason;
 
     let newStatusId;
-    if (closeReason === 'Rescatado')
-      newStatusId = 4; // Recuperado [cite: 580-585]
-    else if (closeReason === 'No Encontrado')
-      newStatusId = 2; // Desaparecido [cite: 580-585]
-    else newStatusId = 5; // Cerrado
+    if (closeReason === 'Rescatado') newStatusId = 4;
+    else if (closeReason === 'No Encontrado') newStatusId = 2;
+    else newStatusId = 5;
 
     try {
       await apiClient.patch(
         `/sightings/${selectedSighting.id_avistamiento}/close`,
         {
-          newStatusId: newStatusId,
+          newStatusId,
           reason: fullReason,
         },
       );
@@ -311,7 +301,7 @@ const MySightingsScreen = () => {
       setSelectedSighting(null);
       setCloseReason(null);
       setCloseComment('');
-      fetchMySightings(); // Recargar lista
+      fetchMySightings();
     } catch (err) {
       showError('Error', 'No se pudo actualizar el reporte.');
     } finally {
@@ -332,17 +322,19 @@ const MySightingsScreen = () => {
       <CustomHeader
         title="Mis Avistamientos"
         leftComponent={
-          // Botón de Volver
           <TouchableOpacity onPress={() => router.back()}>
             <Image
               source={require('../../assets/images/volver.png')}
-              style={{ width: 24, height: 24, tintColor: '#fff' }}
+              style={{
+                width: 24,
+                height: 24,
+                tintColor: isDark ? colors.lightText : colors.text,
+              }}
             />
           </TouchableOpacity>
         }
         rightComponent={
           <TouchableOpacity onPress={handleRefresh}>
-            {/* 4. Usar colores del tema (texto oscuro sobre fondo amarillo) */}
             <Ionicons
               name="refresh-outline"
               size={24}
@@ -383,22 +375,19 @@ const MySightingsScreen = () => {
         />
       )}
 
-      {/* --- MODAL DE DETALLES --- */}
       {selectedSighting && (
         <ReporteDetails
           reporte={selectedSighting}
           onClose={() => setSelectedSighting(null)}
           onDelete={handleDelete}
-          distance={null} // No calculamos distancia en esta pantalla
+          distance={null}
           onCloseSighting={() => setCloseModalVisible(true)}
           canModify={
-            user?.role === 'Admin' || //
-            user?.id === selectedSighting.id_usuario // <-- ¡CORREGIDO!
+            user?.role === 'Admin' || user?.id === selectedSighting.id_usuario
           }
         />
       )}
 
-      {/* --- MODAL DE CIERRE --- */}
       <Modal
         animationType="fade"
         transparent
@@ -435,12 +424,12 @@ const MySightingsScreen = () => {
             />
 
             <TouchableOpacity
-              style={[styles.modalButton, { backgroundColor: Colors.primary }]}
+              style={[styles.modalButton, { backgroundColor: colors.accent }]}
               onPress={handleConfirmCloseSighting}
               disabled={isClosing}
             >
               {isClosing ? (
-                <ActivityIndicator color="#fff" />
+                <ActivityIndicator color={colors.cardBackground} />
               ) : (
                 <AppText style={styles.modalButtonText}>
                   Confirmar Cierre
@@ -449,10 +438,13 @@ const MySightingsScreen = () => {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.modalButton, { backgroundColor: '#e5e7eb' }]}
+              style={[
+                styles.modalButton,
+                { backgroundColor: colors.cardBackground },
+              ]}
               onPress={() => setCloseModalVisible(false)}
             >
-              <AppText style={[styles.modalButtonText, { color: '#111827' }]}>
+              <AppText style={[styles.modalButtonText, { color: colors.text }]}>
                 Cancelar
               </AppText>
             </TouchableOpacity>
@@ -463,104 +455,212 @@ const MySightingsScreen = () => {
   );
 };
 
-// 5. Convertir el StyleSheet en una función
 const getStyles = (colors: ColorsType, isDark: boolean) =>
   StyleSheet.create({
-    container: { flex: 1, backgroundColor: colors.background }, // Dinámico
+    container: { flex: 1, backgroundColor: colors.background },
     centered: {
       flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
       padding: 20,
-      backgroundColor: colors.background, // Dinámico
+      backgroundColor: colors.background,
     },
     loadingText: {
       marginTop: 10,
       fontSize: 16,
-      color: colors.primary, // Dinámico
+      color: colors.primary,
     },
     listContent: { padding: 10 },
     card: {
-      backgroundColor: colors.cardBackground, // Dinámico
+      backgroundColor: colors.cardBackground,
       padding: 15,
       borderRadius: 12,
       marginBottom: 10,
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: isDark ? 0.2 : 0.1, // Dinámico
+      shadowOpacity: isDark ? 0.2 : 0.1,
       shadowRadius: 3.84,
       elevation: 5,
     },
     criticalCard: {
-      backgroundColor: `${colors.danger}20`, // Dinámico
-      borderColor: colors.danger, // Dinámico
+      backgroundColor: `${colors.danger}20`,
+      borderColor: colors.danger,
       borderWidth: 2,
       padding: 15,
       borderRadius: 12,
       marginBottom: 10,
-      shadowColor: colors.danger, // Dinámico
+      shadowColor: colors.danger,
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.2,
       shadowRadius: 5.46,
       elevation: 8,
     },
+    closedCard: {
+      opacity: 0.6,
+      backgroundColor: colors.cardBackground,
+      borderColor: colors.darkGray,
+      borderWidth: 1,
+    },
+    cardHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 10,
+    },
     cardTitle: {
       fontSize: 18,
       fontWeight: fontWeightSemiBold,
-      color: colors.text, // Dinámico
+      color: colors.text,
+      flex: 1,
+      marginRight: 10,
+    },
+    cardDescription: {
+      fontSize: 14,
+      color: colors.text,
       marginBottom: 10,
     },
-    infoRow: { flexDirection: 'row', marginBottom: 5 },
+    infoRow: {
+      flexDirection: 'row',
+      marginBottom: 5,
+      alignItems: 'center',
+    },
     label: {
       fontSize: 14,
-      fontWeight: fontWeightMedium, // Dinámico
-      color: colors.darkGray, // Dinámico
+      fontWeight: fontWeightMedium,
+      color: colors.darkGray,
       width: 120,
     },
     value: {
       fontSize: 14,
-      color: colors.text, // Dinámico
+      color: colors.text,
       flexShrink: 1,
     },
-    emptyText: {
-      fontSize: 16,
-      color: colors.darkGray, // Dinámico
-      textAlign: 'center',
-    },
-    errorText: {
-      color: colors.danger, // Dinámico
-      textAlign: 'center',
-      marginBottom: 15,
-      fontSize: 16,
-      fontWeight: '700',
-    },
-    retryButton: {
-      backgroundColor: colors.primary, // Dinámico
-      paddingVertical: 10,
-      paddingHorizontal: 20,
+    reasonContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 10,
+      padding: 10,
+      backgroundColor: colors.backgroundSecon,
       borderRadius: 8,
-      marginTop: 15,
     },
-    retryText: {
-      color: isDark ? colors.lightText : colors.text, // Dinámico
-      fontWeight: 'bold',
-    },
-    cardLabel: {
+    reasonText: {
       fontSize: 14,
-      fontWeight: fontWeightMedium, // Dinámico
-      color: colors.darkGray, // Dinámico
-      width: 100,
-    },
-    cardValue: {
-      fontSize: 14,
-      color: colors.text, // Dinámico
+      color: colors.darkGray,
+      marginLeft: 6,
       flexShrink: 1,
     },
     cardDate: {
       fontSize: 12,
-      color: colors.gray, // Dinámico
-      marginTop: 10,
+      color: colors.gray,
       textAlign: 'right',
+    },
+    badge: {
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: 12,
+      minWidth: 70,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    badgeClosed: {
+      backgroundColor: colors.darkGray,
+    },
+    badgeCritical: {
+      backgroundColor: colors.danger,
+    },
+    badgeActive: {
+      backgroundColor: colors.success,
+    },
+    badgeText: {
+      color: colors.lightText,
+      fontWeight: '600',
+      fontSize: 12,
+    },
+    errorText: {
+      color: colors.danger,
+      fontSize: 16,
+      fontWeight: '700',
+      textAlign: 'center',
+      marginBottom: 15,
+    },
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 20,
+    },
+    modalContent: {
+      width: '100%',
+      maxWidth: 400,
+      backgroundColor: colors.cardBackground,
+      borderRadius: 12,
+      padding: 20,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.25,
+      shadowRadius: 4,
+      elevation: 5,
+    },
+    modalTitle: {
+      fontSize: 20,
+      fontWeight: fontWeightBold,
+      marginBottom: 10,
+      color: colors.text,
+    },
+    modalSubtitle: {
+      fontSize: 16,
+      marginBottom: 20,
+      color: colors.text,
+    },
+    dropdown: {
+      marginBottom: 20,
+      borderColor: colors.secondary,
+      backgroundColor: colors.backgroundSecon,
+    },
+    dropdownContainer: {
+      backgroundColor: colors.backgroundSecon,
+      borderColor: colors.secondary,
+    },
+    modalTextInput: {
+      height: 80,
+      borderColor: colors.secondary,
+      borderWidth: 1,
+      borderRadius: 8,
+      padding: 10,
+      marginBottom: 20,
+      textAlignVertical: 'top',
+      color: colors.text,
+      fontSize: 14,
+    },
+    modalButton: {
+      paddingVertical: 12,
+      borderRadius: 8,
+      marginBottom: 10,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    modalButtonText: {
+      color: colors.lightText,
+      fontWeight: '700',
+      fontSize: 16,
+    },
+    retryButton: {
+      backgroundColor: colors.primary,
+      paddingVertical: 10,
+      paddingHorizontal: 20,
+      borderRadius: 8,
+      marginTop: 15,
+      alignSelf: 'center',
+    },
+    retryText: {
+      color: isDark ? colors.lightText : colors.text,
+      fontWeight: 'bold',
+    },
+    emptyText: {
+      fontSize: 16,
+      color: colors.darkGray,
+      textAlign: 'center',
     },
   });
 

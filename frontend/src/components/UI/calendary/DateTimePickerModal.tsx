@@ -30,6 +30,7 @@ interface DateTimePickerModalProps {
   // theme?: 'light' | 'dark'; // 3. Se elimina la prop, usaremos el hook
   minuteStep?: number; // default 5
   mode?: 'date' | 'datetime'; // default 'datetime'
+  theme?: 'light' | 'dark';
 }
 
 const pad2 = (n: number) => (n < 10 ? `0${n}` : `${n}`);
@@ -50,7 +51,8 @@ const DateTimePickerModal: React.FC<DateTimePickerModalProps> = ({
   const styles = getStyles(colors, isDark);
 
   const displayTitle =
-    title || (mode === 'date' ? 'Seleccionar Fecha' : 'Seleccionar Fecha y Hora');
+    title ||
+    (mode === 'date' ? 'Seleccionar Fecha' : 'Seleccionar Fecha y Hora');
 
   const initial = React.useMemo(() => {
     const d =
