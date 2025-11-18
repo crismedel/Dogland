@@ -45,7 +45,7 @@ const AnimalCard: React.FC<Props> = memo(
     const router = useRouter();
 
     // Datos directos del mapeo
-    const healthLabel = animal.healthStatus || '';
+    const healthLabel = animal.health || '';
     const breedLabel = animal.breed || '';
 
     // Edad: numérica o texto aproximado
@@ -72,14 +72,17 @@ const AnimalCard: React.FC<Props> = memo(
       [onToggleFavorite],
     );
 
+    // Colores según el texto del estado
     const primaryColor = (() => {
-      if (animal.estadoMedico === 1 || healthLabel === 'Sano') return '#2e7d32'; // Verde (Sano)
-      if (animal.estadoMedico === 2 || healthLabel === 'En tratamiento')
-        return '#ef6c00'; // Naranja (Tratamiento)
-      if (animal.estadoMedico === 3 || healthLabel === 'Recuperado')
-        return '#0288d1'; // Azul (Recuperado)
-      if (healthLabel === 'Discapacitado') return '#6a1b9a'; // Morado
-      return '#455a64'; // Gris (Otro)
+      const status = healthLabel.toLowerCase();
+      if (status.includes('sano') || status.includes('saludable'))
+        return '#2e7d32';
+      if (status.includes('tratamiento') || status.includes('enfermo'))
+        return '#ef6c00';
+      if (status.includes('recuperado')) return '#0288d1';
+      if (status.includes('herido') || status.includes('crítico'))
+        return '#c62828';
+      return '#455a64';
     })();
 
     return (

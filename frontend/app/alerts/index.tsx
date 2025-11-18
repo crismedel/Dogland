@@ -360,7 +360,7 @@ const getStyles = (colors: ColorsType, isDark: boolean) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      paddingHorizontal: 16,
+      paddingHorizontal: 10,
       paddingTop: 8,
       backgroundColor: colors.background, // Dinámico
     },

@@ -2,11 +2,7 @@ import React from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 // 1. Importar las FUNCIONES de estilos y el TIPO
-import {
-  Alert,
-  getAlertStyles,
-  getRiskStyles,
-} from '@/src/types/alert'; // Ajustado al path que refactorizamos
+import { Alert, getAlertStyles, getRiskStyles } from '@/src/types/alert'; // Ajustado al path que refactorizamos
 import { deleteAlert } from '../../api/alerts';
 import { useNotification } from '@/src/components/notifications';
 import { useRefresh } from '@/src/contexts/RefreshContext';
@@ -235,7 +231,7 @@ const getStyles = (colors: ColorsType) =>
   StyleSheet.create({
     card: {
       backgroundColor: colors.cardBackground, // Dinámico
-      padding: 14,
+      padding: 10,
       marginBottom: 14,
       borderRadius: 16,
       borderWidth: 1,

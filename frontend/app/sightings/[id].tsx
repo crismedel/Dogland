@@ -394,12 +394,15 @@ const SightingDetailScreen = () => {
             {!estaActivo && motivoCierre && (
               <View style={styles.infoRow}>
                 <View
-                  style={[styles.iconCircle, { backgroundColor: '#f4f4f6' }]}
+                  style={[
+                    styles.iconCircle,
+                    { backgroundColor: colors.cardBackground },
+                  ]}
                 >
                   <Ionicons
                     name="document-text-outline"
                     size={18}
-                    color="#5b6b82"
+                    color={colors.darkGray}
                   />
                 </View>
                 <View style={styles.infoTextWrap}>
@@ -574,7 +577,11 @@ const SightingDetailScreen = () => {
                 style={styles.editFab}
                 accessibilityLabel="Editar"
               >
-                <Ionicons name="pencil" size={18} color="#fff" />
+                <Ionicons
+                  name="pencil"
+                  size={18}
+                  color={colors.cardBackground}
+                />
               </TouchableOpacity>
             )}
             {!isClosed && canModify && (
@@ -582,7 +589,7 @@ const SightingDetailScreen = () => {
                 onPress={() => setCloseModalVisible(true)} // <-- ABRE EL MODAL
                 style={[
                   styles.editFab,
-                  { backgroundColor: Colors.success, marginLeft: 10 },
+                  { backgroundColor: colors.success, marginLeft: 10 },
                 ]}
                 accessibilityLabel="Cerrar Reporte"
               >
@@ -634,12 +641,12 @@ const SightingDetailScreen = () => {
             />
 
             <TouchableOpacity
-              style={[styles.modalButton, { backgroundColor: Colors.primary }]}
+              style={[styles.modalButton, { backgroundColor: colors.primary }]}
               onPress={handleConfirmCloseSighting}
               disabled={isClosing}
             >
               {isClosing ? (
-                <ActivityIndicator color="#fff" />
+                <ActivityIndicator color={colors.cardBackground} />
               ) : (
                 <AppText style={styles.modalButtonText}>
                   Confirmar Cierre
@@ -648,7 +655,7 @@ const SightingDetailScreen = () => {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.modalButton, { backgroundColor: Colors.gray }]}
+              style={[styles.modalButton, { backgroundColor: colors.gray }]}
               onPress={() => setCloseModalVisible(false)}
             >
               <AppText style={[styles.modalButtonText, { color: '#000' }]}>
@@ -875,6 +882,59 @@ const getStyles = (colors: ColorsType, isDark: boolean) =>
       fontSize: 14,
       color: colors.darkGray, // Dinámico
       lineHeight: 20,
+    },
+    // --- ESTILOS PARA LOS MODALES ---
+    modalOverlay: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: 'rgba(0,0,0,0.5)',
+    },
+    modalContent: {
+      width: '90%',
+      backgroundColor: 'white',
+      borderRadius: 12,
+      padding: 20,
+      elevation: 5,
+      zIndex: 2000,
+    },
+    modalTitle: {
+      fontSize: 20,
+      fontWeight: fontWeightBold,
+      textAlign: 'center',
+      marginBottom: 10,
+    },
+    modalSubtitle: {
+      fontSize: 14,
+      textAlign: 'center',
+      color: colors.gray,
+      marginBottom: 20,
+    },
+    dropdown: {
+      marginBottom: 15,
+      borderColor: colors.gray,
+    },
+    dropdownContainer: {
+      borderColor: colors.gray,
+    },
+    modalTextInput: {
+      borderWidth: 1,
+      borderColor: colors.gray,
+      borderRadius: 8,
+      padding: 10,
+      marginTop: 10,
+      minHeight: 80,
+      textAlignVertical: 'top',
+    },
+    modalButton: {
+      padding: 15,
+      borderRadius: 8,
+      alignItems: 'center',
+      marginTop: 10,
+    },
+    modalButtonText: {
+      color: 'white',
+      fontWeight: fontWeightBold,
     },
   });
 

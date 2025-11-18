@@ -296,6 +296,8 @@ const getStyles = (colors: ColorsType, isDark: boolean) =>
       width: 48,
       height: 48,
       borderRadius: 24,
+      borderWidth: 1,
+      borderColor: colors.secondary, // Dinámico
       backgroundColor: colors.cardBackground, // Dinámico
       justifyContent: 'center',
       alignItems: 'center',

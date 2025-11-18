@@ -170,7 +170,7 @@ const MySightingCard = ({
           <Ionicons
             name="information-circle-outline"
             size={16}
-            color="#6b7280"
+            color={colors.darkGray}
             style={{ marginRight: 6 }}
           />
           <AppText style={styles.reasonText}>
@@ -325,7 +325,11 @@ const MySightingsScreen = () => {
           <TouchableOpacity onPress={() => router.back()}>
             <Image
               source={require('../../assets/images/volver.png')}
-              style={{ width: 24, height: 24, tintColor: '#fff' }}
+              style={{
+                width: 24,
+                height: 24,
+                tintColor: isDark ? colors.lightText : colors.text,
+              }}
             />
           </TouchableOpacity>
         }
@@ -420,12 +424,12 @@ const MySightingsScreen = () => {
             />
 
             <TouchableOpacity
-              style={[styles.modalButton, { backgroundColor: '#2563eb' }]}
+              style={[styles.modalButton, { backgroundColor: colors.accent }]}
               onPress={handleConfirmCloseSighting}
               disabled={isClosing}
             >
               {isClosing ? (
-                <ActivityIndicator color="#fff" />
+                <ActivityIndicator color={colors.cardBackground} />
               ) : (
                 <AppText style={styles.modalButtonText}>
                   Confirmar Cierre
@@ -434,10 +438,13 @@ const MySightingsScreen = () => {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.modalButton, { backgroundColor: '#e5e7eb' }]}
+              style={[
+                styles.modalButton,
+                { backgroundColor: colors.cardBackground },
+              ]}
               onPress={() => setCloseModalVisible(false)}
             >
-              <AppText style={[styles.modalButtonText, { color: '#111827' }]}>
+              <AppText style={[styles.modalButtonText, { color: colors.text }]}>
                 Cancelar
               </AppText>
             </TouchableOpacity>
@@ -634,7 +641,7 @@ const getStyles = (colors: ColorsType, isDark: boolean) =>
       justifyContent: 'center',
     },
     modalButtonText: {
-      color: '#fff',
+      color: colors.lightText,
       fontWeight: '700',
       fontSize: 16,
     },

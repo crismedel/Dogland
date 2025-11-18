@@ -30,7 +30,7 @@ import {
 } from '@/src/utils/animalUtils';
 import { useNotification } from '@/src/components/notifications/NotificationProvider';
 import { fetchAnimalById } from '@/src/api/animals';
-import { RoleGuard } from '@/src/components/auth'; 
+import { RoleGuard } from '@/src/components/auth';
 import Spinner from '@/src/components/UI/Spinner';
 
 // 2. Importar el hook y los tipos de tema
@@ -58,7 +58,7 @@ const PerfilCan = () => {
       return;
     }
     setLoading(true);
-    
+
     // Ahora fetchAnimalById devuelve los datos ya mapeados correctamente
     fetchAnimalById(Number(id))
       .then((data) => setAnimal(data))
@@ -78,10 +78,11 @@ const PerfilCan = () => {
   // Datos procesados directamente del objeto animal
   const healthLabel = animal.healthStatus || 'Sin información';
   const breedLabel = animal.breed || 'Raza desconocida';
-  const ageDisplay = (animal.age !== null && animal.age !== undefined)
+  const ageDisplay =
+    animal.age !== null && animal.age !== undefined
       ? getAgeInYearsDisplay(animal.age)
-      : (animal.ageText || 'Edad desconocida');
-  
+      : animal.ageText || 'Edad desconocida';
+
   // Manejo de imagen con fallback
   const displayImage = animal.imageUrl || FALLBACK_IMAGE;
 
@@ -119,10 +120,13 @@ const PerfilCan = () => {
   // Colores (misma lógica que en Card)
   const estadoColor = (() => {
     const status = healthLabel.toLowerCase();
-    if (status.includes('sano') || status.includes('saludable')) return '#2e7d32';
-    if (status.includes('tratamiento') || status.includes('enfermo')) return '#ef6c00';
+    if (status.includes('sano') || status.includes('saludable'))
+      return '#2e7d32';
+    if (status.includes('tratamiento') || status.includes('enfermo'))
+      return '#ef6c00';
     if (status.includes('recuperado')) return '#0288d1';
-    if (status.includes('herido') || status.includes('crítico')) return '#c62828';
+    if (status.includes('herido') || status.includes('crítico'))
+      return '#c62828';
     return '#455a64';
   })();
 
@@ -189,10 +193,10 @@ const PerfilCan = () => {
 
         <View style={styles.pillsRow}>
           <View style={styles.pill}>
-             {/* Asumimos que si hay raza, sabemos la especie. O puedes agregar species al mapeo si lo tienes */}
+            {/* Asumimos que si hay raza, sabemos la especie. O puedes agregar species al mapeo si lo tienes */}
             <Ionicons name="paw-outline" size={14} color="#1565c0" />
             <AppText numberOfLines={1} style={styles.pillText}>
-              {breedLabel} 
+              {breedLabel}
             </AppText>
           </View>
           {animal.size && (
@@ -230,9 +234,10 @@ const PerfilCan = () => {
         </NeumorphCard>
 
         <NeumorphCard title="Descripción de Adopción">
-           <AppText style={styles.descriptionText}>
-             {animal.descripcionMedica || "No hay descripción disponible para este animal."}
-           </AppText>
+          <AppText style={styles.bulletText}>
+            {animal.descripcionMedica ||
+              'No hay descripción disponible para este animal.'}
+          </AppText>
         </NeumorphCard>
 
         <NeumorphCard title="Requisitos Generales">

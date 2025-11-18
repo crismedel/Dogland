@@ -12,7 +12,7 @@ import {
   obtenerNombreEstadoSalud,
 } from '../../types/report';
 // 1. Quitar la importación estática
-// import { Colors } from '@/src/constants/colors';
+// import { colors } from '@/src/constants/colors';
 import { Ionicons } from '@expo/vector-icons';
 
 // 2. Importar el hook y los tipos de tema
@@ -39,6 +39,10 @@ export const ReporteDetails = ({
 }: ReporteDetailsProps) => {
   // Un reporte se considera 'cerrado' si su estado no es 'Activo' (ID 1)
   const isClosed = reporte.id_estado_avistamiento !== 1;
+
+  // 3. Llamar al hook y generar los estilos
+  const { colors, isDark } = useTheme();
+  const styles = getStyles(colors);
 
   return (
     <View style={styles.floatingDetailsContainer}>
@@ -68,10 +72,10 @@ export const ReporteDetails = ({
             <Ionicons
               name="location-sharp"
               size={16}
-              color={Colors.secondary}
+              color={colors.secondary}
               style={styles.detailIcon}
             />
-            <AppText style={[styles.detailValue, { color: Colors.text }]}>
+            <AppText style={[styles.detailValue, { color: colors.text }]}>
               {reporte.direccion}
             </AppText>
           </View>
@@ -79,10 +83,10 @@ export const ReporteDetails = ({
             <Ionicons
               name="paw-outline"
               size={16}
-              color={Colors.secondary}
+              color={colors.secondary}
               style={styles.detailIcon}
             />
-            <AppText style={[styles.detailValue, { color: Colors.text }]}>
+            <AppText style={[styles.detailValue, { color: colors.text }]}>
               {obtenerNombreEspecie(reporte.id_especie)}
             </AppText>
           </View>
@@ -90,7 +94,7 @@ export const ReporteDetails = ({
             <Ionicons
               name="medkit-outline"
               size={16}
-              color={Colors.secondary}
+              color={colors.secondary}
               style={styles.detailIcon}
             />
             <AppText
@@ -109,10 +113,10 @@ export const ReporteDetails = ({
             <Ionicons
               name="calendar-outline"
               size={16}
-              color={Colors.secondary}
+              color={colors.secondary}
               style={styles.detailIcon}
             />
-            <AppText style={[styles.detailValue, { color: Colors.text }]}>
+            <AppText style={[styles.detailValue, { color: colors.text }]}>
               {new Date(reporte.fecha_creacion).toLocaleDateString('es-ES', {
                 year: 'numeric',
                 month: 'long',
@@ -124,10 +128,10 @@ export const ReporteDetails = ({
             <Ionicons
               name="pricetag-outline"
               size={16}
-              color={Colors.secondary}
+              color={colors.secondary}
               style={styles.detailIcon}
             />
-            <AppText style={[styles.detailValue, { color: Colors.text }]}>
+            <AppText style={[styles.detailValue, { color: colors.text }]}>
               reporte numero {reporte.id_avistamiento}
             </AppText>
           </View>
@@ -141,7 +145,7 @@ export const ReporteDetails = ({
             onPress={onDelete}
             style={[styles.actionButton, styles.deleteButton]}
           >
-            <Ionicons name="trash-outline" size={16} color={Colors.lightText} />
+            <Ionicons name="trash-outline" size={16} color={colors.lightText} />
             <AppText style={styles.actionButtonText}>Eliminar</AppText>
           </TouchableOpacity>
 
@@ -154,7 +158,7 @@ export const ReporteDetails = ({
               <Ionicons
                 name="shield-checkmark-outline"
                 size={16}
-                color={Colors.lightText}
+                color={colors.lightText}
               />
               <AppText style={styles.actionButtonText}>Cerrar Reporte</AppText>
             </TouchableOpacity>
@@ -227,6 +231,30 @@ const getStyles = (colors: ColorsType) =>
       color: colors.lightText, // Dinámico
       fontWeight: fontWeightBold,
       textAlign: 'center',
+    },
+
+    // --- ESTILOS MODIFICADOS/NUEVOS PARA BOTONES ---
+    buttonContainer: {
+      flexDirection: 'row',
+      marginTop: 10,
+      gap: 10, // Espacio entre botones
+    },
+    actionButton: {
+      flex: 1, // Para que ocupen el espacio
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 12,
+      borderRadius: 8,
+    },
+    actionButtonText: {
+      color: colors.lightText,
+      fontWeight: fontWeightBold,
+      textAlign: 'center',
+      marginLeft: 8,
+    },
+    closeReportButton: {
+      backgroundColor: colors.success,
     },
 
     // --- ESTILOS AÑADIDOS PARA LA DISTANCIA ---

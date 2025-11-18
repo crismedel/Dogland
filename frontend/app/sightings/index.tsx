@@ -561,7 +561,9 @@ const getStyles = (colors: ColorsType, isDark: boolean) =>
       borderColor: colors.darkGray,
     },
     chipActive: {
-      backgroundColor: colors.success,
+      backgroundColor: colors.background,
+      borderWidth: 1,
+      borderBlockColor: colors.success,
     },
 
     chipGradient: {
