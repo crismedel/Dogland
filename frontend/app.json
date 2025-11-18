@@ -2,7 +2,7 @@
   "expo": {
     "name": "Dogland",
     "slug": "Dogland",
-    "owner": "dogland-1",
+    "owner": "crismedel",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -17,7 +17,8 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.crismedel.Dogland"
     },
     "web": {
       "bundler": "metro",
@@ -51,7 +52,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "9f56dfdf-8256-47eb-86ba-e9111abffd16"
+        "projectId": "aa779c58-7fc2-4b2a-a766-2a146b78f360"
       }
     }
   }
