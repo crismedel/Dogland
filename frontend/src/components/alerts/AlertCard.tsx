@@ -1,13 +1,19 @@
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Alert, alertStyles, riskStyles } from '../../types/alert';
+// 1. Importar las FUNCIONES de estilos y el TIPO
+import {
+  Alert,
+  getAlertStyles,
+  getRiskStyles,
+} from '@/src/types/alert'; // Ajustado al path que refactorizamos
 import { deleteAlert } from '../../api/alerts';
 import { useNotification } from '@/src/components/notifications';
 import { useRefresh } from '@/src/contexts/RefreshContext';
 import { REFRESH_KEYS } from '@/src/constants/refreshKeys';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '@/src/constants/colors';
+// 1. Quitar la importación estática
+// import { Colors } from '@/src/constants/colors';
 import {
   fontWeightBold,
   fontWeightSemiBold,
@@ -15,17 +21,30 @@ import {
   AppText,
 } from '@/src/components/AppText';
 
+// 2. Importar el hook y los tipos de tema
+import { useTheme } from '@/src/contexts/ThemeContext';
+import { ColorsType } from '@/src/constants/colors';
+
 interface AlertCardProps {
   alert: Alert;
   onDeleteSuccess?: (id: number) => void;
 }
 
 const AlertCard: React.FC<AlertCardProps> = ({ alert, onDeleteSuccess }) => {
+  // 3. Llamar al hook y generar TODOS los estilos
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
+
+  // 4. Generar los estilos de alerta y riesgo dinámicamente
+  const alertStyles = getAlertStyles(colors);
+  const riskStyles = getRiskStyles(colors);
+
+  const { card, badge } = alertStyles[alert.tipo];
+  const riskStyle = riskStyles[alert.nivel_riesgo];
+
   const router = useRouter();
   const { confirm, showSuccess, showError } = useNotification();
   const { triggerRefresh } = useRefresh();
-  const { card, badge } = alertStyles[alert.tipo];
-  const riskStyle = riskStyles[alert.nivel_riesgo];
 
   const daysUntilExpiration = alert.fecha_expiracion
     ? Math.ceil(
@@ -89,7 +108,8 @@ const AlertCard: React.FC<AlertCardProps> = ({ alert, onDeleteSuccess }) => {
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               style={styles.actionIcon}
             >
-              <Ionicons name="create-outline" size={18} color="#1D4ED8" />
+              {/* 5. Usar colores del tema */}
+              <Ionicons name="create-outline" size={18} color={colors.info} />
             </TouchableOpacity>
           )}
           <TouchableOpacity
@@ -97,7 +117,8 @@ const AlertCard: React.FC<AlertCardProps> = ({ alert, onDeleteSuccess }) => {
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             style={styles.actionIcon}
           >
-            <Ionicons name="trash-outline" size={18} color={Colors.danger} />
+            {/* 5. Usar colores del tema */}
+            <Ionicons name="trash-outline" size={18} color={colors.danger} />
           </TouchableOpacity>
         </View>
       </View>
@@ -141,14 +162,20 @@ const AlertCard: React.FC<AlertCardProps> = ({ alert, onDeleteSuccess }) => {
       {/* Meta info */}
       <View style={styles.metaRow}>
         <View style={styles.metaItem}>
-          <Ionicons name="location-outline" size={14} color="#6B7280" />
+          {/* 5. Usar colores del tema */}
+          <Ionicons name="location-outline" size={14} color={colors.darkGray} />
           <AppText numberOfLines={1} style={styles.metaText}>
             {alert.direccion || 'Sin dirección'}
           </AppText>
         </View>
 
         <View style={styles.metaItem}>
-          <Ionicons name="stats-chart-outline" size={14} color="#6B7280" />
+          {/* 5. Usar colores del tema */}
+          <Ionicons
+            name="stats-chart-outline"
+            size={14}
+            color={colors.darkGray}
+          />
           <AppText style={styles.metaText}>
             {alert.reportes || 0} reportes
           </AppText>
@@ -161,7 +188,8 @@ const AlertCard: React.FC<AlertCardProps> = ({ alert, onDeleteSuccess }) => {
       {/* Footer */}
       <View style={styles.footerRow}>
         <View style={styles.metaItem}>
-          <Ionicons name="calendar-outline" size={14} color="#6B7280" />
+          {/* 5. Usar colores del tema */}
+          <Ionicons name="calendar-outline" size={14} color={colors.darkGray} />
           <AppText style={styles.footerText}>
             {new Date(alert.fecha_creacion).toLocaleDateString()}
           </AppText>
@@ -172,7 +200,7 @@ const AlertCard: React.FC<AlertCardProps> = ({ alert, onDeleteSuccess }) => {
             <Ionicons
               name="time-outline"
               size={12}
-              color={daysUntilExpiration <= 3 ? '#DC2626' : '#EF4444'}
+              color={colors.danger} // 5. Usar colores del tema
               style={{ marginRight: 6 }}
             />
             <AppText
@@ -189,7 +217,7 @@ const AlertCard: React.FC<AlertCardProps> = ({ alert, onDeleteSuccess }) => {
             <Ionicons
               name="archive-outline"
               size={12}
-              color="#6B7280"
+              color={colors.darkGray} // 5. Usar colores del tema
               style={{ marginRight: 6 }}
             />
             <AppText style={styles.archivedText}>Archivada</AppText>
@@ -202,153 +230,154 @@ const AlertCard: React.FC<AlertCardProps> = ({ alert, onDeleteSuccess }) => {
 
 export default AlertCard;
 
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: Colors.cardBackground,
-    padding: 14,
-    marginBottom: 14,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: Colors.secondary,
-    // Sombra sutil
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
-    // Línea de acento a la izquierda (color lo trae alertStyles[alert.tipo].card)
-    borderLeftWidth: 5,
-  },
-  archivedCard: {
-    opacity: 0.8,
-    backgroundColor: '#FAFAFA',
-  },
+// 6. Convertir el StyleSheet en una función
+const getStyles = (colors: ColorsType) =>
+  StyleSheet.create({
+    card: {
+      backgroundColor: colors.cardBackground, // Dinámico
+      padding: 14,
+      marginBottom: 14,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: colors.secondary, // Dinámico
+      shadowColor: '#000',
+      shadowOpacity: 0.08,
+      shadowRadius: 8,
+      shadowOffset: { width: 0, height: 4 },
+      elevation: 2,
+      borderLeftWidth: 5,
+    },
+    archivedCard: {
+      opacity: 0.8,
+      backgroundColor: colors.backgroundSecon, // Dinámico
+    },
 
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  title: {
-    flex: 1,
-    fontSize: 16,
-    color: '#111827',
-    fontWeight: fontWeightSemiBold,
-  },
-  actionsPill: {
-    flexDirection: 'row',
-    backgroundColor: '#F3F4F6',
-    borderRadius: 999,
-    paddingHorizontal: 6,
-    paddingVertical: 4,
-    marginLeft: 8,
-  },
-  actionIcon: {
-    paddingHorizontal: 6,
-  },
+    headerRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 8,
+    },
+    title: {
+      flex: 1,
+      fontSize: 16,
+      color: colors.text, // Dinámico
+      fontWeight: fontWeightSemiBold,
+    },
+    actionsPill: {
+      flexDirection: 'row',
+      backgroundColor: colors.backgroundSecon, // Dinámico
+      borderRadius: 999,
+      paddingHorizontal: 6,
+      paddingVertical: 4,
+      marginLeft: 8,
+    },
+    actionIcon: {
+      paddingHorizontal: 6,
+    },
 
-  badgesRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 6,
-    alignItems: 'center',
-  },
-  typePill: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
-    alignSelf: 'flex-start',
-  },
-  typePillText: {
-    color: '#FFFFFF',
-    fontSize: 11,
-    fontWeight: fontWeightBold,
-    letterSpacing: 0.4,
-  },
-  riskPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 999,
-    backgroundColor: '#FEE2E2',
-    borderWidth: 1,
-  },
-  riskPillText: {
-    fontSize: 11,
-    fontWeight: fontWeightBold,
-    textTransform: 'uppercase',
-  },
+    badgesRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginBottom: 6,
+      alignItems: 'center',
+    },
+    typePill: {
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      borderRadius: 999,
+      alignSelf: 'flex-start',
+    },
+    typePillText: {
+      color: colors.lightText, // Dinámico
+      fontSize: 11,
+      fontWeight: fontWeightBold,
+      letterSpacing: 0.4,
+    },
+    riskPill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: 999,
+      borderWidth: 1,
+      // backgroundColor y borderColor son dinámicos desde riskStyle
+    },
+    riskPillText: {
+      fontSize: 11,
+      fontWeight: fontWeightBold,
+      textTransform: 'uppercase',
+      // color es dinámico desde riskStyle
+    },
 
-  description: {
-    fontSize: 13,
-    color: '#4B5563',
-    lineHeight: 18,
-    marginTop: 6,
-    marginBottom: 10,
-  },
+    description: {
+      fontSize: 13,
+      color: colors.darkGray, // Dinámico
+      lineHeight: 18,
+      marginTop: 6,
+      marginBottom: 10,
+    },
 
-  metaRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 12,
-    marginBottom: 10,
-  },
-  metaItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    gap: 6,
-  },
-  metaText: {
-    flex: 1,
-    fontSize: 12,
-    color: '#6B7280',
-  },
+    metaRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      gap: 12,
+      marginBottom: 10,
+    },
+    metaItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      flex: 1,
+      gap: 6,
+    },
+    metaText: {
+      flex: 1,
+      fontSize: 12,
+      color: colors.darkGray, // Dinámico
+    },
 
-  divider: {
-    height: 1,
-    backgroundColor: '#F3F4F6',
-    marginVertical: 4,
-  },
+    divider: {
+      height: 1,
+      backgroundColor: colors.gray, // Dinámico
+      marginVertical: 4,
+    },
 
-  footerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  footerText: {
-    fontSize: 12,
-    color: '#6B7280',
-  },
-  expireChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFE4E6',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 999,
-  },
-  expireText: {
-    fontSize: 12,
-    color: '#EF4444',
-    fontWeight: fontWeightMedium,
-  },
-  expireTextWarning: {
-    color: '#DC2626',
-    fontWeight: fontWeightBold,
-  },
-  archivedChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F3F4F6',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 999,
-  },
-  archivedText: {
-    fontSize: 12,
-    color: '#6B7280',
-    fontWeight: fontWeightMedium,
-  },
-});
+    footerRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    footerText: {
+      fontSize: 12,
+      color: colors.darkGray, // Dinámico
+    },
+    expireChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: `${colors.danger}15`, // Dinámico (light red)
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: 999,
+    },
+    expireText: {
+      fontSize: 12,
+      color: colors.danger, // Dinámico
+      fontWeight: fontWeightMedium,
+    },
+    expireTextWarning: {
+      color: colors.danger, // Dinámico
+      fontWeight: fontWeightBold,
+    },
+    archivedChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.backgroundSecon, // Dinámico
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: 999,
+    },
+    archivedText: {
+      fontSize: 12,
+      color: colors.darkGray, // Dinámico
+      fontWeight: fontWeightMedium,
+    },
+  });

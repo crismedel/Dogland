@@ -1,10 +1,10 @@
 import { AppText, fontWeightBold } from '@/src/components/AppText';
 import CustomHeader from '@/src/components/UI/CustomHeader';
-import { Colors } from '@/src/constants/colors';
+// 1. Quitar la importación estática
+// import { Colors } from '@/src/constants/colors';
 import { useRouter } from 'expo-router';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, useMemo } from 'react';
 import {
-  ActivityIndicator,
   Dimensions,
   Image,
   ScrollView,
@@ -15,6 +15,10 @@ import {
 import { BarChart, LineChart, PieChart } from 'react-native-chart-kit';
 import apiClient from '../../src/api/client';
 import Spinner from '@/src/components/UI/Spinner';
+
+// 2. Importar el hook y los tipos de tema
+import { useTheme } from '@/src/contexts/ThemeContext';
+import { ColorsType } from '@/src/constants/colors';
 
 const { width } = Dimensions.get('window');
 
@@ -46,7 +50,11 @@ interface TrendStats {
 }
 
 const StatsScreen = () => {
+  // 3. Llamar al hook y generar los estilos
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
   const router = useRouter();
+
   const [loading, setLoading] = useState(true);
   const [summary, setSummary] = useState<SummaryStats | null>(null);
   const [healthStates, setHealthStates] = useState<HealthStateStats[]>([]);
@@ -82,36 +90,84 @@ const StatsScreen = () => {
     fetchStats();
   }, [fetchStats]);
 
-  const speciesChartData = {
-    labels: species.map((s) => s.nombre),
-    datasets: [
-      {
-        data: species.map((s) => parseInt(s.total) || 0),
-        colors: species.map(
-          (_, i) =>
-            (opacity = 1) =>
-              `rgba(0, 100, 255, ${((i + 1) / species.length) * opacity})`,
-        ),
-      },
-    ],
-  };
+  // 4. Mover la lógica de datos de gráficos dentro del componente y memoizarla
+  const speciesChartData = useMemo(
+    () => ({
+      labels: species.map((s) => s.nombre),
+      datasets: [
+        {
+          data: species.map((s) => parseInt(s.total) || 0),
+          colors: species.map(
+            (_, i) =>
+              (opacity = 1) =>
+                `rgba(25, 118, 210, ${((i + 1) / species.length) * opacity})`, // Usando colors.info
+          ),
+        },
+      ],
+    }),
+    [species, colors.info],
+  );
 
-  const healthStatesPieData = healthStates.map((item, index) => {
-    const total = parseInt(item.total) || 0;
-    const color =
-      index === 0
-        ? Colors.danger
-        : index === 1
-        ? Colors.warning
-        : Colors.accent;
-    return {
-      name: item.nombre,
-      population: total,
-      color: color,
-      legendFontColor: Colors.text,
-      legendFontSize: 12,
-    };
-  });
+  const healthStatesPieData = useMemo(
+    () =>
+      healthStates.map((item, index) => {
+        const total = parseInt(item.total) || 0;
+        const color =
+          index === 0
+            ? colors.danger
+            : index === 1
+            ? colors.warning
+            : colors.accent;
+        return {
+          name: item.nombre,
+          population: total,
+          color: color,
+          legendFontColor: colors.text, // Dinámico
+          legendFontSize: 12,
+        };
+      }),
+    [healthStates, colors],
+  );
+
+  // 4. Crear configuraciones de gráficos memoizadas
+  const baseChartConfig = useMemo(
+    () => ({
+      backgroundColor: colors.cardBackground,
+      backgroundGradientFrom: colors.cardBackground,
+      backgroundGradientTo: colors.cardBackground,
+      decimalPlaces: 0,
+      color: (opacity = 1) =>
+        `${colors.text}${Math.round(opacity * 255).toString(16)}`,
+      labelColor: (opacity = 1) =>
+        `${colors.text}${Math.round(opacity * 255).toString(16)}`,
+      style: {
+        borderRadius: 16,
+      },
+    }),
+    [colors],
+  );
+
+  const lineChartConfig = useMemo(
+    () => ({
+      ...baseChartConfig,
+      color: (opacity = 1) =>
+        `${colors.danger}${Math.round(opacity * 255).toString(16)}`,
+      propsForDots: {
+        r: '5',
+        strokeWidth: '2',
+        stroke: colors.primary, // Dinámico
+      },
+    }),
+    [baseChartConfig, colors.danger, colors.primary],
+  );
+
+  const barChartConfig = useMemo(
+    () => ({
+      ...baseChartConfig,
+      barPercentage: 0.8,
+    }),
+    [baseChartConfig],
+  );
 
   if (loading) {
     return <Spinner />;
@@ -125,7 +181,8 @@ const StatsScreen = () => {
           <TouchableOpacity onPress={() => router.back()}>
             <Image
               source={require('../../assets/images/volver.png')}
-              style={{ width: 24, height: 24, tintColor: '#fff' }}
+              // 5. Usar colores del tema
+              style={{ width: 24, height: 24, tintColor: colors.lightText }}
             />
           </TouchableOpacity>
         }
@@ -140,14 +197,14 @@ const StatsScreen = () => {
             </AppText>
             <AppText style={styles.summaryLabel}>Total de Reportes</AppText>
           </View>
-          <View style={[styles.summaryCard, { borderColor: Colors.danger }]}>
-            <AppText style={[styles.summaryValue, { color: Colors.danger }]}>
+          <View style={[styles.summaryCard, { borderColor: colors.danger }]}>
+            <AppText style={[styles.summaryValue, { color: colors.danger }]}>
               {summary?.criticalReports || 0}
             </AppText>
             <AppText style={styles.summaryLabel}>Reportes Críticos</AppText>
           </View>
-          <View style={[styles.summaryCard, { borderColor: Colors.success }]}>
-            <AppText style={[styles.summaryValue, { color: Colors.success }]}>
+          <View style={[styles.summaryCard, { borderColor: colors.success }]}>
+            <AppText style={[styles.summaryValue, { color: colors.success }]}>
               {summary?.activeReports || 0}
             </AppText>
             <AppText style={styles.summaryLabel}>Reportes Activos</AppText>
@@ -166,13 +223,13 @@ const StatsScreen = () => {
             <AppText style={styles.impactLabel}>Mis Reportes</AppText>
           </View>
           <View style={styles.impactCard}>
-            <AppText style={[styles.impactValue, { color: Colors.primary }]}>
+            <AppText style={[styles.impactValue, { color: colors.primary }]}>
               {userImpact?.contributionPercentage || 0}%
             </AppText>
             <AppText style={styles.impactLabel}>Contribución Total</AppText>
           </View>
           <View style={styles.impactCard}>
-            <AppText style={[styles.impactValue, { color: Colors.success }]}>
+            <AppText style={[styles.impactValue, { color: colors.success }]}>
               {userImpact?.myResolved || 0}
             </AppText>
             <AppText style={styles.impactLabel}>Casos Resueltos</AppText>
@@ -194,20 +251,7 @@ const StatsScreen = () => {
               height={220}
               yAxisLabel=""
               yAxisSuffix=""
-              chartConfig={{
-                backgroundColor: Colors.lightText,
-                backgroundGradientFrom: Colors.lightText,
-                backgroundGradientTo: Colors.lightText,
-                decimalPlaces: 0,
-                color: (opacity = 1) => `rgba(255, 99, 71, ${opacity})`,
-                labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-                style: { borderRadius: 16 },
-                propsForDots: {
-                  r: '5',
-                  strokeWidth: '2',
-                  stroke: Colors.primary,
-                },
-              }}
+              chartConfig={lineChartConfig} // 5. Usar config dinámica
               bezier
               style={styles.chart}
             />
@@ -228,15 +272,7 @@ const StatsScreen = () => {
               height={220}
               yAxisLabel=""
               yAxisSuffix=""
-              chartConfig={{
-                backgroundColor: Colors.lightText,
-                backgroundGradientFrom: Colors.lightText,
-                backgroundGradientTo: Colors.lightText,
-                decimalPlaces: 0,
-                color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-                style: { borderRadius: 16 },
-                barPercentage: 0.8,
-              }}
+              chartConfig={barChartConfig} // 5. Usar config dinámica
               style={styles.chart}
             />
           ) : (
@@ -256,12 +292,7 @@ const StatsScreen = () => {
               data={healthStatesPieData}
               width={width - 40}
               height={220}
-              chartConfig={{
-                backgroundColor: Colors.lightText,
-                backgroundGradientFrom: Colors.lightText,
-                backgroundGradientTo: Colors.lightText,
-                color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-              }}
+              chartConfig={baseChartConfig} // 5. Usar config dinámica
               accessor="population"
               backgroundColor="transparent"
               paddingLeft="15"
@@ -278,91 +309,93 @@ const StatsScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background || '#F0F4F7' },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  loadingText: { marginTop: 10, fontSize: 16, color: Colors.primary },
-  scrollContent: { padding: 20, paddingBottom: 40 },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: fontWeightBold,
-    color: Colors.text,
-    marginBottom: 15,
-    marginTop: 25,
-  },
-  summaryContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 15,
-  },
-  summaryCard: {
-    flex: 1,
-    backgroundColor: Colors.lightText,
-    borderRadius: 12,
-    padding: 15,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
-    borderWidth: 1,
-    borderColor: Colors.accent,
-  },
-  summaryValue: {
-    fontSize: 32,
-    fontWeight: fontWeightBold,
-    color: Colors.text,
-  },
-  summaryLabel: {
-    fontSize: 14,
-    color: Colors.gray,
-    textAlign: 'center',
-    marginTop: 5,
-  },
-  impactContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 10,
-  },
-  impactCard: {
-    flex: 1,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    paddingVertical: 15,
-    paddingHorizontal: 5,
-    alignItems: 'center',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-    shadowOffset: { width: 0, height: 2 },
-  },
-  impactValue: {
-    fontSize: 24,
-    fontWeight: fontWeightBold,
-    color: Colors.text,
-  },
-  impactLabel: {
-    fontSize: 12,
-    color: Colors.gray,
-    textAlign: 'center',
-    marginTop: 4,
-  },
-  chartContainer: {
-    backgroundColor: Colors.lightText,
-    borderRadius: 16,
-    padding: 10,
-    marginTop: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  chart: { marginVertical: 8, borderRadius: 16 },
-  noDataText: { textAlign: 'center', padding: 20, color: Colors.gray },
-});
+// 6. Convertir el StyleSheet en una función
+const getStyles = (colors: ColorsType) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background }, // Dinámico
+    centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    loadingText: { marginTop: 10, fontSize: 16, color: colors.primary }, // Dinámico
+    scrollContent: { padding: 20, paddingBottom: 40 },
+    sectionTitle: {
+      fontSize: 20,
+      fontWeight: fontWeightBold,
+      color: colors.text, // Dinámico
+      marginBottom: 15,
+      marginTop: 25,
+    },
+    summaryContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      gap: 15,
+    },
+    summaryCard: {
+      flex: 1,
+      backgroundColor: colors.cardBackground, // Dinámico
+      borderRadius: 12,
+      padding: 15,
+      alignItems: 'center',
+      justifyContent: 'center',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 3.84,
+      elevation: 5,
+      borderWidth: 1,
+      borderColor: colors.accent, // Dinámico
+    },
+    summaryValue: {
+      fontSize: 32,
+      fontWeight: fontWeightBold,
+      color: colors.text, // Dinámico
+    },
+    summaryLabel: {
+      fontSize: 14,
+      color: colors.darkGray, // Dinámico
+      textAlign: 'center',
+      marginTop: 5,
+    },
+    impactContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      gap: 10,
+    },
+    impactCard: {
+      flex: 1,
+      backgroundColor: colors.cardBackground, // Dinámico
+      borderRadius: 12,
+      paddingVertical: 15,
+      paddingHorizontal: 5,
+      alignItems: 'center',
+      elevation: 2,
+      shadowColor: '#000',
+      shadowOpacity: 0.05,
+      shadowRadius: 5,
+      shadowOffset: { width: 0, height: 2 },
+    },
+    impactValue: {
+      fontSize: 24,
+      fontWeight: fontWeightBold,
+      color: colors.text, // Dinámico
+    },
+    impactLabel: {
+      fontSize: 12,
+      color: colors.darkGray, // Dinámico
+      textAlign: 'center',
+      marginTop: 4,
+    },
+    chartContainer: {
+      backgroundColor: colors.cardBackground, // Dinámico
+      borderRadius: 16,
+      padding: 10,
+      marginTop: 10,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 3.84,
+      elevation: 5,
+    },
+    chart: { marginVertical: 8, borderRadius: 16 },
+    noDataText: { textAlign: 'center', padding: 20, color: colors.darkGray }, // Dinámico
+  });
 
 export default StatsScreen;

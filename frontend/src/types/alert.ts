@@ -1,14 +1,18 @@
-import { Colors } from '../constants/colors';
+// 1. Quitar la importación estática de Colors
+// import { Colors } from '../constants/colors';
 
-// Tipos fijos
+// 2. Importar el TIPO de los colores, no el hook
+import { ColorsType } from "@/src/constants/colors";
+
+// Tipos fijos (Estos se mantienen igual)
 export type AlertType =
-  | 'Jauria'
-  | 'Accidente'
-  | 'Robo'
-  | 'Animal Perdido'
-  | 'Otro';
+  | "Jauria"
+  | "Accidente"
+  | "Robo"
+  | "Animal Perdido"
+  | "Otro";
 
-export type RiskLevel = 'Bajo' | 'Medio' | 'Alto' | 'Crítico';
+export type RiskLevel = "Bajo" | "Medio" | "Alto" | "Crítico";
 
 export interface Alert {
   id_alerta: number;
@@ -28,45 +32,78 @@ export interface Alert {
   longitude?: number | null;
 }
 
-// Filtros
+// Filtros (Estos se mantienen igual)
 export interface FilterOptions {
-  type: AlertType | 'todos';
-  riskLevel: RiskLevel | 'todos';
-  status: 'activas' | 'archivadas' | 'todas';
-  timeRange: 'recientes' | 'semana' | 'mes' | 'todas';
+  type: AlertType | "todos";
+  riskLevel: RiskLevel | "todos";
+  status: "activas" | "archivadas" | "todas";
+  timeRange: "recientes" | "semana" | "mes" | "todas";
 }
 
-// Estilos por tipo de alerta
-export const alertStyles: Record<AlertType, { card: object; badge: object }> = {
+// 3. Convertir 'alertStyles' en una FUNCIÓN que recibe los colores
+export const getAlertStyles = (
+  colors: ColorsType
+): Record<AlertType, { card: object; badge: object }> => ({
   Jauria: {
-    card: { borderLeftColor: '#FF6B6B', backgroundColor: '#FFF5F5' },
-    badge: { backgroundColor: '#FF6B6B' },
+    // Original: #FF6B6B / #FFF5F5
+    card: {
+      borderLeftColor: colors.danger,
+      backgroundColor: `${colors.danger}15`,
+    },
+    badge: { backgroundColor: colors.danger },
   },
   Accidente: {
-    card: { borderLeftColor: '#FFB347', backgroundColor: '#FFF8F0' },
-    badge: { backgroundColor: '#FFB347' },
+    // Original: #FFB347 / #FFF8F0
+    card: {
+      borderLeftColor: colors.warning,
+      backgroundColor: `${colors.warning}15`,
+    },
+    badge: { backgroundColor: colors.warning },
   },
   Robo: {
-    card: { borderLeftColor: '#4ECDC4', backgroundColor: '#F0FFFE' },
-    badge: { backgroundColor: '#4ECDC4' },
+    // Original: #4ECDC4 / #F0FFFE
+    card: {
+      borderLeftColor: colors.info,
+      backgroundColor: `${colors.info}15`,
+    },
+    badge: { backgroundColor: colors.info },
   },
-  'Animal Perdido': {
-    card: { borderLeftColor: '#45B7D1', backgroundColor: '#F0F8FF' },
-    badge: { backgroundColor: '#45B7D1' },
+  "Animal Perdido": {
+    // Original: #45B7D1 / #F0F8FF
+    card: {
+      borderLeftColor: colors.accent,
+      backgroundColor: `${colors.accent}15`,
+    },
+    badge: { backgroundColor: colors.accent },
   },
   Otro: {
-    card: { borderLeftColor: '#96CEB4', backgroundColor: '#F8FFF8' },
-    badge: { backgroundColor: '#96CEB4' },
+    // Original: #96CEB4 / #F8FFF8 (Verde)
+    card: {
+      borderLeftColor: colors.success,
+      backgroundColor: `${colors.success}15`,
+    },
+    badge: { backgroundColor: colors.success },
   },
-};
+});
 
-// Estilos por nivel de riesgo
-export const riskStyles: Record<
-  RiskLevel,
-  { color: string; backgroundColor: string }
-> = {
-  Bajo: { color: Colors.success, backgroundColor: '#d4edda' },
-  Medio: { color: Colors.warning, backgroundColor: '#fff3cd' },
-  Alto: { color: Colors.secondary, backgroundColor: '#f8d7da' },
-  Crítico: { color: Colors.danger, backgroundColor: '#f8d7da' },
-};
+// 4. Convertir 'riskStyles' en una FUNCIÓN que recibe los colores
+export const getRiskStyles = (
+  colors: ColorsType
+): Record<RiskLevel, { color: string; backgroundColor: string }> => ({
+  Bajo: {
+    color: colors.success,
+    backgroundColor: `${colors.success}20`, // Original: #d4edda
+  },
+  Medio: {
+    color: colors.warning,
+    backgroundColor: `${colors.warning}20`, // Original: #fff3cd
+  },
+  Alto: {
+    color: colors.secondary, // Mantenemos secondary si así estaba
+    backgroundColor: `${colors.danger}20`, // Original: #f8d7da
+  },
+  Crítico: {
+    color: colors.danger,
+    backgroundColor: `${colors.danger}20`, // Original: #f8d7da
+  },
+});

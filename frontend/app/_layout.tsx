@@ -1,4 +1,4 @@
-import { Stack, router, usePathname } from 'expo-router';
+import { Slot, Stack, router, usePathname } from 'expo-router';
 import {
   View,
   StyleSheet,
@@ -9,7 +9,7 @@ import {
 import { useEffect, useState } from 'react';
 
 import { useCustomFonts } from '@/src/constants/fontFamily';
-import { Colors } from '@/src/constants/colors';
+import { ThemeProvider, useTheme } from '@/src/contexts/ThemeContext';
 import { NotificationProvider } from '@/src/components/notifications';
 import { AuthProvider, useAuth } from '@/src/contexts/AuthContext';
 import BottomNavBar from '@/src/components/UI/TabBar';
@@ -26,6 +26,8 @@ function AppContent() {
   const fontsLoaded = useCustomFonts();
   const pathname = usePathname();
   const { isAuthenticated, isLoading } = useAuth();
+
+  const { colors } = useTheme();
 
   useEffect(() => {
     if (!fontsLoaded || isLoading) return;
@@ -48,10 +50,10 @@ function AppContent() {
   const showTabBar = pathname && !pathname.startsWith('/auth');
 
   return (
-    <View style={styles.background}>
+    <View style={[styles.background, { backgroundColor: colors.background }]}>
       <Stack
         screenOptions={{
-          contentStyle: { backgroundColor: Colors.background },
+          contentStyle: { backgroundColor: colors.background },
           animation: Platform.select({ ios: 'default', android: 'fade' }),
         }}
       >
@@ -83,11 +85,13 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <RefreshProvider>
-          <NotificationProvider>
-            <AppContent />
-          </NotificationProvider>
-        </RefreshProvider>
+        <ThemeProvider>
+          <RefreshProvider>
+            <NotificationProvider>
+              <AppContent />
+            </NotificationProvider>
+          </RefreshProvider>
+        </ThemeProvider>
       </AuthProvider>
     </QueryClientProvider>
   );
@@ -96,7 +100,6 @@ export default function RootLayout() {
 const styles = StyleSheet.create({
   background: {
     flex: 1,
-    backgroundColor: Colors.background,
   },
   loadingContainer: {
     justifyContent: 'center',

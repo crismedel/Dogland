@@ -21,7 +21,8 @@ import {
   Linking,
 } from 'react-native';
 import apiClient from '../../src/api/client';
-import { Colors } from '../../src/constants/colors';
+// 1. Quitar la importación estática
+// import { Colors } from '../../src/constants/colors';
 import { Sighting } from '../../src/types/sighting';
 import {
   obtenerNombreEspecie,
@@ -29,9 +30,14 @@ import {
 } from '../../src/types/report';
 import Spinner from '@/src/components/UI/Spinner';
 
+// 2. Importar el hook y los tipos de tema
+import { useTheme } from '@/src/contexts/ThemeContext';
+import { ColorsType } from '@/src/constants/colors';
+
 const { width } = Dimensions.get('window');
 const HERO_HEIGHT = Math.round(width * 0.58);
 
+// ... (funciones formatDateDDMMYYYY, formatCoords, openInMaps se mantienen igual) ...
 const formatDateDDMMYYYY = (input?: string | null) => {
   if (!input) return 'N/A';
   const d = new Date(input);
@@ -78,6 +84,10 @@ const openInMaps = async (
 };
 
 const SightingDetailScreen = () => {
+  // 3. Llamar al hook y generar los estilos
+  const { colors, isDark } = useTheme();
+  const styles = getStyles(colors, isDark);
+
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const [sighting, setSighting] = useState<Sighting | null>(null);
@@ -151,6 +161,7 @@ const SightingDetailScreen = () => {
     extrapolate: 'clamp',
   });
 
+  // Este sub-componente usa 'styles' y 'colors' del scope de SightingDetailScreen
   const InfoSection = ({ s }: { s: Sighting }) => {
     const fecha = formatDateDDMMYYYY(s.fecha_creacion);
     const especieDisplay =
@@ -188,7 +199,7 @@ const SightingDetailScreen = () => {
               <Ionicons
                 name="information-circle-outline"
                 size={20}
-                color={Colors.primary}
+                color={colors.primary} // 4. Usar colores del tema
               />
             </View>
           </View>
@@ -196,8 +207,12 @@ const SightingDetailScreen = () => {
           <View style={styles.infoBody}>
             {/* --- Detalles del avistamiento --- */}
             <View style={styles.infoRow}>
-              <View style={[styles.iconCircle, { backgroundColor: '#eef8ff' }]}>
-                <Ionicons name="calendar-outline" size={18} color="#2b6cff" />
+              <View style={[styles.iconCircle, styles.iconCircleInfo]}>
+                <Ionicons
+                  name="calendar-outline"
+                  size={18}
+                  color={colors.info}
+                />
               </View>
               <View style={styles.infoTextWrap}>
                 <AppText style={styles.rowLabel}>Fecha de Creación</AppText>
@@ -206,8 +221,8 @@ const SightingDetailScreen = () => {
             </View>
 
             <View style={styles.infoRow}>
-              <View style={[styles.iconCircle, { backgroundColor: '#f6fbf4' }]}>
-                <Ionicons name="paw-outline" size={18} color="#2b7a78" />
+              <View style={[styles.iconCircle, styles.iconCircleSuccess]}>
+                <Ionicons name="paw-outline" size={18} color={colors.success} />
               </View>
               <View style={styles.infoTextWrap}>
                 <AppText style={styles.rowLabel}>Especie</AppText>
@@ -216,8 +231,12 @@ const SightingDetailScreen = () => {
             </View>
 
             <View style={styles.infoRow}>
-              <View style={[styles.iconCircle, { backgroundColor: '#fff7ec' }]}>
-                <Ionicons name="medkit-outline" size={18} color="#e8772b" />
+              <View style={[styles.iconCircle, styles.iconCircleWarning]}>
+                <Ionicons
+                  name="medkit-outline"
+                  size={18}
+                  color={colors.secondary}
+                />
               </View>
               <View style={styles.infoTextWrap}>
                 <AppText style={styles.rowLabel}>Estado de Salud</AppText>
@@ -226,8 +245,12 @@ const SightingDetailScreen = () => {
             </View>
 
             <View style={styles.infoRow}>
-              <View style={[styles.iconCircle, { backgroundColor: '#f0f4f8' }]}>
-                <Ionicons name="location-sharp" size={18} color="#5b6b82" />
+              <View style={[styles.iconCircle, styles.iconCircleGray]}>
+                <Ionicons
+                  name="location-sharp"
+                  size={18}
+                  color={colors.darkGray}
+                />
               </View>
               <View style={styles.infoTextWrap}>
                 <AppText style={styles.rowLabel}>Dirección</AppText>
@@ -239,13 +262,15 @@ const SightingDetailScreen = () => {
               <View
                 style={[
                   styles.iconCircle,
-                  { backgroundColor: estaActivo ? '#e6fbf0' : '#f4f4f6' },
+                  estaActivo
+                    ? styles.iconCircleSuccess
+                    : styles.iconCircleGray,
                 ]}
               >
                 <Ionicons
                   name={estaActivo ? 'checkmark-circle' : 'close-circle'}
                   size={18}
-                  color={estaActivo ? Colors.success : Colors.darkGray}
+                  color={estaActivo ? colors.success : colors.darkGray}
                 />
               </View>
               <View style={styles.infoTextWrap}>
@@ -262,14 +287,18 @@ const SightingDetailScreen = () => {
                   <View
                     style={[
                       styles.statusBadge,
-                      { backgroundColor: estaActivo ? '#E6FBF0' : '#F1F1F3' },
+                      {
+                        backgroundColor: estaActivo
+                          ? `${colors.success}20`
+                          : `${colors.gray}40`,
+                      },
                     ]}
                   >
                     <AppText
                       style={[
                         styles.statusBadgeText,
                         {
-                          color: estaActivo ? Colors.success : Colors.darkGray,
+                          color: estaActivo ? colors.success : colors.darkGray,
                         },
                       ]}
                     >
@@ -287,8 +316,8 @@ const SightingDetailScreen = () => {
             </View>
 
             <View style={styles.infoRow}>
-              <View style={[styles.iconCircle, { backgroundColor: '#fff5f3' }]}>
-                <Ionicons name="map-outline" size={18} color="#c85a4d" />
+              <View style={[styles.iconCircle, styles.iconCircleDanger]}>
+                <Ionicons name="map-outline" size={18} color={colors.danger} />
               </View>
               <View style={styles.infoTextWrap}>
                 <AppText style={styles.rowLabel}>Ubicación</AppText>
@@ -316,7 +345,7 @@ const SightingDetailScreen = () => {
                       <Ionicons
                         name="navigate-circle-outline"
                         size={20}
-                        color={Colors.primary}
+                        color={colors.primary}
                       />
                     </TouchableOpacity>
 
@@ -327,7 +356,7 @@ const SightingDetailScreen = () => {
                       <Ionicons
                         name="copy-outline"
                         size={18}
-                        color={Colors.darkGray}
+                        color={colors.darkGray}
                       />
                     </TouchableOpacity>
                   </View>
@@ -342,7 +371,10 @@ const SightingDetailScreen = () => {
 
   return (
     <View style={styles.fullScreenContainer}>
-      <StatusBar barStyle="light-content" backgroundColor={Colors.text} />
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor={isDark ? colors.backgroundSecon : colors.text} // 4. Usar colores del tema
+      />
 
       {/* TODO SE MUEVE JUNTOS */}
       <Animated.ScrollView
@@ -383,7 +415,7 @@ const SightingDetailScreen = () => {
                 <Ionicons
                   name="image-outline"
                   size={64}
-                  color={Colors.lightText}
+                  color={isDark ? colors.text : colors.lightText} // 4. Usar colores del tema
                 />
                 <AppText style={styles.placeholderText}>
                   Sin Imagen Reportada
@@ -399,7 +431,11 @@ const SightingDetailScreen = () => {
               style={styles.iconBtn}
               accessibilityLabel="Volver"
             >
-              <Ionicons name="chevron-back" size={22} color="#fff" />
+              <Ionicons
+                name="chevron-back"
+                size={22}
+                color={isDark ? colors.text : colors.lightText} // 4. Usar colores del tema
+              />
             </TouchableOpacity>
 
             <View style={{ flex: 1 }} />
@@ -411,7 +447,11 @@ const SightingDetailScreen = () => {
               style={styles.iconBtn}
               accessibilityLabel="Compartir"
             >
-              <Ionicons name="share-social-outline" size={20} color="#fff" />
+              <Ionicons
+                name="share-social-outline"
+                size={20}
+                color={isDark ? colors.text : colors.lightText} // 4. Usar colores del tema
+              />
             </TouchableOpacity>
           </View>
 
@@ -431,7 +471,12 @@ const SightingDetailScreen = () => {
               style={styles.editFab}
               accessibilityLabel="Editar"
             >
-              <Ionicons name="pencil" size={18} color="#fff" />
+              <Ionicons
+                name="pencil"
+                size={18}
+                // 4. Texto sobre fondo primario (amarillo)
+                color={isDark ? colors.lightText : colors.text}
+              />
             </TouchableOpacity>
           </View>
 
@@ -443,211 +488,219 @@ const SightingDetailScreen = () => {
 };
 
 /* --- ESTILOS --- */
-const styles = StyleSheet.create({
-  fullScreenContainer: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  centered: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: Colors.background,
-  },
-  text: { fontSize: 16, color: Colors.darkGray, marginTop: 10 },
-  errorText: {
-    fontSize: 18,
-    color: Colors.danger,
-    textAlign: 'center',
-    fontWeight: fontWeightBold,
-  },
-  heroContainer: {
-    width: '100%',
-    height: HERO_HEIGHT,
-    backgroundColor: Colors.text,
-    overflow: 'hidden',
-    justifyContent: 'flex-end',
-  },
-  heroImageWrapper: {
-    width: '100%',
-    height: '100%',
-  },
-  heroImage: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: Colors.text,
-  },
-  heroOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.28)',
-  },
-  placeholder: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: Colors.text,
-  },
-  placeholderText: {
-    color: Colors.lightText,
-    fontSize: 16,
-    marginTop: 8,
-    fontWeight: fontWeightSemiBold as any,
-  },
-  heroTopRow: {
-    position: 'absolute',
-    top: Platform.OS === 'android' ? StatusBar.currentHeight ?? 12 : 12,
-    left: 15,
-    right: 15,
-    zIndex: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  iconBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    backgroundColor: 'rgba(0,0,0,0.28)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  heroTitleWrap: {
-    position: 'absolute',
-    left: 16,
-    bottom: 16,
-    right: 80,
-    zIndex: 6,
-  },
-  heroTitleText: {
-    color: '#fff',
-    fontSize: 20,
-    fontWeight: fontWeightBold as any,
-    textShadowColor: 'rgba(0,0,0,0.45)',
-    textShadowOffset: { width: 0, height: 6 },
-    textShadowRadius: 14,
-  },
-  sheetHandle: {
-    width: 56,
-    height: 5,
-    backgroundColor: '#EEE',
-    borderRadius: 6,
-    alignSelf: 'center',
-    marginBottom: 8,
-  },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    marginBottom: 8,
-  },
-  mainTitle: {
-    fontSize: 20,
-    fontWeight: fontWeightBold,
-    color: Colors.text,
-    flex: 1,
-    marginRight: 10,
-  },
-  editFab: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: Colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  infoSectionWrap: { marginTop: 12 },
-  infoCardNew: {
-    backgroundColor: '#fff',
-    borderRadius: 18,
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    shadowColor: '#000',
-    shadowOpacity: 0.07,
-    shadowOffset: { width: 0, height: 3 },
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  infoHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-    justifyContent: 'space-between',
-  },
-  infoHeaderIcon: {
-    backgroundColor: '#eff3ff',
-    borderRadius: 8,
-    padding: 6,
-  },
-  infoTitle: {
-    fontSize: 16,
-    fontWeight: fontWeightSemiBold,
-    color: Colors.text,
-  },
-  infoSubtitle: {
-    fontSize: 13,
-    color: Colors.darkGray,
-    marginTop: 2,
-  },
-  infoBody: { gap: 12 },
-  infoRow: { flexDirection: 'row', alignItems: 'center' },
-  iconCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  infoTextWrap: { flex: 1 },
-  rowLabel: {
-    fontSize: 13,
-    color: Colors.darkGray,
-  },
-  rowValue: {
-    fontSize: 15,
-    fontWeight: fontWeightMedium,
-    color: Colors.text,
-  },
-  mapBtn: {
-    padding: 6,
-    backgroundColor: '#f7f8f9',
-    borderRadius: 8,
-  },
-  statusBadge: {
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: 8,
-  },
-  statusBadgeText: {
-    fontSize: 13,
-    fontWeight: fontWeightSemiBold,
-  },
-  riskBadge: {
-    backgroundColor: '#ffe8e5',
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: 8,
-  },
-  riskBadgeText: {
-    color: '#c85a4d',
-    fontSize: 13,
-    fontWeight: fontWeightSemiBold,
-  },
-  descriptionBox: {
-    backgroundColor: '#fff',
-    marginBottom: 16,
-    borderRadius: 18,
-    padding: 16,
-  },
-  descTitle: {
-    fontSize: 16,
-    fontWeight: fontWeightSemiBold,
-    marginBottom: 6,
-    color: Colors.text,
-  },
-  descText: {
-    fontSize: 14,
-    color: Colors.darkGray,
-    lineHeight: 20,
-  },
-});
+// 5. Convertir el StyleSheet en una función
+const getStyles = (colors: ColorsType, isDark: boolean) =>
+  StyleSheet.create({
+    fullScreenContainer: {
+      flex: 1,
+      backgroundColor: colors.background, // Dinámico
+    },
+    centered: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: colors.background, // Dinámico
+    },
+    text: { fontSize: 16, color: colors.darkGray, marginTop: 10 }, // Dinámico
+    errorText: {
+      fontSize: 18,
+      color: colors.danger, // Dinámico
+      textAlign: 'center',
+      fontWeight: fontWeightBold,
+    },
+    heroContainer: {
+      width: '100%',
+      height: HERO_HEIGHT,
+      backgroundColor: isDark ? colors.backgroundSecon : colors.text, // Dinámico
+      overflow: 'hidden',
+      justifyContent: 'flex-end',
+    },
+    heroImageWrapper: {
+      width: '100%',
+      height: '100%',
+    },
+    heroImage: {
+      width: '100%',
+      height: '100%',
+      backgroundColor: isDark ? colors.backgroundSecon : colors.text, // Dinámico
+    },
+    heroOverlay: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: 'rgba(0,0,0,0.28)',
+    },
+    placeholder: {
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    placeholderText: {
+      color: isDark ? colors.text : colors.lightText, // Dinámico
+      fontSize: 16,
+      marginTop: 8,
+      fontWeight: fontWeightSemiBold,
+    },
+    heroTopRow: {
+      position: 'absolute',
+      top: Platform.OS === 'android' ? StatusBar.currentHeight ?? 12 : 12,
+      left: 15,
+      right: 15,
+      zIndex: 10,
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    iconBtn: {
+      width: 40,
+      height: 40,
+      borderRadius: 10,
+      backgroundColor: 'rgba(0,0,0,0.28)',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    heroTitleWrap: {
+      position: 'absolute',
+      left: 16,
+      bottom: 16,
+      right: 80,
+      zIndex: 6,
+    },
+    heroTitleText: {
+      color: isDark ? colors.text : colors.lightText, // Dinámico
+      fontSize: 20,
+      fontWeight: fontWeightBold,
+      textShadowColor: 'rgba(0,0,0,0.45)',
+      textShadowOffset: { width: 0, height: 6 },
+      textShadowRadius: 14,
+    },
+    sheetHandle: {
+      width: 56,
+      height: 5,
+      backgroundColor: colors.gray, // Dinámico
+      borderRadius: 6,
+      alignSelf: 'center',
+      marginBottom: 8,
+    },
+    titleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 14,
+      marginBottom: 8,
+    },
+    mainTitle: {
+      fontSize: 20,
+      fontWeight: fontWeightBold,
+      color: colors.text, // Dinámico
+      flex: 1,
+      marginRight: 10,
+    },
+    editFab: {
+      width: 44,
+      height: 44,
+      borderRadius: 12,
+      backgroundColor: colors.primary, // Dinámico
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    infoSectionWrap: { marginTop: 12 },
+    infoCardNew: {
+      backgroundColor: colors.cardBackground, // Dinámico
+      borderRadius: 18,
+      paddingVertical: 16,
+      paddingHorizontal: 16,
+      shadowColor: '#000',
+      shadowOpacity: isDark ? 0.1 : 0.07, // Dinámico
+      shadowOffset: { width: 0, height: 3 },
+      shadowRadius: 8,
+      elevation: 2,
+    },
+    infoHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 12,
+      justifyContent: 'space-between',
+    },
+    infoHeaderIcon: {
+      backgroundColor: `${colors.primary}30`, // Dinámico (light primary)
+      borderRadius: 8,
+      padding: 6,
+    },
+    infoTitle: {
+      fontSize: 16,
+      fontWeight: fontWeightSemiBold,
+      color: colors.text, // Dinámico
+    },
+    infoSubtitle: {
+      fontSize: 13,
+      color: colors.darkGray, // Dinámico
+      marginTop: 2,
+    },
+    infoBody: { gap: 12 },
+    infoRow: { flexDirection: 'row', alignItems: 'center' },
+    iconCircle: {
+      width: 36,
+      height: 36,
+      borderRadius: 10,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: 12,
+    },
+    // Icon circle variants
+    iconCircleInfo: { backgroundColor: `${colors.info}20` },
+    iconCircleSuccess: { backgroundColor: `${colors.success}20` },
+    iconCircleWarning: { backgroundColor: `${colors.warning}20` },
+    iconCircleGray: { backgroundColor: `${colors.gray}40` },
+    iconCircleDanger: { backgroundColor: `${colors.danger}20` },
+
+    infoTextWrap: { flex: 1 },
+    rowLabel: {
+      fontSize: 13,
+      color: colors.darkGray, // Dinámico
+    },
+    rowValue: {
+      fontSize: 15,
+      fontWeight: fontWeightMedium,
+      color: colors.text, // Dinámico
+    },
+    mapBtn: {
+      padding: 6,
+      backgroundColor: colors.backgroundSecon, // Dinámico
+      borderRadius: 8,
+    },
+    statusBadge: {
+      paddingVertical: 4,
+      paddingHorizontal: 8,
+      borderRadius: 8,
+    },
+    statusBadgeText: {
+      fontSize: 13,
+      fontWeight: fontWeightSemiBold,
+    },
+    riskBadge: {
+      backgroundColor: `${colors.danger}20`, // Dinámico
+      paddingVertical: 4,
+      paddingHorizontal: 8,
+      borderRadius: 8,
+    },
+    riskBadgeText: {
+      color: colors.danger, // Dinámico
+      fontSize: 13,
+      fontWeight: fontWeightSemiBold,
+    },
+    descriptionBox: {
+      backgroundColor: colors.cardBackground, // Dinámico
+      marginBottom: 16,
+      borderRadius: 18,
+      padding: 16,
+    },
+    descTitle: {
+      fontSize: 16,
+      fontWeight: fontWeightSemiBold,
+      marginBottom: 6,
+      color: colors.text, // Dinámico
+    },
+    descText: {
+      fontSize: 14,
+      color: colors.darkGray, // Dinámico
+      lineHeight: 20,
+    },
+  });
 
 export default SightingDetailScreen;

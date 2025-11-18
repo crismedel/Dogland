@@ -1,4 +1,3 @@
-// components/Pagination.tsx
 import React from 'react';
 import {
   View,
@@ -9,7 +8,12 @@ import {
 } from 'react-native';
 import { AppText } from '@/src/components/AppText';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '@/src/constants/colors';
+// 1. Quitar la importación estática
+// import { Colors } from '@/src/constants/colors';
+
+// 2. Importar el hook y el tipo de 'theme'
+import { useTheme } from '@/src/contexts/ThemeContext';
+import { ColorsType } from '@/src/constants/colors';
 
 interface PaginationProps {
   currentPage: number;
@@ -27,6 +31,10 @@ const Pagination: React.FC<PaginationProps> = ({
   onPageChange,
   buttonSize = 44,
 }) => {
+  // 3. Llamar al hook y generar los estilos DENTRO del componente
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
+
   if (totalPages <= 1) return null;
 
   const delta = 1; // muestra 1 previo y 1 siguiente alrededor de la página actual
@@ -77,7 +85,8 @@ const Pagination: React.FC<PaginationProps> = ({
         <Ionicons
           name="chevron-back"
           size={20}
-          color={currentPage === 1 ? '#bdbdbd' : '#424242'}
+          // 4. Usar colores del hook
+          color={currentPage === 1 ? colors.darkGray : colors.text}
         />
       </TouchableOpacity>
 
@@ -138,73 +147,77 @@ const Pagination: React.FC<PaginationProps> = ({
         <Ionicons
           name="chevron-forward"
           size={20}
-          color={currentPage === totalPages ? '#bdbdbd' : '#424242'}
+          // 4. Usar colores del hook
+          color={currentPage === totalPages ? colors.darkGray : colors.text}
         />
       </TouchableOpacity>
     </View>
   );
 };
 
-const styles = StyleSheet.create({
-  wrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    gap: 10,
-    backgroundColor: 'transparent',
-  },
-  control: {
-    borderWidth: 1,
-    borderColor: '#ECEFF1',
-    backgroundColor: '#FAFAFA',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  controlDisabled: {
-    borderColor: '#F0F0F0',
-    backgroundColor: '#FAFAFA',
-  },
-  pagesContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 6,
-    gap: 8,
-  },
-  page: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-  },
-  pageInactive: {
-    backgroundColor: '#FAFAFA',
-    borderColor: '#ECEFF1',
-  },
-  pageActive: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.secondary,
-  },
-  pageText: {
-    color: '#424242',
-    fontWeight: '600',
-    fontSize: 15,
-  },
-  pageTextActive: {
-    color: '#FAFAFA',
-    fontWeight: '700',
-  },
-  ellipsis: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#ECEFF1',
-    backgroundColor: '#FAFAFA',
-  },
-  ellipsisText: {
-    color: '#9E9E9E',
-    fontSize: 18,
-    fontWeight: '600',
-  },
-});
+// 5. Convertir el StyleSheet en una función que acepte los colores
+const getStyles = (colors: ColorsType) =>
+  StyleSheet.create({
+    wrapper: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: 10,
+      paddingHorizontal: 12,
+      gap: 10,
+      backgroundColor: 'transparent',
+    },
+    control: {
+      borderWidth: 1,
+      borderColor: colors.gray, // Dinámico
+      backgroundColor: colors.cardBackground, // Dinámico
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    controlDisabled: {
+      borderColor: colors.gray, // Dinámico
+      backgroundColor: colors.cardBackground, // Dinámico
+      // Puedes agregar un 'opacity: 0.7' si lo deseas
+    },
+    pagesContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 6,
+      gap: 8,
+    },
+    page: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+    },
+    pageInactive: {
+      backgroundColor: colors.cardBackground, // Dinámico
+      borderColor: colors.gray, // Dinámico
+    },
+    pageActive: {
+      backgroundColor: colors.primary, // Dinámico
+      borderColor: colors.secondary, // Dinámico
+    },
+    pageText: {
+      color: colors.text, // Dinámico
+      fontWeight: '600',
+      fontSize: 15,
+    },
+    pageTextActive: {
+      color: colors.text, // Dinámico (Texto oscuro sobre fondo primario)
+      fontWeight: '700',
+    },
+    ellipsis: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: colors.gray, // Dinámico
+      backgroundColor: colors.cardBackground, // Dinámico
+    },
+    ellipsisText: {
+      color: colors.darkGray, // Dinámico
+      fontSize: 18,
+      fontWeight: '600',
+    },
+  });
 
 export default Pagination;

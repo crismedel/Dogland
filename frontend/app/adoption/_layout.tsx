@@ -1,6 +1,11 @@
 import { Stack } from 'expo-router';
+// 1. Importar el hook useTheme
+import { useTheme } from '@/src/contexts/ThemeContext';
 
 export default function AdopcionesLayout() {
+  // 2. Llamar al hook para obtener los colores dinámicos
+  const { colors } = useTheme();
+
   return (
     // 👇 Oculta el header por defecto del stack de la carpeta adoption
     <Stack screenOptions={{ headerShown: false }}>
@@ -8,8 +13,9 @@ export default function AdopcionesLayout() {
         name="historialMedico"
         options={{
           title: 'Historial Médico',
-          headerStyle: { backgroundColor: '#4A90E2' },
-          headerTintColor: '#fff',
+          // 3. Usar los colores del tema
+          headerStyle: { backgroundColor: colors.accent },
+          headerTintColor: colors.lightText,
           headerShown: false,
         }}
       />
@@ -17,8 +23,9 @@ export default function AdopcionesLayout() {
         name="agregarPerrito"
         options={{
           title: 'Agregar Perrito',
-          headerStyle: { backgroundColor: '#4A90E2' },
-          headerTintColor: '#fff',
+          // 3. Usar los colores del tema
+          headerStyle: { backgroundColor: colors.accent },
+          headerTintColor: colors.lightText,
           headerShown: false,
         }}
       />

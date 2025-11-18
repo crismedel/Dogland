@@ -1,4 +1,3 @@
-//Solo contiene la lógica de estado y pasa las props a los nuevos componentes.
 import { useNotification } from '@/src/components/notifications';
 import CustomHeader from '@/src/components/UI/CustomHeader';
 import FloatingSpeedDial from '@/src/components/UI/FloatingMenu';
@@ -13,15 +12,29 @@ import { CommunityMapView } from '../../src/components/community_maps/CommunityM
 import { MapControlButtons } from '../../src/components/community_maps/MapControlButtons';
 import MapsFilterModal from '../../src/components/community_maps/MapsFilterModal';
 import { MapStatusOverlay } from '../../src/components/community_maps/MapStatusOverlay';
-import { CurrentFilters, HeatmapPoint, Reporte } from '../../src/components/community_maps/types';
-import { ReporteDetails } from '../../src/components/report/ReporteDetails';
-import { Colors } from '../../src/constants/colors';
+import {
+  CurrentFilters,
+  HeatmapPoint,
+  Reporte,
+} from '../../src/components/community_maps/types';
+// 1. Quitar la importación estática
+// import { Colors } from '../../src/constants/colors';
 import { getHaversineDistance } from '../../src/utils/geo';
+import { AppText } from '@/src/components/AppText'; // Importar AppText
+import { ReporteDetails } from '@/src/components/report/ReporteDetails';
+
+// 2. Importar el hook y los tipos de tema
+import { useTheme } from '@/src/contexts/ThemeContext';
+import { ColorsType } from '@/src/constants/colors';
 
 const CommunityMapScreen = () => {
+  // 3. Llamar al hook y generar los estilos
+  const { colors, isDark } = useTheme();
+  const styles = getStyles(colors, isDark);
+
   const router = useRouter();
   const mapRef = useRef<MapView | null>(null);
-  const { showError, showSuccess, confirm, showInfo } = useNotification(); 
+  const { showError, showSuccess, confirm, showInfo } = useNotification();
 
   // --- ESTADOS ---
   const [filterModalVisible, setFilterModalVisible] = useState(false);
@@ -30,14 +43,16 @@ const CommunityMapScreen = () => {
   const [loading, setLoading] = useState(false);
   const [hasSearchedWithFilters, setHasSearchedWithFilters] = useState(false);
 
-
-  const [calculatedDistance, setCalculatedDistance] = useState<string | null>(null);
+  const [calculatedDistance, setCalculatedDistance] = useState<string | null>(
+    null,
+  );
   const [currentUserLocation, setCurrentUserLocation] = useState<{
     latitude: number;
     longitude: number;
   } | null>(null);
-  const [locationSubscription, setLocationSubscription] = useState<Location.LocationSubscription | null>(null);
-  
+  const [locationSubscription, setLocationSubscription] =
+    useState<Location.LocationSubscription | null>(null);
+
   const [mapRegion, setMapRegion] = useState<Region>({
     latitude: -38.7369,
     longitude: -72.5994,
@@ -69,7 +84,6 @@ const CommunityMapScreen = () => {
     setHasActiveFilters(!!hasFilters);
   }, [currentFilters]);
 
-
   const startLocationTracking = useCallback(async () => {
     let { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== 'granted') {
@@ -81,13 +95,13 @@ const CommunityMapScreen = () => {
     const subscription = await Location.watchPositionAsync(
       {
         accuracy: Location.Accuracy.BestForNavigation,
-        timeInterval: 5000, 
-        distanceInterval: 10, 
+        timeInterval: 5000,
+        distanceInterval: 10,
       },
       (location) => {
         setCurrentUserLocation(location.coords); // Actualiza el estado con la nueva ubicación
         if (!initialZoomDone) {
-           // Centra el mapa en el usuario la primera vez
+          // Centra el mapa en el usuario la primera vez
           setMapRegion({
             latitude: location.coords.latitude,
             longitude: location.coords.longitude,
@@ -96,11 +110,10 @@ const CommunityMapScreen = () => {
           });
           setInitialZoomDone(true);
         }
-      }
+      },
     );
     setLocationSubscription(subscription);
   }, [showError, initialZoomDone]);
-  
 
   useEffect(() => {
     // Retornamos una función de limpieza que se ejecuta al desmontar
@@ -194,7 +207,6 @@ const CommunityMapScreen = () => {
     }
   }, []);
 
-
   const toggleCriticalView = useCallback(async () => {
     const newState = !showCriticalReports;
     setShowCriticalReports(newState);
@@ -271,42 +283,49 @@ const CommunityMapScreen = () => {
     setMapRegion(newRegion);
   };
 
-// --- Handler para presionar un marcador 
-  const handleMarkerPress = useCallback((reporte: Reporte | null) => {
-    
-    if (!reporte) {
-      setSelectedSighting(null);
-      setCalculatedDistance(null); 
-      return;
-    }
+  // --- Handler para presionar un marcador
+  const handleMarkerPress = useCallback(
+    (reporte: Reporte | null) => {
+      if (!reporte) {
+        setSelectedSighting(null);
+        setCalculatedDistance(null);
+        return;
+      }
 
-    //  Mostrar el modal de detalles
-    setSelectedSighting(reporte);
+      //  Mostrar el modal de detalles
+      setSelectedSighting(reporte);
 
-    // Calcular y mostrar la distancia
-    if (!currentUserLocation) {
-      showInfo("Calculando...", "Espera un momento, obteniendo tu ubicación.");
-      setCalculatedDistance(null); 
-      return;
-    }
+      // Calcular y mostrar la distancia
+      if (!currentUserLocation) {
+        showInfo(
+          'Calculando...',
+          'Espera un momento, obteniendo tu ubicación.',
+        );
+        setCalculatedDistance(null);
+        return;
+      }
 
-    const distance = getHaversineDistance(
-      currentUserLocation.latitude,
-      currentUserLocation.longitude,
-      reporte.latitude,
-      reporte.longitude
-    );
+      const distance = getHaversineDistance(
+        currentUserLocation.latitude,
+        currentUserLocation.longitude,
+        reporte.latitude,
+        reporte.longitude,
+      );
 
-    let friendlyDistance: string;
-    if (distance < 1000) {
-      friendlyDistance = `${Math.round(distance)} metros`;
-    } else {
-      friendlyDistance = `${(distance / 1000).toFixed(2)} km`;
-    }
--
-    setCalculatedDistance(friendlyDistance); 
-    showInfo("Distancia al Reporte", `Estás a ${friendlyDistance} de este avistamiento.`);
-  }, [currentUserLocation, showInfo]);
+      let friendlyDistance: string;
+      if (distance < 1000) {
+        friendlyDistance = `${Math.round(distance)} metros`;
+      } else {
+        friendlyDistance = `${(distance / 1000).toFixed(2)} km`;
+      }
+      -setCalculatedDistance(friendlyDistance);
+      showInfo(
+        'Distancia al Reporte',
+        `Estás a ${friendlyDistance} de este avistamiento.`,
+      );
+    },
+    [currentUserLocation, showInfo],
+  );
   // --- EFECTOS (EFFECTS) ---
   useEffect(() => {
     if (showCriticalReports || hasActiveFilters) return;
@@ -345,7 +364,7 @@ const CommunityMapScreen = () => {
     const initializeData = async () => {
       try {
         await Promise.all([
-          startLocationTracking(), 
+          startLocationTracking(),
           obtenerReportes(currentFilters),
           fetchCriticalReports(),
           fetchHeatmapData(),
@@ -365,10 +384,10 @@ const CommunityMapScreen = () => {
     showCriticalReports,
     hasActiveFilters,
   ]);
-  
+
   const reportsToRender = showCriticalReports ? criticalReports : reportes;
 
-useEffect(() => {
+  useEffect(() => {
     if (reportsToRender.length === 0 || showHeatmap || !mapRef.current) {
       return;
     }
@@ -387,7 +406,7 @@ useEffect(() => {
         animated: true,
       });
     }, 500);
-  }, [reportsToRender, showHeatmap]); 
+  }, [reportsToRender, showHeatmap]);
   useEffect(() => {
     if (!showCriticalReports) {
       obtenerReportes(currentFilters);
@@ -419,10 +438,11 @@ useEffect(() => {
     router.push('/alerts/create-alert');
   };
 
+  // 4. Usar 'colors' del tema
   const getMarkerColor = (report: Reporte): string | undefined => {
     if (!showCriticalReports) return undefined;
-    if (report.id_estado_salud === 3) return Colors.danger || 'red';
-    if (report.id_estado_salud === 2) return Colors.warning || 'yellow';
+    if (report.id_estado_salud === 3) return colors.danger;
+    if (report.id_estado_salud === 2) return colors.warning;
     return undefined;
   };
 
@@ -435,7 +455,12 @@ useEffect(() => {
           <TouchableOpacity onPress={() => router.back()}>
             <Image
               source={require('../../assets/images/volver.png')}
-              style={{ width: 24, height: 24, tintColor: '#fff' }}
+              // 4. Usar colores del tema (texto oscuro sobre fondo amarillo)
+              style={{
+                width: 24,
+                height: 24,
+                tintColor: isDark ? colors.lightText : colors.text,
+              }}
             />
           </TouchableOpacity>
         }
@@ -447,7 +472,12 @@ useEffect(() => {
               setFilterModalVisible(true);
             }}
           >
-            <Ionicons name="options-outline" size={24} color="#fff" />
+            {/* 4. Usar colores del tema (texto oscuro sobre fondo amarillo) */}
+            <Ionicons
+              name="options-outline"
+              size={24}
+              color={isDark ? colors.lightText : colors.text}
+            />
           </TouchableOpacity>
         }
       />
@@ -511,7 +541,7 @@ useEffect(() => {
               <Ionicons
                 name="person-circle-outline"
                 size={22}
-                color={Colors.secondary}
+                color={colors.secondary} // 4. Usar colores del tema
               />
             ),
           },
@@ -523,7 +553,7 @@ useEffect(() => {
               <Ionicons
                 name="bar-chart-outline"
                 size={22}
-                color={Colors.secondary}
+                color={colors.secondary} // 4. Usar colores del tema
               />
             ),
           },
@@ -535,7 +565,7 @@ useEffect(() => {
               <Ionicons
                 name="document-text-outline"
                 size={22}
-                color={Colors.secondary}
+                color={colors.secondary} // 4. Usar colores del tema
               />
             ),
           },
@@ -547,7 +577,7 @@ useEffect(() => {
               <Ionicons
                 name="alert-circle-outline"
                 size={22}
-                color={Colors.secondary}
+                color={colors.secondary} // 4. Usar colores del tema
               />
             ),
           },
@@ -576,9 +606,10 @@ useEffect(() => {
   );
 };
 
-// Estilos mínimos para el contenedor principal
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background || '#F8F8F8' },
-});
+// 5. Convertir el StyleSheet en una función
+const getStyles = (colors: ColorsType, isDark: boolean) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background }, // Dinámico
+  });
 
 export default CommunityMapScreen;

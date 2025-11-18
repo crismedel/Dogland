@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
+  FlatList,
   StyleSheet,
+  ActivityIndicator,
   TouchableOpacity,
   Image,
-  FlatList,
-  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 
@@ -17,8 +17,14 @@ import { jwtDecode } from 'jwt-decode';
 
 import CustomHeader from '@/src/components/UI/CustomHeader';
 import CustomButton from '@/src/components/UI/CustomButton';
-import { Colors } from '@/src/constants/colors';
+// 1. Quitar la importación estática
+// import { Colors } from '@/src/constants/colors';
 import Spinner from '@/src/components/UI/Spinner';
+
+// 2. Importar el hook y los tipos de tema
+import { useTheme } from '@/src/contexts/ThemeContext';
+import { ColorsType } from '@/src/constants/colors';
+import { AppText } from '@/src/components/AppText'; // Importar AppText
 
 // --- Opcional: Interfaz para el payload de tu token ---
 interface TokenPayload {
@@ -30,6 +36,10 @@ interface TokenPayload {
 }
 
 const HistorialMedico = () => {
+  // 3. Llamar al hook y generar los estilos
+  const { colors, isDark } = useTheme();
+  const styles = getStyles(colors, isDark);
+
   const router = useRouter();
 
   const [historial, setHistorial] = useState<any[]>([]);
@@ -117,7 +127,7 @@ const HistorialMedico = () => {
           >
             <Image
               source={require('../../assets/images/volver.png')}
-              style={styles.backIconHeader}
+              style={styles.backIconHeader} // 4. Usar estilos dinámicos
             />
           </TouchableOpacity>
         }
@@ -156,23 +166,33 @@ const HistorialMedico = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+// 5. Convertir el StyleSheet en una función
+const getStyles = (colors: ColorsType, isDark: boolean) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background }, // Dinámico
 
-  backButtonHeader: { padding: 6 },
-  backIconHeader: { width: 24, height: 24, tintColor: '#fff' },
+    backButtonHeader: { padding: 6 },
+    backIconHeader: {
+      width: 24,
+      height: 24,
+      // 4. Usar colores del tema (texto oscuro sobre fondo amarillo)
+      tintColor: isDark ? colors.lightText : colors.text,
+    },
 
-  listContent: {
-    paddingTop: 10,
-    paddingBottom: 80, // ⬅ espacio extra para que el botón flotante no tape nada
-  },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  floatingButton: {
-    position: 'absolute',
-    bottom: 20,
-
-    zIndex: 10,
-  },
-});
+    listContent: {
+      paddingTop: 10,
+      paddingBottom: 80, // ⬅ espacio extra para que el botón flotante no tape nada
+    },
+    center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    floatingButton: {
+      position: 'absolute',
+      bottom: 20,
+      // Centrar horizontalmente
+      left: '10%',
+      right: '10%',
+      width: '80%',
+      zIndex: 10,
+    },
+  });
 
 export default HistorialMedico;

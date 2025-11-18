@@ -1,25 +1,35 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
-  FlatList,
   StyleSheet,
-  ActivityIndicator,
-  RefreshControl,
-  SafeAreaView,
   TouchableOpacity,
   Image,
+  ActivityIndicator,
+  FlatList,
+  RefreshControl,
+  SafeAreaView,
+  Platform, // Import Platform
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import apiClient from '../../src/api/client';
-import { Colors } from '@/src/constants/colors';
+// 1. Quitar la importación estática
+// import { Colors } from '@/src/constants/colors';
 import { useNotification } from '@/src/components/notifications';
 import {
   obtenerNombreEspecie,
   obtenerNombreEstadoSalud,
 } from '../../src/types/report';
-import { AppText, fontWeightSemiBold } from '@/src/components/AppText';
+import {
+  AppText,
+  fontWeightSemiBold,
+  fontWeightMedium, // Importar fontWeightMedium
+} from '@/src/components/AppText';
 import CustomHeader from '@/src/components/UI/CustomHeader';
 import { Ionicons } from '@expo/vector-icons';
+
+// 2. Importar el hook y los tipos de tema
+import { useTheme } from '@/src/contexts/ThemeContext';
+import { ColorsType } from '@/src/constants/colors';
 
 interface MySighting {
   id_avistamiento: number;
@@ -38,6 +48,10 @@ const MySightingCard = ({
   sighting: MySighting;
   onPress: () => void;
 }) => {
+  // 3. Llamar al hook y generar los estilos
+  const { colors, isDark } = useTheme();
+  const styles = getStyles(colors, isDark);
+
   // Lógica de MySightingCard
   const estadoSaludNombre = obtenerNombreEstadoSalud(sighting.id_estado_salud);
   const especieNombre = obtenerNombreEspecie(sighting.id_especie);
@@ -70,7 +84,7 @@ const MySightingCard = ({
         <Ionicons
           name="paw-outline"
           size={16}
-          color={Colors.darkGray}
+          color={colors.darkGray} // 4. Usar colores del tema
           style={{ marginRight: 8 }}
         />
         <AppText style={styles.label}>Especie ID:</AppText>
@@ -81,14 +95,14 @@ const MySightingCard = ({
         <Ionicons
           name="medkit-outline"
           size={16}
-          color={isCritical ? Colors.danger : Colors.darkGray}
+          color={isCritical ? colors.danger : colors.darkGray} // 4. Usar colores del tema
           style={{ marginRight: 8 }}
         />
         <AppText style={styles.label}>Salud ID:</AppText>
         <AppText
           style={[
             styles.value,
-            isCritical && { color: Colors.danger, fontWeight: '700' },
+            isCritical && { color: colors.danger, fontWeight: '700' }, // 4. Usar colores del tema
           ]}
         >
           {sighting.id_estado_salud}
@@ -99,7 +113,7 @@ const MySightingCard = ({
         <Ionicons
           name="list-outline"
           size={16}
-          color={Colors.darkGray}
+          color={colors.darkGray} // 4. Usar colores del tema
           style={{ marginRight: 8 }}
         />
         <AppText style={styles.label}>Estado Av. ID:</AppText>
@@ -116,6 +130,10 @@ const MySightingCard = ({
 };
 
 const MySightingsScreen = () => {
+  // 3. Llamar al hook y generar los estilos
+  const { colors, isDark } = useTheme();
+  const styles = getStyles(colors, isDark);
+
   const router = useRouter();
   const { showSuccess } = useNotification();
 
@@ -192,7 +210,8 @@ const MySightingsScreen = () => {
   if (loading && sightings.length === 0 && !error) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color={Colors.primary} />
+        {/* 4. Usar colores del tema */}
+        <ActivityIndicator size="large" color={colors.primary} />
         <AppText style={styles.loadingText}>
           Cargando tus avistamientos...
         </AppText>
@@ -206,7 +225,12 @@ const MySightingsScreen = () => {
         title="Mis Avistamientos"
         rightComponent={
           <TouchableOpacity onPress={handleRefresh}>
-            <Ionicons name="refresh-outline" size={24} color={'#fff'} />
+            {/* 4. Usar colores del tema (texto oscuro sobre fondo amarillo) */}
+            <Ionicons
+              name="refresh-outline"
+              size={24}
+              color={isDark ? colors.lightText : colors.text}
+            />
           </TouchableOpacity>
         }
       />
@@ -238,7 +262,11 @@ const MySightingsScreen = () => {
           contentContainerStyle={styles.listContent}
           refreshControl={
             // Se usa handleRefresh directamente en el onRefresh
-            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={colors.primary} // 4. Usar colores del tema
+            />
           }
         />
       )}
@@ -246,87 +274,105 @@ const MySightingsScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f0f4f7' },
-  centered: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  loadingText: { marginTop: 10, fontSize: 16, color: Colors.primary },
-  listContent: { padding: 10 },
-  card: {
-    backgroundColor: Colors.lightText,
-    padding: 15,
-    borderRadius: 12,
-    marginBottom: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  criticalCard: {
-    backgroundColor: '#FFE5E5',
-    borderColor: Colors.danger || 'red',
-    borderWidth: 2,
-    padding: 15,
-    borderRadius: 12,
-    marginBottom: 10,
-    shadowColor: Colors.danger || 'red',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 5.46,
-    elevation: 8,
-  },
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: fontWeightSemiBold,
-    color: '#1f2937',
-    marginBottom: 10,
-  },
-  infoRow: { flexDirection: 'row', marginBottom: 5 },
-  label: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#4b5563',
-    width: 120,
-  },
-  value: { fontSize: 14, color: '#374151', flexShrink: 1 },
-  emptyText: { fontSize: 16, color: Colors.gray, textAlign: 'center' },
-  errorText: {
-    color: Colors.danger,
-    textAlign: 'center',
-    marginBottom: 15,
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  retryButton: {
-    backgroundColor: Colors.primary,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    marginTop: 15,
-  },
-  retryText: { color: 'white', fontWeight: 'bold' },
-  cardLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: Colors.darkGray,
-    width: 100,
-  },
-  cardValue: {
-    fontSize: 14,
-    color: Colors.text,
-    flexShrink: 1,
-  },
-  cardDate: {
-    fontSize: 12,
-    color: Colors.gray,
-    marginTop: 10,
-    textAlign: 'right',
-  },
-});
+// 5. Convertir el StyleSheet en una función
+const getStyles = (colors: ColorsType, isDark: boolean) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background }, // Dinámico
+    centered: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 20,
+      backgroundColor: colors.background, // Dinámico
+    },
+    loadingText: {
+      marginTop: 10,
+      fontSize: 16,
+      color: colors.primary, // Dinámico
+    },
+    listContent: { padding: 10 },
+    card: {
+      backgroundColor: colors.cardBackground, // Dinámico
+      padding: 15,
+      borderRadius: 12,
+      marginBottom: 10,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: isDark ? 0.2 : 0.1, // Dinámico
+      shadowRadius: 3.84,
+      elevation: 5,
+    },
+    criticalCard: {
+      backgroundColor: `${colors.danger}20`, // Dinámico
+      borderColor: colors.danger, // Dinámico
+      borderWidth: 2,
+      padding: 15,
+      borderRadius: 12,
+      marginBottom: 10,
+      shadowColor: colors.danger, // Dinámico
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.2,
+      shadowRadius: 5.46,
+      elevation: 8,
+    },
+    cardTitle: {
+      fontSize: 18,
+      fontWeight: fontWeightSemiBold,
+      color: colors.text, // Dinámico
+      marginBottom: 10,
+    },
+    infoRow: { flexDirection: 'row', marginBottom: 5 },
+    label: {
+      fontSize: 14,
+      fontWeight: fontWeightMedium, // Dinámico
+      color: colors.darkGray, // Dinámico
+      width: 120,
+    },
+    value: {
+      fontSize: 14,
+      color: colors.text, // Dinámico
+      flexShrink: 1,
+    },
+    emptyText: {
+      fontSize: 16,
+      color: colors.darkGray, // Dinámico
+      textAlign: 'center',
+    },
+    errorText: {
+      color: colors.danger, // Dinámico
+      textAlign: 'center',
+      marginBottom: 15,
+      fontSize: 16,
+      fontWeight: '700',
+    },
+    retryButton: {
+      backgroundColor: colors.primary, // Dinámico
+      paddingVertical: 10,
+      paddingHorizontal: 20,
+      borderRadius: 8,
+      marginTop: 15,
+    },
+    retryText: {
+      color: isDark ? colors.lightText : colors.text, // Dinámico
+      fontWeight: 'bold',
+    },
+    cardLabel: {
+      fontSize: 14,
+      fontWeight: fontWeightMedium, // Dinámico
+      color: colors.darkGray, // Dinámico
+      width: 100,
+    },
+    cardValue: {
+      fontSize: 14,
+      color: colors.text, // Dinámico
+      flexShrink: 1,
+    },
+    cardDate: {
+      fontSize: 12,
+      color: colors.gray, // Dinámico
+      marginTop: 10,
+      textAlign: 'right',
+    },
+  });
 
 export default MySightingsScreen;

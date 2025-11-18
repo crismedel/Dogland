@@ -7,21 +7,35 @@ import {
   ScrollView,
 } from 'react-native';
 import CustomHeader from '@/src/components/UI/CustomHeader';
-import { AppText } from '@/src/components/AppText';
+import {
+  AppText,
+  fontWeightBold,
+  fontWeightMedium,
+  fontWeightSemiBold,
+} from '@/src/components/AppText';
 import CustomButton from '@/src/components/UI/CustomButton';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
+// 1. Importar el hook y los tipos de tema
+import { useTheme } from '@/src/contexts/ThemeContext';
+import { ColorsType } from '@/src/constants/colors';
+
 type Item = { title: string; content: React.ReactNode };
 
 export default function HelpScreen() {
+  // 2. Llamar al hook y generar los estilos
+  const { colors, isDark } = useTheme();
+  const styles = getStyles(colors, isDark);
+
   const [open, setOpen] = useState<string | null>(null);
 
   const faqs: Item[] = [
     {
       title: '¿Qué es Ayuda Animal Temuco?',
       content: (
-        <AppText>
+        // 7. Aplicar estilo de párrafo
+        <AppText style={styles.paragraphText}>
           Plataforma colaborativa para reportar animales en riesgo, coordinar
           operativos sanitarios, emitir alertas y facilitar adopciones
           responsables en Temuco.
@@ -32,13 +46,15 @@ export default function HelpScreen() {
       title: '¿Cómo hago un reporte correcto?',
       content: (
         <View style={{ gap: 6 }}>
-          <AppText>
+          <AppText style={styles.paragraphText}>
             - Activa ubicación y toma una foto clara (opcional).
           </AppText>
-          <AppText>
+          <AppText style={styles.paragraphText}>
             - Describe el estado del animal y el lugar (referencias).
           </AppText>
-          <AppText>- Evita publicar datos personales de terceros.</AppText>
+          <AppText style={styles.paragraphText}>
+            - Evita publicar datos personales de terceros.
+          </AppText>
         </View>
       ),
     },
@@ -46,9 +62,13 @@ export default function HelpScreen() {
       title: '¿Qué significan las alertas?',
       content: (
         <View style={{ gap: 6 }}>
-          <AppText>- Informativas: presencia de animales vulnerables.</AppText>
-          <AppText>- Riesgo sanitario: posibles focos de enfermedad.</AppText>
-          <AppText>
+          <AppText style={styles.paragraphText}>
+            - Informativas: presencia de animales vulnerables.
+          </AppText>
+          <AppText style={styles.paragraphText}>
+            - Riesgo sanitario: posibles focos de enfermedad.
+          </AppText>
+          <AppText style={styles.paragraphText}>
             - Recuerda: son orientativas y no sustituyen a autoridades.
           </AppText>
         </View>
@@ -57,7 +77,7 @@ export default function HelpScreen() {
     {
       title: '¿Cómo postulo a adopción?',
       content: (
-        <AppText>
+        <AppText style={styles.paragraphText}>
           Desde la sección Adopciones podrás ver animales disponibles y
           postular. La evaluación la realizan refugios/ONGs según sus
           protocolos.
@@ -67,7 +87,7 @@ export default function HelpScreen() {
     {
       title: 'Privacidad y ubicación',
       content: (
-        <AppText>
+        <AppText style={styles.paragraphText}>
           La ubicación se usa para georreferenciar reportes y mostrar focos
           cercanos. No rastreamos en segundo plano sin tu autorización.
         </AppText>
@@ -77,7 +97,7 @@ export default function HelpScreen() {
       title: 'Contactos locales',
       content: (
         <View style={{ gap: 6 }}>
-          <AppText>
+          <AppText style={styles.paragraphText}>
             Los contactos actualizados estarán disponibles en esta sección.
           </AppText>
         </View>
@@ -94,7 +114,12 @@ export default function HelpScreen() {
             onPress={() => router.back()}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            <Ionicons name="chevron-back" size={24} color="#fff" />
+            {/* 3. Usar colores del tema (texto oscuro sobre fondo amarillo) */}
+            <Ionicons
+              name="chevron-back"
+              size={24}
+              color={isDark ? colors.lightText : colors.text}
+            />
           </TouchableOpacity>
         }
       />
@@ -123,7 +148,7 @@ export default function HelpScreen() {
                   <Ionicons
                     name={open === item.title ? 'chevron-up' : 'chevron-down'}
                     size={18}
-                    color="#7A5C3A"
+                    color={colors.darkGray} // 4. Usar colores del tema
                   />
                 </TouchableOpacity>
                 {open === item.title && (
@@ -163,32 +188,60 @@ export default function HelpScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FAF7EF' },
-  content: { padding: 16, paddingBottom: 32, gap: 16 },
-  intro: { color: '#7A5C3A' },
-  card: {
-    backgroundColor: '#FFFDF4',
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#F2D8A7',
-  },
-  sectionTitle: { color: '#CC5803', fontSize: 18, marginBottom: 12 },
-  faqItem: {
-    borderWidth: 1,
-    borderColor: '#F2E6C8',
-    borderRadius: 10,
-    backgroundColor: '#FFFFFF',
-  },
-  faqHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  faqTitle: { color: '#7A5C3A' },
-  faqBody: { paddingHorizontal: 12, paddingBottom: 12, gap: 6 },
-  updatedAt: { textAlign: 'center', color: '#9C815F', marginTop: 8 },
-});
+// 5. Convertir el StyleSheet en una función
+const getStyles = (colors: ColorsType, isDark: boolean) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background }, // Dinámico
+    content: { padding: 16, paddingBottom: 32, gap: 16 },
+    intro: { color: colors.darkGray, fontSize: 16, lineHeight: 22 }, // Dinámico
+    card: {
+      backgroundColor: colors.cardBackground, // Dinámico
+      borderRadius: 12,
+      padding: 16,
+      borderWidth: 1,
+      borderColor: colors.secondary, // Dinámico
+    },
+    sectionTitle: {
+      color: colors.secondary, // Dinámico
+      fontSize: 18,
+      marginBottom: 12,
+      fontWeight: fontWeightBold,
+    },
+    faqItem: {
+      borderWidth: 1,
+      borderColor: colors.gray, // Dinámico
+      borderRadius: 10,
+      backgroundColor: colors.background, // Dinámico
+    },
+    faqHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+    },
+    faqTitle: {
+      color: colors.text, // Dinámico
+      fontWeight: fontWeightSemiBold,
+      flex: 1,
+    },
+    faqBody: {
+      paddingHorizontal: 12,
+      paddingBottom: 12,
+      gap: 6,
+      borderTopWidth: 1,
+      borderTopColor: colors.gray, // Dinámico
+    },
+    updatedAt: {
+      textAlign: 'center',
+      color: colors.darkGray, // Dinámico
+      marginTop: 8,
+      fontStyle: 'italic',
+    },
+    // 7. Añadir estilo de párrafo
+    paragraphText: {
+      color: colors.text,
+      fontSize: 15,
+      lineHeight: 22,
+    },
+  });

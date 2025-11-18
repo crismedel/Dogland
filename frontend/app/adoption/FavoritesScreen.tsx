@@ -5,24 +5,34 @@ import {
   ActivityIndicator,
   StyleSheet,
   Text,
+  Pressable, // Importar Pressable
 } from 'react-native';
-import AnimalCard from './component/card';
+import AnimalCard from '../adoption/component/card'; // Ruta corregida
 import {
   fetchFavorites,
   removeFavorite as apiRemoveFavorite,
 } from '@/src/api/favorite';
 import { fetchAnimalById } from '@/src/api/animals';
-import { Colors } from '@/src/constants/colors';
+// 1. Quitar la importación estática
+// import { Colors } from '@/src/constants/colors';
 import { AppText, fontWeightSemiBold } from '@/src/components/AppText';
 import { normalizeAnimal } from '@/src/utils/animalUtils';
 import { Animal } from '@/src/types/animals';
 import Spinner from '@/src/components/UI/Spinner';
+
+// 2. Importar el hook y los tipos de tema
+import { useTheme } from '@/src/contexts/ThemeContext';
+import { ColorsType } from '@/src/constants/colors';
 
 type FavoriteRaw =
   | { id_favorito?: number; id_animal: number | string; animal?: any }
   | any;
 
 export default function FavoritesScreen() {
+  // 3. Llamar al hook y generar los estilos
+  const { colors, isDark } = useTheme();
+  const styles = getStyles(colors, isDark);
+
   const [animals, setAnimals] = useState<Animal[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -112,7 +122,10 @@ export default function FavoritesScreen() {
   if (error) {
     return (
       <View style={styles.center}>
-        <AppText style={{ fontWeight: fontWeightSemiBold }}>{error}</AppText>
+        {/* 4. Usar estilos dinámicos */}
+        <AppText style={[styles.centerText, { color: colors.danger }]}>
+          {error}
+        </AppText>
       </View>
     );
   }
@@ -120,10 +133,10 @@ export default function FavoritesScreen() {
   if (animals.length === 0) {
     return (
       <View style={styles.center}>
-        <AppText>No tienes favoritos aún</AppText>
-        <Text style={{ marginTop: 8, color: '#90a4ae' }}>
+        <AppText style={styles.centerText}>No tienes favoritos aún</AppText>
+        <AppText style={styles.centerSubtext}>
           Marca animales con ❤️ para verlos aquí.
-        </Text>
+        </AppText>
       </View>
     );
   }
@@ -154,11 +167,25 @@ function looksLikeAnimalObject(obj: any) {
   return Boolean(obj.id || obj.name || obj.nombre_animal || obj.edad_animal);
 }
 
-const styles = StyleSheet.create({
-  center: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
-  },
-});
+// 5. Convertir el StyleSheet en una función
+const getStyles = (colors: ColorsType, isDark: boolean) =>
+  StyleSheet.create({
+    center: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 20,
+      backgroundColor: colors.background, // Dinámico
+    },
+    centerText: {
+      fontSize: 16,
+      fontWeight: fontWeightSemiBold,
+      color: colors.text, // Dinámico
+      textAlign: 'center',
+    },
+    centerSubtext: {
+      marginTop: 8,
+      color: colors.darkGray, // Dinámico
+      textAlign: 'center',
+    },
+  });

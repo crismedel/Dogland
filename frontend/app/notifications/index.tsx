@@ -9,6 +9,7 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Image,
 } from 'react-native';
 import { router } from 'expo-router';
 import {
@@ -20,12 +21,18 @@ import {
 } from '@/src/api/notifications';
 import { useNotification } from '@/src/components/notifications';
 import CustomHeader from '@/src/components/UI/CustomHeader';
-import { Colors } from '@/src/constants/colors';
+// 1. Quitar la importación estática
+// import { Colors } from '@/src/constants/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { checkAlertExists } from '@/src/api/alerts';
 import { checkSightingExists } from '@/src/api/sightings';
 import NotificationOptionsModal from './NotificationOptionsModal';
 import Spinner from '@/src/components/UI/Spinner';
+import { AppText } from '@/src/components/AppText'; // Importar AppText
+
+// 2. Importar el hook y los tipos de tema
+import { useTheme } from '@/src/contexts/ThemeContext';
+import { ColorsType } from '@/src/constants/colors';
 
 const PAGE_SIZE = 20;
 
@@ -70,6 +77,10 @@ type RowProps = {
 
 const NotificationRow = React.memo(
   ({ item, onPress, onLongPress }: RowProps) => {
+    // 3. Llamar al hook y generar los estilos
+    const { colors, isDark } = useTheme();
+    const styles = getStyles(colors, isDark);
+
     const created = item.created_at ? new Date(item.created_at) : null;
 
     const iconName = (() => {
@@ -91,7 +102,8 @@ const NotificationRow = React.memo(
         ]}
       >
         <View style={styles.iconContainer}>
-          <Ionicons name={iconName as any} size={26} color={Colors.secondary} />
+          {/* 4. Usar colores del tema */}
+          <Ionicons name={iconName as any} size={26} color={colors.secondary} />
         </View>
 
         <View style={styles.cardBody}>
@@ -119,6 +131,10 @@ const NotificationRow = React.memo(
 NotificationRow.displayName = 'NotificationRow';
 
 export default function NotificationsScreen() {
+  // 3. Llamar al hook y generar los estilos
+  const { colors, isDark } = useTheme();
+  const styles = getStyles(colors, isDark);
+
   const [page, setPage] = useState(1);
   const [items, setItems] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -187,69 +203,72 @@ export default function NotificationsScreen() {
     await load(next);
   }, [page, load, loadingMore, loading, hasMore]);
 
-  const onPressItem = useCallback(async (item: NotificationItem) => {
-    const data = (item as any).data ?? {};
-    const type =
-      (data && (data.type || data.eventType || data.notificationType)) ||
-      item.type ||
-      null;
+  const onPressItem = useCallback(
+    async (item: NotificationItem) => {
+      const data = (item as any).data ?? {};
+      const type =
+        (data && (data.type || data.eventType || data.notificationType)) ||
+        item.type ||
+        null;
 
-    // optimistic
-    if (!item.read) {
-      setItems((prev) =>
-        prev.map((x) => (x.id === item.id ? { ...x, read: true } : x)),
-      );
-      try {
-        await markNotificationAsRead(item.id);
-      } catch (err) {
-        console.warn('Error marcando notificación como leída', err);
+      // optimistic
+      if (!item.read) {
         setItems((prev) =>
-          prev.map((x) => (x.id === item.id ? { ...x, read: false } : x)),
+          prev.map((x) => (x.id === item.id ? { ...x, read: true } : x)),
         );
+        try {
+          await markNotificationAsRead(item.id);
+        } catch (err) {
+          console.warn('Error marcando notificación como leída', err);
+          setItems((prev) =>
+            prev.map((x) => (x.id === item.id ? { ...x, read: false } : x)),
+          );
+        }
       }
-    }
 
-    try {
-      if (type === 'alert' || type === 'alerta') {
-        const id = data.alert_id ?? data.alertId ?? data.id ?? null;
-        if (id) {
-          const exists = await checkAlertExists(Number(id));
-          if (exists) {
-            router.push({
-              pathname: '/alerts/detail-alert',
-              params: { id: String(id) },
-            });
+      try {
+        if (type === 'alert' || type === 'alerta') {
+          const id = data.alert_id ?? data.alertId ?? data.id ?? null;
+          if (id) {
+            const exists = await checkAlertExists(Number(id));
+            if (exists) {
+              router.push({
+                pathname: '/alerts/detail-alert',
+                params: { id: String(id) },
+              });
+            } else {
+              showError?.('Alerta no disponible', 'La alerta ya fue eliminada.');
+            }
           } else {
-            showError?.('Alerta no disponible', 'La alerta ya fue eliminada.');
+            router.push('/settings/notifications');
+          }
+        } else if (type === 'avistamiento' || type === 'sighting') {
+          const sightingId = data.sighting_id ?? data.id ?? null;
+          if (sightingId) {
+            const exists = await checkSightingExists(Number(sightingId));
+            if (exists) {
+              router.push({
+                pathname: '/sightings/[id]',
+                params: { id: String(sightingId) },
+              });
+            } else {
+              showError?.(
+                'Avistamiento no disponible',
+                'El avistamiento fue eliminado.',
+              );
+            }
+          } else {
+            router.push('/settings/notifications');
           }
         } else {
           router.push('/settings/notifications');
         }
-      } else if (type === 'avistamiento' || type === 'sighting') {
-        const sightingId = data.sighting_id ?? data.id ?? null;
-        if (sightingId) {
-          const exists = await checkSightingExists(Number(sightingId));
-          if (exists) {
-            router.push({
-              pathname: '/sightings/[id]',
-              params: { id: String(sightingId) },
-            });
-          } else {
-            showError?.(
-              'Avistamiento no disponible',
-              'El avistamiento fue eliminado.',
-            );
-          }
-        } else {
-          router.push('/settings/notifications');
-        }
-      } else {
-        router.push('/settings/notifications');
+      } catch (err) {
+        console.warn('Error navegando desde notificación', err);
       }
-    } catch (err) {
-      console.warn('Error navegando desde notificación', err);
-    }
-  }, []);
+    },
+    [showError],
+  );
 
   const onDelete = useCallback(
     (item: NotificationItem) => {
@@ -264,8 +283,8 @@ export default function NotificationsScreen() {
             // Eliminación local optimista
             setItems((prev) => prev.filter((x) => x.id !== item.id));
 
-            // Para eliminar en la base de datos, descomenta esta línea:
-            // await deleteNotificationApi(item.id);
+            // Para eliminar en la base de datos:
+            await deleteNotificationApi(item.id);
 
             showSuccess?.('Eliminada', 'Notificación eliminada');
           } catch (err) {
@@ -341,13 +360,11 @@ export default function NotificationsScreen() {
               prev.filter((item) => !selectedIds.includes(item.id)),
             );
 
-            // Para eliminar en la base de datos, descomenta esta parte:
-            /*
+            // Para eliminar en la base de datos:
             await Promise.all(
               selectedIds.map((id) => deleteNotificationApi(id)),
             );
-            await load(1);
-            */
+            // await load(1); // Recargar si es necesario
 
             showSuccess?.('Eliminadas', 'Notificaciones eliminadas localmente');
           } catch (err) {
@@ -397,12 +414,22 @@ export default function NotificationsScreen() {
             onPress={() => router.back()}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            <Ionicons name="chevron-back" size={24} color="#fff" />
+            {/* 4. Usar colores del tema (texto oscuro sobre fondo amarillo) */}
+            <Ionicons
+              name="chevron-back"
+              size={24}
+              color={isDark ? colors.lightText : colors.text}
+            />
           </TouchableOpacity>
         }
         rightComponent={
           <TouchableOpacity onPress={() => setOptionsVisible(true)}>
-            <Ionicons name="options-outline" size={24} color="#fff" />
+            {/* 4. Usar colores del tema (texto oscuro sobre fondo amarillo) */}
+            <Ionicons
+              name="options-outline"
+              size={24}
+              color={isDark ? colors.lightText : colors.text}
+            />
           </TouchableOpacity>
         }
       />
@@ -416,7 +443,8 @@ export default function NotificationsScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              colors={['#0a84ff']}
+              colors={[colors.primary]} // 4. Usar colores del tema
+              tintColor={colors.primary} // Para iOS
             />
           }
           renderItem={renderItem}
@@ -434,7 +462,7 @@ export default function NotificationsScreen() {
           ListFooterComponent={
             loadingMore ? (
               <View style={styles.footer}>
-                <ActivityIndicator />
+                <ActivityIndicator color={colors.primary} />
               </View>
             ) : null
           }
@@ -454,119 +482,119 @@ export default function NotificationsScreen() {
   );
 }
 
-const CARD_BG = Colors.primary;
-const UNREAD_BG = '#f0f8ff';
+// 5. Convertir el StyleSheet en una función
+const getStyles = (colors: ColorsType, isDark: boolean) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background }, // Dinámico
+    center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+    card: {
+      flexDirection: 'row',
+      padding: 16,
+      marginHorizontal: 14,
+      marginVertical: 8,
+      borderRadius: 14,
+      backgroundColor: colors.backgroundSecon, // Dinámico
+      shadowColor: '#000',
+      shadowOpacity: 0.08,
+      shadowRadius: 8,
+      shadowOffset: { width: 0, height: 3 },
+      elevation: 3,
+    },
+    cardUnread: {
+      borderWidth: 2,
+      borderColor: colors.secondary, // Dinámico
+    },
+    iconContainer: {
+      width: 40,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    cardBody: { flex: 1, marginLeft: 8 },
+    title: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: colors.text, // Dinámico
+      marginBottom: 4,
+    },
+    body: {
+      fontSize: 14,
+      color: colors.darkGray, // Dinámico
+      marginBottom: 6,
+    },
+    meta: {
+      fontSize: 12,
+      color: colors.accent, // Dinámico
+      marginTop: 4,
+    },
+    badgeNew: {
+      backgroundColor: colors.secondary, // Dinámico
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 6,
+      alignSelf: 'flex-start',
+    },
+    badgeText: {
+      fontSize: 11,
+      // 4. Usar colores del tema (texto claro/oscuro sobre fondo naranja)
+      color: isDark ? colors.text : colors.lightText,
+      fontWeight: '600',
+    },
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  card: {
-    flexDirection: 'row',
-    padding: 16,
-    marginHorizontal: 14,
-    marginVertical: 8,
-    borderRadius: 14,
-    backgroundColor: Colors.backgroundSecon,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 3,
-  },
-  cardUnread: {
-    borderWidth: 2,
-    borderColor: Colors.secondary,
-  },
-  iconContainer: {
-    width: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  cardBody: { flex: 1, marginLeft: 8 },
-  title: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: Colors.text,
-    marginBottom: 4,
-  },
-  body: {
-    fontSize: 14,
-    color: Colors.darkGray,
-    marginBottom: 6,
-  },
-  meta: {
-    fontSize: 12,
-    color: Colors.accent,
-    marginTop: 4,
-  },
-  badgeNew: {
-    backgroundColor: Colors.secondary,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    alignSelf: 'flex-start',
-  },
-  badgeText: {
-    fontSize: 11,
-    color: Colors.lightText,
-    fontWeight: '600',
-  },
+    // Estilos antiguos/posiblemente no usados (refactorizados por si acaso)
+    item: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      padding: 12,
+      marginHorizontal: 12,
+      marginVertical: 6,
+      borderRadius: 10,
+      backgroundColor: colors.primary, // Dinámico
+      ...Platform.select({
+        ios: {
+          shadowColor: '#000',
+          shadowOpacity: 0.06,
+          shadowRadius: 8,
+          shadowOffset: { width: 0, height: 2 },
+        },
+        android: {
+          elevation: 2,
+        },
+      }),
+    },
+    itemPressed: { opacity: 0.9 },
+    itemRead: { backgroundColor: colors.primary }, // Dinámico
+    itemUnread: { backgroundColor: colors.background }, // Dinámico
+    rowLeft: { width: 24, alignItems: 'center', marginTop: 6 },
+    unreadDot: {
+      width: 10,
+      height: 10,
+      borderRadius: 5,
+      backgroundColor: colors.primary, // Dinámico
+    },
+    unreadPlaceholder: { width: 10, height: 10, borderRadius: 5, opacity: 0 },
+    rowBody: { flex: 1, paddingHorizontal: 8 },
+    rowRight: { width: 68, alignItems: 'flex-end' },
+    preview: { fontSize: 12, color: colors.darkGray }, // Dinámico
 
-  item: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    padding: 12,
-    marginHorizontal: 12,
-    marginVertical: 6,
-    borderRadius: 10,
-    backgroundColor: CARD_BG,
-    // shadow
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOpacity: 0.06,
-        shadowRadius: 8,
-        shadowOffset: { width: 0, height: 2 },
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
-  },
-  itemPressed: { opacity: 0.9 },
-  itemRead: { backgroundColor: CARD_BG },
-  itemUnread: { backgroundColor: UNREAD_BG },
-
-  rowLeft: { width: 24, alignItems: 'center', marginTop: 6 },
-  unreadDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: Colors.primary,
-  },
-  unreadPlaceholder: { width: 10, height: 10, borderRadius: 5, opacity: 0 },
-
-  rowBody: { flex: 1, paddingHorizontal: 8 },
-  rowRight: { width: 68, alignItems: 'flex-end' },
-
-  preview: { fontSize: 12, color: '#666' },
-
-  empty: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
-  },
-  emptyEmoji: { fontSize: 42, marginBottom: 8 },
-  emptyText: { color: '#666', fontSize: 16, marginBottom: 12 },
-  reloadButton: {
-    backgroundColor: Colors.primary,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  reloadPressed: { opacity: 0.9 },
-  reloadText: { color: '#fff', fontWeight: '600' },
-
-  footer: { padding: 12, alignItems: 'center' },
-});
+    // Estilos de Empty/Footer
+    empty: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 24,
+    },
+    emptyEmoji: { fontSize: 42, marginBottom: 8 },
+    emptyText: { color: colors.darkGray, fontSize: 16, marginBottom: 12 }, // Dinámico
+    reloadButton: {
+      backgroundColor: colors.primary, // Dinámico
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+      borderRadius: 8,
+    },
+    reloadPressed: { opacity: 0.9 },
+    reloadText: {
+      color: isDark ? colors.lightText : colors.text, // Dinámico
+      fontWeight: '600',
+    },
+    footer: { padding: 12, alignItems: 'center' },
+  });

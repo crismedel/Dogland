@@ -9,6 +9,7 @@ import {
   Image,
   TextInput,
   ActivityIndicator,
+  Text, // Asegúrate de que Text esté importado
 } from 'react-native';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -18,11 +19,13 @@ import { useAuth } from '@/src/contexts/AuthContext';
 import { isAxiosError } from 'axios';
 import { router } from 'expo-router';
 import { useNotification } from '@/src/components/notifications';
-import { Colors } from '@/src/constants/colors';
+// 1. Quitar la importación estática
+// import { Colors } from '@/src/constants/colors';
 import { loginSchema } from '@/src/schemas';
 import {
   fontWeightBold,
   fontWeightSemiBold,
+  fontWeightMedium,
   AppText,
 } from '@/src/components/AppText';
 import Constants from 'expo-constants';
@@ -30,9 +33,17 @@ import { getExpoPushTokenAsync } from '@/src/utils/expoNotifications';
 import { registerPushToken } from '@/src/api/notifications';
 import * as SecureStore from 'expo-secure-store';
 
+// 2. Importar el hook y los tipos de tema
+import { useTheme } from '@/src/contexts/ThemeContext';
+import { ColorsType } from '@/src/constants/colors';
+
 const { width } = Dimensions.get('window');
 
 export default function LoginWithValidation() {
+  // 3. Llamar al hook y generar los estilos
+  const { colors, isDark } = useTheme();
+  const styles = getStyles(colors, isDark);
+
   const [loading, setLoading] = useState<boolean>(false);
   const [showPassword, setShowPassword] = useState(false);
   const { showInfo, showError, showSuccess, showWarning } = useNotification();
@@ -56,7 +67,7 @@ export default function LoginWithValidation() {
     try {
       const projectId =
         Constants?.expoConfig?.extra?.eas?.projectId ||
-        Constants?.easConfig?.projectId ||
+        (Constants?.easConfig as any)?.projectId || // Ajuste para tipo
         undefined;
 
       const tokenResult = await getExpoPushTokenAsync({
@@ -165,7 +176,7 @@ export default function LoginWithValidation() {
           <View style={styles.backButtonInner}>
             <Image
               source={require('../../assets/images/volver.png')}
-              style={{ width: 24, height: 24, tintColor: '#374151' }}
+              style={styles.backIcon} // 4. Usar estilos dinámicos
             />
           </View>
         </TouchableOpacity>
@@ -195,13 +206,14 @@ export default function LoginWithValidation() {
                     <Ionicons
                       name="mail-outline"
                       size={20}
-                      color={errors.email ? '#EF4444' : '#6B7280'}
+                      // 4. Usar colores del tema
+                      color={errors.email ? colors.danger : colors.darkGray}
                       style={styles.icon}
                     />
                     <TextInput
                       style={styles.input}
                       placeholder="Ingresa tu correo"
-                      placeholderTextColor="#9CA3AF"
+                      placeholderTextColor={colors.darkGray} // 4. Usar colores del tema
                       value={value}
                       onChangeText={onChange}
                       onBlur={onBlur}
@@ -237,13 +249,14 @@ export default function LoginWithValidation() {
                     <Ionicons
                       name="lock-closed-outline"
                       size={20}
-                      color={errors.password ? '#EF4444' : '#6B7280'}
+                      // 4. Usar colores del tema
+                      color={errors.password ? colors.danger : colors.darkGray}
                       style={styles.icon}
                     />
                     <TextInput
                       style={styles.input}
                       placeholder="Ingresa tu contraseña"
-                      placeholderTextColor="#9CA3AF"
+                      placeholderTextColor={colors.darkGray} // 4. Usar colores del tema
                       value={value}
                       onChangeText={onChange}
                       onBlur={onBlur}
@@ -258,7 +271,7 @@ export default function LoginWithValidation() {
                       <Ionicons
                         name={showPassword ? 'eye-off-outline' : 'eye-outline'}
                         size={20}
-                        color="#6B7280"
+                        color={colors.darkGray} // 4. Usar colores del tema
                       />
                     </TouchableOpacity>
                   </View>
@@ -280,13 +293,17 @@ export default function LoginWithValidation() {
             activeOpacity={0.8}
           >
             {loading ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator
+                // 4. Usar colores del tema
+                color={isDark ? colors.lightText : colors.text}
+              />
             ) : (
               <>
                 <Ionicons
                   name="log-in-outline"
                   size={20}
-                  color="#fff"
+                  // 4. Usar colores del tema
+                  color={isDark ? colors.lightText : colors.text}
                   style={styles.buttonIcon}
                 />
                 <AppText style={styles.submitButtonText}>Acceder</AppText>
@@ -316,148 +333,158 @@ export default function LoginWithValidation() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  titleContainer: {
-    marginBottom: 40,
-    alignItems: 'center',
-  },
-  welcomeTitle: {
-    fontSize: 22,
-    fontWeight: '500',
-    color: '#6B7280',
-    textAlign: 'center',
-    letterSpacing: 0.5,
-  },
-  brandTitle: {
-    fontSize: 36,
-    fontWeight: fontWeightBold,
-    color: '#1F2937',
-    textAlign: 'center',
-    letterSpacing: 1,
-    textShadowColor: 'rgba(251, 191, 36, 0.3)',
-    textShadowOffset: { width: 2, height: 2 },
-    textShadowRadius: 4,
-  },
-  backButton: {
-    alignSelf: 'flex-start',
-    marginBottom: 20,
-  },
-  backButtonInner: {
-    backgroundColor: Colors.lightText,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: '#F3F4F6',
-  },
-  formWrapper: {
-    width: width * 0.85,
-    maxWidth: 400,
-  },
-  inputContainer: {
-    marginBottom: 20,
-  },
-  inputLabel: {
-    fontSize: 14,
-    fontWeight: fontWeightSemiBold,
-    color: '#374151',
-    marginBottom: 8,
-  },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F9FAFB',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    height: 50,
-  },
-  inputError: {
-    borderColor: '#EF4444',
-    backgroundColor: '#FEF2F2',
-  },
-  icon: {
-    marginRight: 8,
-  },
-  input: {
-    flex: 1,
-    fontSize: 16,
-    color: '#1F2937',
-  },
-  errorText: {
-    color: '#EF4444',
-    fontSize: 12,
-    marginTop: 4,
-    marginLeft: 4,
-  },
-  submitButton: {
-    backgroundColor: Colors.primary,
-    paddingVertical: 16,
-    borderRadius: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 10,
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  submitButtonDisabled: {
-    backgroundColor: '#9CA3AF',
-  },
-  buttonIcon: {
-    marginRight: 8,
-  },
-  submitButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: fontWeightSemiBold,
-  },
-  registerButton: {
-    backgroundColor: '#FEF3C7',
-    paddingVertical: 16,
-    marginTop: 15,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 6,
-    borderWidth: 1.5,
-    borderColor: Colors.primary,
-    width: width * 0.85,
-    maxWidth: 400,
-  },
-  registerText: {
-    color: Colors.primary,
-    fontSize: 16,
-    fontWeight: fontWeightSemiBold,
-    letterSpacing: 0.3,
-    textAlign: 'center',
-  },
-  forgotPasswordText: {
-    color: '#6B7280',
-    fontSize: 14,
-    textAlign: 'center',
-    marginTop: 20,
-    marginBottom: 16,
-  },
-});
+// 5. Convertir el StyleSheet en una función
+const getStyles = (colors: ColorsType, isDark: boolean) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background, // Dinámico
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    titleContainer: {
+      marginBottom: 40,
+      alignItems: 'center',
+    },
+    welcomeTitle: {
+      fontSize: 22,
+      fontWeight: '500',
+      color: colors.darkGray, // Dinámico
+      textAlign: 'center',
+      letterSpacing: 0.5,
+    },
+    brandTitle: {
+      fontSize: 36,
+      fontWeight: fontWeightBold,
+      color: colors.text, // Dinámico
+      textAlign: 'center',
+      letterSpacing: 1,
+      textShadowColor: `${colors.primary}4D`, // Dinámico
+      textShadowOffset: { width: 2, height: 2 },
+      textShadowRadius: 4,
+    },
+    backButton: {
+      position: 'absolute', // Colocado absoluto para no mover el formulario
+      top: 60,
+      left: 20,
+      zIndex: 1,
+    },
+    backButtonInner: {
+      backgroundColor: colors.cardBackground, // Dinámico
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      justifyContent: 'center',
+      alignItems: 'center',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 3,
+      borderWidth: 1,
+      borderColor: colors.gray, // Dinámico
+    },
+    backIcon: {
+      width: 24,
+      height: 24,
+      tintColor: colors.text, // Dinámico
+    },
+    formWrapper: {
+      width: width * 0.85,
+      maxWidth: 400,
+    },
+    inputContainer: {
+      marginBottom: 20,
+    },
+    inputLabel: {
+      fontSize: 14,
+      fontWeight: fontWeightSemiBold,
+      color: colors.text, // Dinámico
+      marginBottom: 8,
+    },
+    inputWrapper: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.backgroundSecon, // Dinámico
+      borderWidth: 1,
+      borderColor: colors.gray, // Dinámico
+      borderRadius: 12,
+      paddingHorizontal: 12,
+      height: 50,
+    },
+    inputError: {
+      borderColor: colors.danger, // Dinámico
+      backgroundColor: `${colors.danger}15`, // Dinámico
+    },
+    icon: {
+      marginRight: 8,
+    },
+    input: {
+      flex: 1,
+      fontSize: 16,
+      color: colors.text, // Dinámico
+    },
+    errorText: {
+      color: colors.danger, // Dinámico
+      fontSize: 12,
+      marginTop: 4,
+      marginLeft: 4,
+    },
+    submitButton: {
+      backgroundColor: colors.primary, // Dinámico
+      paddingVertical: 16,
+      borderRadius: 14,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: 10,
+      shadowColor: colors.primary, // Dinámico
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 6,
+    },
+    submitButtonDisabled: {
+      backgroundColor: colors.darkGray, // Dinámico
+      opacity: 0.7,
+    },
+    buttonIcon: {
+      marginRight: 8,
+    },
+    submitButtonText: {
+      color: isDark ? colors.lightText : colors.text, // Dinámico
+      fontSize: 16,
+      fontWeight: fontWeightSemiBold,
+    },
+    registerButton: {
+      backgroundColor: `${colors.primary}40`, // Dinámico (amarillo claro)
+      paddingVertical: 16,
+      marginTop: 15,
+      borderRadius: 14,
+      alignItems: 'center',
+      justifyContent: 'center',
+      shadowColor: colors.primary, // Dinámico
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.15,
+      shadowRadius: 8,
+      elevation: 6,
+      borderWidth: 1.5,
+      borderColor: colors.primary, // Dinámico
+      width: width * 0.85,
+      maxWidth: 400,
+    },
+    registerText: {
+      color: colors.primary, // Dinámico
+      fontSize: 16,
+      fontWeight: fontWeightSemiBold,
+      letterSpacing: 0.3,
+      textAlign: 'center',
+    },
+    forgotPasswordText: {
+      color: colors.darkGray, // Dinámico
+      fontSize: 14,
+      textAlign: 'center',
+      marginTop: 20,
+      marginBottom: 16,
+    },
+  });

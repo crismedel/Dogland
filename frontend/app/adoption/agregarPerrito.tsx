@@ -1,11 +1,19 @@
-// app/adoption/agregarPerrito.tsx
-import CustomHeader from '@/src/components/UI/CustomHeader';
-import { useRouter } from 'expo-router';
 import React from 'react';
 import { Image, StyleSheet, TouchableOpacity, View } from 'react-native';
+import CustomHeader from '@/src/components/UI/CustomHeader';
+import { useRouter } from 'expo-router';
 import FormAgregarPerrito from './component/formAgregarPerrito';
 
+// 1. Importar el hook y los tipos de tema
+import { useTheme } from '@/src/contexts/ThemeContext';
+import { ColorsType } from '@/src/constants/colors';
+import { Ionicons } from '@expo/vector-icons'; // Importar Ionicons
+
 const AgregarPerrito = () => {
+  // 2. Llamar al hook y generar los estilos
+  const { colors, isDark } = useTheme();
+  const styles = getStyles(colors, isDark);
+
   const router = useRouter();
 
   return (
@@ -16,23 +24,30 @@ const AgregarPerrito = () => {
           <TouchableOpacity onPress={() => router.back()}>
             <Image
               source={require('../../assets/images/volver.png')}
-              style={{ width: 24, height: 24, tintColor: '#fff' }}
+              // 3. Aplicar color dinámico
+              style={{
+                width: 24,
+                height: 24,
+                tintColor: isDark ? colors.lightText : colors.text,
+              }}
             />
           </TouchableOpacity>
         }
       />
 
       {/* 👇 Aquí simplemente renderizamos el componente del formulario */}
-      <FormAgregarPerrito /> 
+      <FormAgregarPerrito />
     </View>
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f4f6f9', // Un color de fondo consistente
-  },
-});
+// 4. Convertir el StyleSheet en una función
+const getStyles = (colors: ColorsType, isDark: boolean) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background, // 5. Aplicar color dinámico
+    },
+  });
 
 export default AgregarPerrito;

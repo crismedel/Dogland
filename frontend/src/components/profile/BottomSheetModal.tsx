@@ -1,4 +1,3 @@
-// BottomSheetModal.tsx
 import React from 'react';
 import {
   Modal,
@@ -10,8 +9,13 @@ import {
   Dimensions,
   TouchableWithoutFeedback,
 } from 'react-native';
-import { Colors } from '@/src/constants/colors';
+// 1. Quitar la importación estática
+// import { Colors } from '@/src/constants/colors';
 import { fontWeightBold, AppText } from '@/src/components/AppText';
+
+// 2. Importar el hook y los tipos de tema
+import { useTheme } from '@/src/contexts/ThemeContext';
+import { ColorsType } from '@/src/constants/colors';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -28,6 +32,10 @@ export default function BottomSheetModal({
   title,
   children,
 }: BottomSheetModalProps) {
+  // 3. Llamar al hook y generar los estilos
+  const { colors, isDark } = useTheme();
+  const styles = getStyles(colors, isDark);
+
   const slideAnim = React.useRef(new Animated.Value(SCREEN_HEIGHT)).current;
 
   React.useEffect(() => {
@@ -47,7 +55,6 @@ export default function BottomSheetModal({
     }
   }, [visible, slideAnim]);
 
-  if (!visible) return null;
 
   return (
     <Modal
@@ -89,55 +96,57 @@ export default function BottomSheetModal({
   );
 }
 
-const styles = StyleSheet.create({
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
-  },
-  bottomSheetContainer: {
-    backgroundColor: '#FFFDF4',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    maxHeight: SCREEN_HEIGHT * 0.75,
-    paddingBottom: 20,
-  },
-  handleBar: {
-    width: 40,
-    height: 4,
-    backgroundColor: 'rgba(107,114,128,0.18)',
-    borderRadius: 2,
-    alignSelf: 'center',
-    marginTop: 12,
-    marginBottom: 8,
-  },
-  bottomSheetHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.04)',
-  },
-  bottomSheetTitle: {
-    fontSize: 16,
-    fontWeight: fontWeightBold,
-    color: Colors.secondary,
-  },
-  closeButton: {
-    width: 32,
-    height: 32,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  closeButtonText: {
-    fontSize: 20,
-    color: Colors.darkGray,
-    fontWeight: fontWeightBold,
-  },
-  bottomSheetContent: {
-    paddingHorizontal: 20,
-    paddingTop: 18,
-  },
-});
+// 4. Convertir el StyleSheet en una función
+const getStyles = (colors: ColorsType, isDark: boolean) =>
+  StyleSheet.create({
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      justifyContent: 'flex-end',
+    },
+    bottomSheetContainer: {
+      backgroundColor: colors.cardBackground, // Dinámico
+      borderTopLeftRadius: 24,
+      borderTopRightRadius: 24,
+      maxHeight: SCREEN_HEIGHT * 0.75,
+      paddingBottom: 20,
+    },
+    handleBar: {
+      width: 40,
+      height: 4,
+      backgroundColor: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)', // Dinámico
+      borderRadius: 2,
+      alignSelf: 'center',
+      marginTop: 12,
+      marginBottom: 8,
+    },
+    bottomSheetHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 20,
+      paddingVertical: 16,
+      borderBottomWidth: 1,
+      borderBottomColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)', // Dinámico
+    },
+    bottomSheetTitle: {
+      fontSize: 16,
+      fontWeight: fontWeightBold,
+      color: colors.secondary, // Dinámico
+    },
+    closeButton: {
+      width: 32,
+      height: 32,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    closeButtonText: {
+      fontSize: 20,
+      color: colors.darkGray, // Dinámico
+      fontWeight: fontWeightBold,
+    },
+    bottomSheetContent: {
+      paddingHorizontal: 20,
+      paddingTop: 18,
+    },
+  });

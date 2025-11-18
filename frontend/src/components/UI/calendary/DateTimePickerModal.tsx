@@ -9,8 +9,13 @@ import {
 import { Calendar } from 'react-native-calendars';
 import { Ionicons } from '@expo/vector-icons';
 import { AppText, fontWeightBold, fontWeightSemiBold } from '../../AppText';
-import { Colors } from '@/src/constants/colors';
+// 1. Quitar la importación estática
+// import { Colors } from '@/src/constants/colors';
 import { configureSpanishLocale } from '@/src/components/UI/calendary/Calendary';
+
+// 2. Importar el hook y los tipos de tema
+import { useTheme } from '@/src/contexts/ThemeContext';
+import { ColorsType } from '@/src/constants/colors';
 
 configureSpanishLocale();
 
@@ -22,7 +27,7 @@ interface DateTimePickerModalProps {
   title?: string;
   minDate?: string; // YYYY-MM-DD
   maxDate?: string; // YYYY-MM-DD
-  theme?: 'light' | 'dark';
+  // theme?: 'light' | 'dark'; // 3. Se elimina la prop, usaremos el hook
   minuteStep?: number; // default 5
   mode?: 'date' | 'datetime'; // default 'datetime'
 }
@@ -37,12 +42,15 @@ const DateTimePickerModal: React.FC<DateTimePickerModalProps> = ({
   title,
   minDate,
   maxDate,
-  theme = 'light',
   minuteStep = 5,
   mode = 'datetime',
 }) => {
-  const isDarkTheme = theme === 'dark';
-  const displayTitle = title || (mode === 'date' ? 'Seleccionar Fecha' : 'Seleccionar Fecha y Hora');
+  // 4. Llamar al hook y generar los estilos
+  const { colors, isDark } = useTheme();
+  const styles = getStyles(colors, isDark);
+
+  const displayTitle =
+    title || (mode === 'date' ? 'Seleccionar Fecha' : 'Seleccionar Fecha y Hora');
 
   const initial = React.useMemo(() => {
     const d =
@@ -61,29 +69,41 @@ const DateTimePickerModal: React.FC<DateTimePickerModalProps> = ({
     initial.getMinutes() - (initial.getMinutes() % minuteStep),
   );
 
-  const calendarTheme = {
-    backgroundColor: isDarkTheme ? '#1F2937' : '#FFFFFF',
-    calendarBackground: isDarkTheme ? '#1F2937' : '#FFFFFF',
-    textSectionTitleColor: isDarkTheme ? '#9CA3AF' : '#6B7280',
-    selectedDayBackgroundColor: Colors.primary || '#FACC15',
-    selectedDayTextColor: '#111827',
-    todayTextColor: Colors.primary || '#FACC15',
-    dayTextColor: isDarkTheme ? '#F9FAFB' : '#1F2937',
-    textDisabledColor: isDarkTheme ? '#4B5563' : '#D1D5DB',
-    monthTextColor: isDarkTheme ? '#F9FAFB' : '#111827',
-    textMonthFontWeight: 'bold' as const,
-    textDayFontSize: 15,
-    textMonthFontSize: 18,
-    textDayHeaderFontSize: 13,
-    arrowColor: isDarkTheme ? '#F9FAFB' : '#111827',
-  };
+  // 5. Refactorizar calendarTheme para usar el hook y useMemo
+  const calendarTheme = React.useMemo(
+    () => ({
+      backgroundColor: isDark ? colors.background : colors.cardBackground,
+      calendarBackground: isDark ? colors.background : colors.cardBackground,
+      textSectionTitleColor: colors.darkGray,
+      selectedDayBackgroundColor: colors.primary,
+      selectedDayTextColor: colors.text,
+      todayTextColor: colors.primary,
+      dayTextColor: colors.text,
+      textDisabledColor: colors.gray,
+      monthTextColor: colors.text,
+      textMonthFontWeight: 'bold' as const,
+      textDayFontSize: 15,
+      textMonthFontSize: 18,
+      textDayHeaderFontSize: 13,
+      arrowColor: colors.text,
+    }),
+    [colors, isDark],
+  );
 
   const handleConfirm = () => {
     const [y, m, d] = selectedDay.split('-').map(Number);
     // If mode is 'date', set time to 00:00:00, otherwise use selected time
     const finalHour = mode === 'date' ? 0 : hour;
     const finalMinute = mode === 'date' ? 0 : minute;
-    const finalDate = new Date(y, (m ?? 1) - 1, d ?? 1, finalHour, finalMinute, 0, 0);
+    const finalDate = new Date(
+      y,
+      (m ?? 1) - 1,
+      d ?? 1,
+      finalHour,
+      finalMinute,
+      0,
+      0,
+    );
 
     if (minDate) {
       const [yMin, mMin, dMin] = minDate.split('-').map(Number);
@@ -121,36 +141,16 @@ const DateTimePickerModal: React.FC<DateTimePickerModalProps> = ({
           activeOpacity={1}
           onPress={(e) => e.stopPropagation()}
         >
-          <View
-            style={[
-              styles.container,
-              {
-                backgroundColor: isDarkTheme ? Colors.text : Colors.background,
-              },
-            ]}
-          >
+          {/* 6. Usar estilos dinámicos */}
+          <View style={styles.container}>
             {/* Header */}
-            <View
-              style={[
-                styles.header,
-                {
-                  borderBottomColor: isDarkTheme ? '#374151' : Colors.secondary,
-                },
-              ]}
-            >
-              <AppText
-                style={[
-                  styles.title,
-                  { color: isDarkTheme ? '#F9FAFB' : Colors.text },
-                ]}
-              >
-                {displayTitle}
-              </AppText>
+            <View style={styles.header}>
+              <AppText style={styles.title}>{displayTitle}</AppText>
               <TouchableOpacity onPress={onClose}>
                 <Ionicons
                   name="close"
                   size={24}
-                  color={isDarkTheme ? '#9CA3AF' : '#6B7280'}
+                  color={colors.darkGray} // 6. Usar colores del tema
                 />
               </TouchableOpacity>
             </View>
@@ -162,7 +162,7 @@ const DateTimePickerModal: React.FC<DateTimePickerModalProps> = ({
               markedDates={{
                 [selectedDay]: {
                   selected: true,
-                  selectedColor: Colors.primary || '#FACC15',
+                  selectedColor: colors.primary, // 6. Usar colores del tema
                 },
               }}
               minDate={minDate}
@@ -174,30 +174,26 @@ const DateTimePickerModal: React.FC<DateTimePickerModalProps> = ({
 
             {/* Time Picker inline - only show if mode is datetime */}
             {mode === 'datetime' && (
-              <View
-                style={[
-                  styles.timeSection,
-                  { borderTopColor: isDarkTheme ? Colors.text : '#E5E7EB' },
-                ]}
-              >
-                <AppText
-                  style={[
-                    styles.timeLabel,
-                    { color: isDarkTheme ? '#E5E7EB' : '#374151' },
-                  ]}
-                >
-                  Hora
-                </AppText>
+              <View style={styles.timeSection}>
+                <AppText style={styles.timeLabel}>Hora</AppText>
 
                 <View style={styles.timeRow}>
                   {/* Hour */}
                   <View style={styles.timeBox}>
                     <TouchableOpacity onPress={incHour} style={styles.timeBtn}>
-                      <Ionicons name="chevron-up" size={20} color="#6B7280" />
+                      <Ionicons
+                        name="chevron-up"
+                        size={20}
+                        color={colors.darkGray} // 6. Usar colores del tema
+                      />
                     </TouchableOpacity>
                     <AppText style={styles.timeValue}>{pad2(hour)}</AppText>
                     <TouchableOpacity onPress={decHour} style={styles.timeBtn}>
-                      <Ionicons name="chevron-down" size={20} color="#6B7280" />
+                      <Ionicons
+                        name="chevron-down"
+                        size={20}
+                        color={colors.darkGray} // 6. Usar colores del tema
+                      />
                     </TouchableOpacity>
                   </View>
 
@@ -205,12 +201,26 @@ const DateTimePickerModal: React.FC<DateTimePickerModalProps> = ({
 
                   {/* Minute */}
                   <View style={styles.timeBox}>
-                    <TouchableOpacity onPress={incMinute} style={styles.timeBtn}>
-                      <Ionicons name="chevron-up" size={20} color="#6B7280" />
+                    <TouchableOpacity
+                      onPress={incMinute}
+                      style={styles.timeBtn}
+                    >
+                      <Ionicons
+                        name="chevron-up"
+                        size={20}
+                        color={colors.darkGray} // 6. Usar colores del tema
+                      />
                     </TouchableOpacity>
                     <AppText style={styles.timeValue}>{pad2(minute)}</AppText>
-                    <TouchableOpacity onPress={decMinute} style={styles.timeBtn}>
-                      <Ionicons name="chevron-down" size={20} color="#6B7280" />
+                    <TouchableOpacity
+                      onPress={decMinute}
+                      style={styles.timeBtn}
+                    >
+                      <Ionicons
+                        name="chevron-down"
+                        size={20}
+                        color={colors.darkGray} // 6. Usar colores del tema
+                      />
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -218,21 +228,9 @@ const DateTimePickerModal: React.FC<DateTimePickerModalProps> = ({
             )}
 
             {/* Actions */}
-            <View
-              style={[
-                styles.actions,
-                { borderTopColor: isDarkTheme ? Colors.text : '#E5E7EB' },
-              ]}
-            >
+            <View style={styles.actions}>
               <TouchableOpacity style={styles.cancelBtn} onPress={onClose}>
-                <AppText
-                  style={[
-                    styles.cancelText,
-                    { color: isDarkTheme ? '#9CA3AF' : '#6B7280' },
-                  ]}
-                >
-                  Cancelar
-                </AppText>
+                <AppText style={styles.cancelText}>Cancelar</AppText>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.confirmBtn}
@@ -250,72 +248,103 @@ const DateTimePickerModal: React.FC<DateTimePickerModalProps> = ({
 
 export default DateTimePickerModal;
 
-const styles = StyleSheet.create({
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  container: {
-    borderRadius: 20,
-    width: Math.min(Dimensions.get('window').width - 40, 380),
-    maxWidth: '100%',
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  header: {
-    padding: 20,
-    borderBottomWidth: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  title: { fontSize: 18, fontWeight: fontWeightBold },
-  calendar: { paddingBottom: 10, backgroundColor: 'transparent' },
-  timeSection: { paddingHorizontal: 16, paddingTop: 8 },
-  timeLabel: { fontSize: 15, fontWeight: fontWeightSemiBold, marginBottom: 8 },
-  timeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 8,
-  },
-  timeBox: {
-    width: 80,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 10,
-    alignItems: 'center',
-    paddingVertical: 6,
-    backgroundColor: '#FFF',
-  },
-  timeBtn: { paddingVertical: 6, width: '100%', alignItems: 'center' },
-  timeValue: { fontSize: 22, fontWeight: fontWeightBold, color: '#111827' },
-  colon: { marginHorizontal: 10, fontSize: 24, fontWeight: '600' },
-  actions: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    padding: 12,
-    borderTopWidth: 1,
-    gap: 8,
-  },
-  cancelBtn: { paddingVertical: 10, paddingHorizontal: 16 },
-  cancelText: { fontSize: 15, fontWeight: fontWeightSemiBold },
-  confirmBtn: {
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    backgroundColor: Colors.primary || '#FACC15',
-    borderRadius: 10,
-  },
-  confirmText: {
-    fontSize: 15,
-    fontWeight: fontWeightSemiBold,
-    color: '#111827',
-  },
-});
+// 7. Convertir el StyleSheet en una función
+const getStyles = (colors: ColorsType, isDark: boolean) =>
+  StyleSheet.create({
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.6)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 20,
+    },
+    container: {
+      borderRadius: 20,
+      width: Math.min(Dimensions.get('window').width - 40, 380),
+      maxWidth: '100%',
+      overflow: 'hidden',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 8,
+      backgroundColor: isDark ? colors.background : colors.cardBackground, // Dinámico
+    },
+    header: {
+      padding: 20,
+      borderBottomWidth: 1,
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      borderBottomColor: colors.gray, // Dinámico
+    },
+    title: {
+      fontSize: 18,
+      fontWeight: fontWeightBold,
+      color: colors.text, // Dinámico
+    },
+    calendar: { paddingBottom: 10, backgroundColor: 'transparent' },
+    timeSection: {
+      paddingHorizontal: 16,
+      paddingTop: 8,
+      borderTopColor: colors.gray, // Dinámico
+    },
+    timeLabel: {
+      fontSize: 15,
+      fontWeight: fontWeightSemiBold,
+      marginBottom: 8,
+      color: colors.text, // Dinámico
+    },
+    timeRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 8,
+    },
+    timeBox: {
+      width: 80,
+      borderWidth: 1,
+      borderColor: colors.gray, // Dinámico
+      borderRadius: 10,
+      alignItems: 'center',
+      paddingVertical: 6,
+      backgroundColor: colors.background, // Dinámico
+    },
+    timeBtn: { paddingVertical: 6, width: '100%', alignItems: 'center' },
+    timeValue: {
+      fontSize: 22,
+      fontWeight: fontWeightBold,
+      color: colors.text, // Dinámico
+    },
+    colon: {
+      marginHorizontal: 10,
+      fontSize: 24,
+      fontWeight: '600',
+      color: colors.darkGray, // Dinámico
+    },
+    actions: {
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+      padding: 12,
+      borderTopWidth: 1,
+      gap: 8,
+      borderTopColor: colors.gray, // Dinámico
+    },
+    cancelBtn: { paddingVertical: 10, paddingHorizontal: 16 },
+    cancelText: {
+      fontSize: 15,
+      fontWeight: fontWeightSemiBold,
+      color: colors.darkGray, // Dinámico
+    },
+    confirmBtn: {
+      paddingVertical: 10,
+      paddingHorizontal: 16,
+      backgroundColor: colors.primary, // Dinámico
+      borderRadius: 10,
+    },
+    confirmText: {
+      fontSize: 15,
+      fontWeight: fontWeightSemiBold,
+      color: colors.text, // Dinámico (para contraste con amarillo)
+    },
+  });

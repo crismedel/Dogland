@@ -1,4 +1,3 @@
-// ProfileScreen.tsx
 import React, { useMemo, useState, useCallback } from 'react';
 import {
   ActivityIndicator,
@@ -6,7 +5,8 @@ import {
   StyleSheet,
   View,
   Dimensions,
-  useColorScheme,
+  // 1. Quitar useColorScheme
+  // useColorScheme,
 } from 'react-native';
 import { fetchUserProfile } from '../../src/api/users';
 import CustomButton from '../../src/components/UI/CustomButton';
@@ -17,7 +17,8 @@ import { REFRESH_KEYS } from '@/src/constants/refreshKeys';
 import { useAuth } from '@/src/contexts/AuthContext';
 import ProfileImagePicker from '@/src/components/profile/ProfileImagePicker';
 import { useProfilePhoto } from '@/src/utils/useProfilePhoto';
-import { Colors } from '@/src/constants/colors';
+// 1. Quitar la importación estática
+// import { Colors } from '@/src/constants/colors';
 import { AppText } from '@/src/components/AppText';
 import { router } from 'expo-router';
 import { useNotification } from '@/src/components/notifications';
@@ -27,9 +28,17 @@ import ContactInfo from '@/src/components/profile/ContactInfo';
 import AdditionalInfo from '@/src/components/profile/AdditionalInfo';
 import Spinner from '@/src/components/UI/Spinner';
 
+// 2. Importar el hook y los tipos de tema
+import { useTheme } from '@/src/contexts/ThemeContext';
+import { ColorsType } from '@/src/constants/colors';
+
 const AVATAR_PLACEHOLDER = 'https://placehold.co/200x200/png?text=Avatar';
 
 export default function ProfileScreen() {
+  // 3. Llamar al hook y generar los estilos
+  const { colors, isDark } = useTheme();
+  const styles = getStyles(colors, isDark);
+
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [showImagePicker, setShowImagePicker] = useState(false);
@@ -40,8 +49,9 @@ export default function ProfileScreen() {
     user?.id_usuario || 0,
   );
 
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+  // 3. Quitar esto, ya lo provee el hook useTheme
+  // const colorScheme = useColorScheme();
+  // const isDark = colorScheme === 'dark';
 
   const refreshPhoto = useCallback(async () => {
     if (user?.id_usuario) {
@@ -128,7 +138,8 @@ export default function ProfileScreen() {
   return (
     <>
       <ScrollView
-        style={[styles.scrollView, { backgroundColor: Colors.background }]}
+        // 4. Usar estilos dinámicos
+        style={styles.scrollView}
         contentContainerStyle={styles.container}
       >
         <CustomHeader title="Perfil" rightComponent={null} />
@@ -177,36 +188,44 @@ export default function ProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  scrollView: { flex: 1, backgroundColor: Colors.background },
-  container: { padding: 16, paddingBottom: 32 },
-  loadingContainer: {
-    flex: 1,
-    backgroundColor: Colors.background,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  cardContainer: {
-    backgroundColor: Colors.cardBackground,
-    borderRadius: 20,
-    paddingVertical: 16,
-    paddingHorizontal: 18,
-    marginTop: 20,
-    borderWidth: 1,
-    borderColor: Colors.secondary,
-    shadowColor: '#000',
-    shadowOpacity: 0.045,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 4,
-  },
+// 5. Convertir el StyleSheet en una función
+const getStyles = (colors: ColorsType, isDark: boolean) =>
+  StyleSheet.create({
+    scrollView: {
+      flex: 1,
+      backgroundColor: colors.background, // Dinámico
+    },
+    container: { padding: 16, paddingBottom: 32 },
+    loadingContainer: {
+      flex: 1,
+      backgroundColor: colors.background, // Dinámico
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    cardContainer: {
+      backgroundColor: colors.cardBackground, // Dinámico
+      borderRadius: 20,
+      paddingVertical: 16,
+      paddingHorizontal: 18,
+      marginTop: 20,
+      borderWidth: 1,
+      borderColor: colors.secondary, // Dinámico
+      shadowColor: '#000',
+      shadowOpacity: isDark ? 0.1 : 0.045, // Dinámico
+      shadowRadius: 10,
+      shadowOffset: { width: 0, height: 6 },
+      elevation: 4,
+    },
 
-  errorContainer: {
-    flex: 1,
-    backgroundColor: Colors.background,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-  },
-  errorText: { color: Colors.secondary, fontSize: 14 },
-});
+    errorContainer: {
+      flex: 1,
+      backgroundColor: colors.background, // Dinámico
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 24,
+    },
+    errorText: {
+      color: colors.secondary, // Dinámico
+      fontSize: 14,
+    },
+  });

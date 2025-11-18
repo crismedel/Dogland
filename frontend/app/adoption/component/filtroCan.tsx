@@ -12,7 +12,12 @@ import { Ionicons } from '@expo/vector-icons';
 import MultiSlider from '@ptomasroos/react-native-multi-slider';
 import { LinearGradient } from 'expo-linear-gradient';
 import { AppText, fontWeightBold } from '@/src/components/AppText';
-import { Colors } from '@/src/constants/colors';
+// 1. Quitar la importación estática
+// import { Colors } from '@/src/constants/colors';
+
+// 2. Importar el hook y los tipos de tema
+import { useTheme } from '@/src/contexts/ThemeContext';
+import { ColorsType } from '@/src/constants/colors';
 
 interface FiltroCanProps {
   visible: boolean;
@@ -54,6 +59,10 @@ const FiltroCan: React.FC<FiltroCanProps> = ({
   healthMapping = {},
   sizesMapping = {},
 }) => {
+  // 3. Llamar al hook y generar los estilos DENTRO del componente
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
+
   const maxAge = useMemo(
     () =>
       animals.length > 0
@@ -170,12 +179,13 @@ const FiltroCan: React.FC<FiltroCanProps> = ({
           <TouchableWithoutFeedback>
             <View style={styles.container}>
               <LinearGradient
-                colors={[Colors.primary, Colors.primary]}
+                // 4. Usar colores del hook
+                colors={[colors.primary, colors.primary]}
                 style={styles.header}
               >
                 <AppText style={styles.title}>Filtros de Búsqueda</AppText>
                 <TouchableOpacity onPress={onClose}>
-                  <Ionicons name="close" size={26} color="#fff" />
+                  <Ionicons name="close" size={26} color={colors.lightText} />
                 </TouchableOpacity>
               </LinearGradient>
 
@@ -202,7 +212,7 @@ const FiltroCan: React.FC<FiltroCanProps> = ({
                         <Ionicons
                           name={showFavorites ? 'heart' : 'heart-outline'}
                           size={14}
-                          color={Colors.text}
+                          color={colors.text} // 4. Usar colores del hook
                           style={{ marginRight: 10 }}
                         />
                         Solo favoritos
@@ -222,9 +232,9 @@ const FiltroCan: React.FC<FiltroCanProps> = ({
                     max={maxAge}
                     step={1}
                     onValuesChange={(v) => setAgeRange([v[0], v[1]])}
-                    selectedStyle={{ backgroundColor: Colors.primary }}
+                    selectedStyle={{ backgroundColor: colors.primary }} // 4. Usar colores del hook
                     markerStyle={{
-                      backgroundColor: Colors.secondary,
+                      backgroundColor: colors.secondary, // 4. Usar colores del hook
                       height: 20,
                       width: 20,
                       borderRadius: 10,
@@ -295,130 +305,139 @@ const FilterGroup = ({
   items: string[];
   selected: string[];
   onToggle: (v: string) => void;
-}) => (
-  <View style={styles.section}>
-    <AppText style={styles.sectionTitle}>{title}</AppText>
-    <View style={styles.chips}>
-      {items.map((item) => (
-        <TouchableOpacity
-          key={item}
-          activeOpacity={0.7}
-          style={[
-            styles.chip,
-            selected.includes(item) && styles.chipSelected,
-            Platform.OS === 'ios' && styles.chipShadow,
-          ]}
-          onPress={() => onToggle(item)}
-        >
-          <AppText
-            style={[
-              styles.chipText,
-              selected.includes(item) && styles.chipTextSelected,
-            ]}
-          >
-            {item}
-          </AppText>
-        </TouchableOpacity>
-      ))}
-    </View>
-  </View>
-);
+}) => {
+  // 3. Este componente también necesita los estilos
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
 
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    justifyContent: 'flex-end',
-  },
-  container: {
-    backgroundColor: '#fafafa',
-    borderTopLeftRadius: 25,
-    borderTopRightRadius: 25,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 6,
-    maxHeight: '88%',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-  },
-  title: {
-    color: '#fff',
-    fontSize: 20,
-    fontWeight: fontWeightBold,
-  },
-  section: {
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    borderBottomColor: '#f2f2f2',
-    borderBottomWidth: 1,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: fontWeightBold,
-    marginBottom: 10,
-    color: '#333',
-  },
-  range: {
-    textAlign: 'center',
-    color: '#666',
-    marginBottom: 15,
-    fontSize: 14,
-  },
-  chips: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  chip: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    backgroundColor: '#fafafa',
-    marginBottom: 8,
-  },
-  chipSelected: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.secondary,
-  },
-  chipShadow: {
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    shadowOffset: { width: 0, height: 1 },
-  },
-  chipText: { color: Colors.text, fontSize: 14 },
-  chipTextSelected: { color: Colors.text, fontWeight: fontWeightBold },
-  actions: {
-    flexDirection: 'row',
-    padding: 20,
-    gap: 12,
-    borderTopColor: '#f2f2f2',
-    borderTopWidth: 1,
-  },
-  button: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: 14,
-    borderRadius: 12,
-  },
-  reset: {
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#ccc',
-  },
-  apply: {
-    backgroundColor: Colors.primary,
-  },
-  applyText: { color: Colors.text, fontWeight: fontWeightBold },
-  resetText: { color: Colors.text, fontWeight: fontWeightBold },
-});
+  return (
+    <View style={styles.section}>
+      <AppText style={styles.sectionTitle}>{title}</AppText>
+      <View style={styles.chips}>
+        {items.map((item) => (
+          <TouchableOpacity
+            key={item}
+            activeOpacity={0.7}
+            style={[
+              styles.chip,
+              selected.includes(item) && styles.chipSelected,
+              Platform.OS === 'ios' && styles.chipShadow,
+            ]}
+            onPress={() => onToggle(item)}
+          >
+            <AppText
+              style={[
+                styles.chipText,
+                selected.includes(item) && styles.chipTextSelected,
+              ]}
+            >
+              {item}
+            </AppText>
+          </TouchableOpacity>
+        ))}
+      </View>
+    </View>
+  );
+};
+
+// 5. Convertir el StyleSheet en una función que acepte los colores
+const getStyles = (colors: ColorsType) =>
+  StyleSheet.create({
+    overlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.45)', // Esto se mantiene estático
+      justifyContent: 'flex-end',
+    },
+    container: {
+      backgroundColor: colors.cardBackground, // Dinámico
+      borderTopLeftRadius: 25,
+      borderTopRightRadius: 25,
+      overflow: 'hidden',
+      shadowColor: '#000',
+      shadowOpacity: 0.15,
+      shadowRadius: 6,
+      elevation: 6,
+      maxHeight: '88%',
+    },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      padding: 20,
+      // El color de fondo viene del LinearGradient
+    },
+    title: {
+      color: colors.lightText, // Dinámico
+      fontSize: 20,
+      fontWeight: fontWeightBold,
+    },
+    section: {
+      paddingHorizontal: 20,
+      paddingVertical: 15,
+      borderBottomColor: colors.gray, // Dinámico
+      borderBottomWidth: 1,
+    },
+    sectionTitle: {
+      fontSize: 16,
+      fontWeight: fontWeightBold,
+      marginBottom: 10,
+      color: colors.text, // Dinámico
+    },
+    range: {
+      textAlign: 'center',
+      color: colors.darkGray, // Dinámico
+      marginBottom: 15,
+      fontSize: 14,
+    },
+    chips: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 10,
+    },
+    chip: {
+      borderWidth: 1,
+      borderColor: colors.gray, // Dinámico
+      borderRadius: 20,
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+      backgroundColor: colors.background, // Dinámico
+      marginBottom: 8,
+    },
+    chipSelected: {
+      backgroundColor: colors.primary, // Dinámico
+      borderColor: colors.secondary, // Dinámico
+    },
+    chipShadow: {
+      shadowColor: '#000',
+      shadowOpacity: 0.1,
+      shadowRadius: 2,
+      shadowOffset: { width: 0, height: 1 },
+    },
+    chipText: { color: colors.text, fontSize: 14 }, // Dinámico
+    chipTextSelected: { color: colors.text, fontWeight: fontWeightBold }, // Dinámico
+    actions: {
+      flexDirection: 'row',
+      padding: 20,
+      gap: 12,
+      borderTopColor: colors.gray, // Dinámico
+      borderTopWidth: 1,
+    },
+    button: {
+      flex: 1,
+      alignItems: 'center',
+      paddingVertical: 14,
+      borderRadius: 12,
+    },
+    reset: {
+      backgroundColor: colors.cardBackground, // Dinámico
+      borderWidth: 1,
+      borderColor: colors.gray, // Dinámico
+    },
+    apply: {
+      backgroundColor: colors.primary, // Dinámico
+    },
+    applyText: { color: colors.text, fontWeight: fontWeightBold }, // Dinámico
+    resetText: { color: colors.text, fontWeight: fontWeightBold }, // Dinámico
+  });
 
 export default FiltroCan;

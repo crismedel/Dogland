@@ -11,7 +11,8 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import CustomHeader from '@/src/components/UI/CustomHeader';
-import { Colors } from '@/src/constants/colors';
+// 1. Quitar la importación estática
+// import { Colors } from '@/src/constants/colors';
 import {
   fontWeightSemiBold,
   fontWeightMedium,
@@ -20,6 +21,10 @@ import {
 import { useRole } from '@/src/hooks/useRole';
 import apiClient from '@/src/api/client';
 import Spinner from '@/src/components/UI/Spinner';
+
+// 2. Importar el hook y los tipos de tema
+import { useTheme } from '@/src/contexts/ThemeContext';
+import { ColorsType } from '@/src/constants/colors';
 
 interface User {
   id_usuario: number;
@@ -38,6 +43,10 @@ interface User {
 }
 
 const UsersScreen = () => {
+  // 3. Llamar al hook y generar los estilos
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
+
   const router = useRouter();
   const { isAdmin } = useRole();
   const [users, setUsers] = useState<User[]>([]);
@@ -76,16 +85,17 @@ const UsersScreen = () => {
     loadUsers();
   };
 
+  // 4. Mover la función aquí para que acceda a 'colors'
   const getRoleBadgeColor = (nombre_rol: string) => {
     switch (nombre_rol) {
       case 'Admin':
-        return '#dc3545';
+        return colors.danger;
       case 'Trabajador':
-        return '#17a2b8';
+        return colors.info;
       case 'Usuario':
-        return '#28a745';
+        return colors.success;
       default:
-        return '#6c757d';
+        return colors.darkGray;
     }
   };
 
@@ -110,7 +120,8 @@ const UsersScreen = () => {
           <Ionicons
             name={item.activo ? 'checkmark-circle' : 'close-circle'}
             size={16}
-            color={item.activo ? '#28a745' : '#dc3545'}
+            // 5. Usar colores del tema
+            color={item.activo ? colors.success : colors.danger}
           />
           <AppText style={styles.statusText}>
             {item.activo ? 'Activo' : 'Inactivo'}
@@ -118,7 +129,7 @@ const UsersScreen = () => {
         </View>
       </View>
       <TouchableOpacity style={styles.editButton}>
-        <Ionicons name="create-outline" size={20} color={Colors.primary} />
+        <Ionicons name="create-outline" size={20} color={colors.primary} />
       </TouchableOpacity>
     </View>
   );
@@ -135,13 +146,18 @@ const UsersScreen = () => {
           <TouchableOpacity onPress={() => router.back()}>
             <Image
               source={require('../../assets/images/volver.png')}
-              style={{ width: 24, height: 24, tintColor: '#fff' }}
+              // 5. Usar colores del tema
+              style={{ width: 24, height: 24, tintColor: colors.lightText }}
             />
           </TouchableOpacity>
         }
         rightComponent={
           <TouchableOpacity style={styles.addButton}>
-            <Ionicons name="person-add-outline" size={22} color="#fff" />
+            <Ionicons
+              name="person-add-outline"
+              size={22}
+              color={colors.lightText} // 5. Usar colores del tema
+            />
           </TouchableOpacity>
         }
       />
@@ -152,18 +168,22 @@ const UsersScreen = () => {
             <Ionicons
               name="cloud-offline-outline"
               size={56}
-              color={Colors.primary}
+              color={colors.primary} // 5. Usar colores del tema
             />
             <AppText style={styles.emptyTitle}>Error al cargar</AppText>
             <AppText style={styles.emptySubtitle}>{error}</AppText>
             <TouchableOpacity style={styles.retryBtn} onPress={onRefresh}>
-              <Ionicons name="refresh" size={18} color="#fff" />
+              <Ionicons name="refresh" size={18} color={colors.lightText} />
               <AppText style={styles.retryText}>Reintentar</AppText>
             </TouchableOpacity>
           </View>
         ) : users.length === 0 ? (
           <View style={styles.emptyState}>
-            <Ionicons name="people-outline" size={56} color={Colors.primary} />
+            <Ionicons
+              name="people-outline"
+              size={56}
+              color={colors.primary} // 5. Usar colores del tema
+            />
             <AppText style={styles.emptyTitle}>No hay usuarios</AppText>
             <AppText style={styles.emptySubtitle}>
               No se encontraron usuarios en el sistema
@@ -179,7 +199,7 @@ const UsersScreen = () => {
               <RefreshControl
                 refreshing={refreshing}
                 onRefresh={onRefresh}
-                tintColor={Colors.primary}
+                tintColor={colors.primary} // 5. Usar colores del tema
               />
             }
             contentContainerStyle={{ paddingBottom: 16 }}
@@ -192,114 +212,107 @@ const UsersScreen = () => {
 
 export default UsersScreen;
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 12,
-  },
-  center: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: Colors.background,
-  },
-  loadingText: {
-    marginTop: 8,
-    color: Colors.secondary,
-  },
-  addButton: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  userCard: {
-    flexDirection: 'row',
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    alignItems: 'center',
-  },
-  userInfo: {
-    flex: 1,
-  },
-  userHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 6,
-    gap: 8,
-  },
-  userName: {
-    fontSize: 16,
-    fontWeight: fontWeightSemiBold,
-    color: Colors.text,
-  },
-  roleBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
-  },
-  roleBadgeText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#fff',
-    textTransform: 'uppercase',
-  },
-  userEmail: {
-    fontSize: 13,
-    color: Colors.secondary,
-    marginBottom: 6,
-  },
-  userStatus: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  statusText: {
-    fontSize: 12,
-    color: Colors.secondary,
-    fontWeight: fontWeightMedium,
-  },
-  editButton: {
-    padding: 8,
-  },
-  emptyState: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 24,
-    gap: 8,
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: fontWeightSemiBold,
-    color: Colors.text,
-    textAlign: 'center',
-    marginTop: 8,
-  },
-  emptySubtitle: {
-    fontSize: 14,
-    color: Colors.secondary,
-    textAlign: 'center',
-    marginBottom: 12,
-  },
-  retryBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: Colors.primary,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 10,
-  },
-  retryText: {
-    color: '#fff',
-    fontWeight: fontWeightMedium,
-  },
-});
+// 6. Convertir el StyleSheet en una función
+const getStyles = (colors: ColorsType) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background, // Dinámico
+    },
+    content: {
+      flex: 1,
+      paddingHorizontal: 16,
+      paddingTop: 12,
+    },
+    addButton: {
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+    },
+    userCard: {
+      flexDirection: 'row',
+      backgroundColor: colors.cardBackground, // Dinámico
+      padding: 16,
+      borderRadius: 12,
+      marginBottom: 12,
+      borderWidth: 1,
+      borderColor: colors.gray, // Dinámico
+      alignItems: 'center',
+    },
+    userInfo: {
+      flex: 1,
+    },
+    userHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 6,
+      gap: 8,
+    },
+    userName: {
+      fontSize: 16,
+      fontWeight: fontWeightSemiBold,
+      color: colors.text, // Dinámico
+    },
+    roleBadge: {
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderRadius: 8,
+      // backgroundColor es dinámico
+    },
+    roleBadgeText: {
+      fontSize: 11,
+      fontWeight: '700',
+      color: colors.lightText, // Dinámico
+      textTransform: 'uppercase',
+    },
+    userEmail: {
+      fontSize: 13,
+      color: colors.secondary, // Dinámico
+      marginBottom: 6,
+    },
+    userStatus: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
+    statusText: {
+      fontSize: 12,
+      color: colors.darkGray, // Dinámico
+      fontWeight: fontWeightMedium,
+    },
+    editButton: {
+      padding: 8,
+    },
+    emptyState: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 24,
+      gap: 8,
+    },
+    emptyTitle: {
+      fontSize: 18,
+      fontWeight: fontWeightSemiBold,
+      color: colors.text, // Dinámico
+      textAlign: 'center',
+      marginTop: 8,
+    },
+    emptySubtitle: {
+      fontSize: 14,
+      color: colors.darkGray, // Dinámico
+      textAlign: 'center',
+      marginBottom: 12,
+    },
+    retryBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      backgroundColor: colors.primary, // Dinámico
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      borderRadius: 10,
+    },
+    retryText: {
+      color: colors.lightText, // Dinámico
+      fontWeight: fontWeightMedium,
+    },
+  });

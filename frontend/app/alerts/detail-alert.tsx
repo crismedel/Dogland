@@ -1,31 +1,50 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   StyleSheet,
-  ActivityIndicator,
-  TouchableOpacity,
-  ScrollView,
-  Image,
   Dimensions,
+  Image,
+  ScrollView,
+  Pressable, // Importar Pressable
+  ActivityIndicator,
+  Text, // Importar Text
+  TouchableOpacity,
+  Linking,
+  Platform, // Importar Platform
+  Animated, // Importar Animated
 } from 'react-native';
-import MapView, { Marker, Callout } from 'react-native-maps';
-import { useRouter, useLocalSearchParams } from 'expo-router';
-import { fetchAlertById } from '../../src/api/alerts';
-import { Alert as AlertType, riskStyles } from '../../src/types/alert';
-import { Colors } from '@/src/constants/colors';
-import CustomHeader from '@/src/components/UI/CustomHeader';
-import CustomButton from '@/src/components/UI/CustomButton';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import CustomButton from '../../src/components/UI/CustomButton';
+// 1. Quitar la importación estática
+// import { Colors } from '@/src/constants/colors';
+import { fetchAlertById } from '../../src/api/alerts';
+// 3. Importar la FUNCIÓN getRiskStyles y el TIPO Alert
+import {
+  Alert as AlertType,
+  getRiskStyles,
+} from '@/src/types/alert';
+import CustomHeader from '@/src/components/UI/CustomHeader';
 import {
   fontWeightBold,
   fontWeightSemiBold,
   fontWeightMedium,
   AppText,
 } from '@/src/components/AppText';
+import MapView, { Marker, Callout } from 'react-native-maps';
+import Spinner from '@/src/components/UI/Spinner';
+
+// 2. Importar el hook y los tipos de tema
+import { useTheme } from '@/src/contexts/ThemeContext';
+import { ColorsType } from '@/src/constants/colors';
 
 const { width } = Dimensions.get('window');
 
 const AlertDetailScreen = () => {
+  // 4. Llamar al hook y generar los estilos
+  const { colors, isDark } = useTheme();
+  const styles = getStyles(colors, isDark);
+
   // Hook para manejar la navegación
   const router = useRouter();
   // Obtener el parámetro 'id' de la URL o ruta local
@@ -37,6 +56,9 @@ const AlertDetailScreen = () => {
   const [loading, setLoading] = useState(true);
   // Estado para manejar errores
   const [error, setError] = useState<string | null>(null);
+
+  // 4. Generar los estilos de riesgo dinámicamente
+  const riskStyles = getRiskStyles(colors);
 
   // useEffect para cargar la alerta cuando cambia el 'id'
   useEffect(() => {
@@ -69,27 +91,9 @@ const AlertDetailScreen = () => {
       ? { latitude: alert.latitude, longitude: alert.longitude }
       : null;
 
-  // Mostrar indicador de carga mientras se obtienen los datos
+  // 7. Usar el componente Spinner para la carga
   if (loading) {
-    return (
-      <View style={styles.container}>
-        <CustomHeader
-          title="Detalle de Alerta"
-          leftComponent={
-            <TouchableOpacity onPress={() => router.back()}>
-              <Image
-                source={require('../../assets/images/volver.png')}
-                style={{ width: 24, height: 24, tintColor: '#fff' }}
-              />
-            </TouchableOpacity>
-          }
-        />
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color={Colors.secondary} />
-          <AppText style={styles.loadingText}>Cargando alerta...</AppText>
-        </View>
-      </View>
-    );
+    return <Spinner />;
   }
 
   // Mostrar mensaje de error si ocurrió un problema o no se encontró la alerta
@@ -102,7 +106,12 @@ const AlertDetailScreen = () => {
             <TouchableOpacity onPress={() => router.back()}>
               <Image
                 source={require('../../assets/images/volver.png')}
-                style={{ width: 24, height: 24, tintColor: '#fff' }}
+                // 6. Usar colores del tema
+                style={{
+                  width: 24,
+                  height: 24,
+                  tintColor: isDark ? colors.lightText : colors.text,
+                }}
               />
             </TouchableOpacity>
           }
@@ -150,7 +159,12 @@ const AlertDetailScreen = () => {
           <TouchableOpacity onPress={() => router.back()}>
             <Image
               source={require('../../assets/images/volver.png')}
-              style={{ width: 24, height: 24, tintColor: '#fff' }}
+              // 6. Usar colores del tema
+              style={{
+                width: 24,
+                height: 24,
+                tintColor: isDark ? colors.lightText : colors.text,
+              }}
             />
           </TouchableOpacity>
         }
@@ -160,7 +174,12 @@ const AlertDetailScreen = () => {
               /* acción opcional: compartir, editar, etc. */
             }}
           >
-            <Ionicons name="share-outline" size={22} color="#fff" />
+            {/* 6. Usar colores del tema */}
+            <Ionicons
+              name="share-outline"
+              size={22}
+              color={isDark ? colors.lightText : colors.text}
+            />
           </TouchableOpacity>
         }
       />
@@ -172,7 +191,7 @@ const AlertDetailScreen = () => {
             <Ionicons
               name="megaphone-outline"
               size={16}
-              color={Colors.secondary}
+              color={colors.secondary} // 6. Usar colores del tema
             />
             <AppText style={styles.subtitle}>{alert.tipo}</AppText>
           </View>
@@ -197,7 +216,7 @@ const AlertDetailScreen = () => {
               <Ionicons
                 name="person-outline"
                 size={18}
-                color={Colors.secondary}
+                color={colors.secondary} // 6. Usar colores del tema
               />
               <AppText style={styles.infoLabel}>Creado por</AppText>
               <AppText style={styles.infoValue}>{alert.creado_por}</AppText>
@@ -206,7 +225,7 @@ const AlertDetailScreen = () => {
               <Ionicons
                 name="calendar-outline"
                 size={18}
-                color={Colors.secondary}
+                color={colors.secondary} // 6. Usar colores del tema
               />
               <AppText style={styles.infoLabel}>Fecha</AppText>
               <AppText style={styles.infoValue}>
@@ -240,7 +259,7 @@ const AlertDetailScreen = () => {
                       <Ionicons
                         name={getMarkerIcon(alert.nivel_riesgo)}
                         size={20}
-                        color="#fff"
+                        color={colors.lightText} // 6. Usar colores del tema
                       />
                     </View>
                     <View
@@ -294,164 +313,167 @@ const AlertDetailScreen = () => {
 
 export default AlertDetailScreen;
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  scrollContent: {
-    padding: 20,
-    paddingBottom: 50,
-  },
-  headerDetail: {
-    marginTop: 20,
-    marginBottom: 24,
-  },
-  title: {
-    fontSize: 26,
-    fontWeight: fontWeightBold,
-    color: '#1A1A1A',
-    letterSpacing: 0.3,
-    marginBottom: 8,
-  },
-  typeBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#E3F2FD',
-    borderRadius: 20,
-    alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderWidth: 1,
-    borderColor: '#BBDEFB',
-    gap: 6,
-  },
-  subtitle: {
-    fontSize: 14,
-    fontWeight: fontWeightSemiBold,
-    color: Colors.secondary,
-  },
-  card: {
-    backgroundColor: Colors.cardBackground,
-    borderRadius: 20,
-    padding: 18,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  sectionTitle: {
-    fontWeight: fontWeightBold,
-    marginBottom: 12,
-    fontSize: 17,
-    color: '#1A1A1A',
-  },
-  description: {
-    fontSize: 15,
-    color: '#444',
-    lineHeight: 22,
-  },
-  infoContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  infoItem: {
-    flex: 1,
-    alignItems: 'center',
-    gap: 4,
-  },
-  infoLabel: {
-    fontSize: 11,
-    color: '#888',
-    textTransform: 'uppercase',
-  },
-  infoValue: {
-    fontSize: 14,
-    fontWeight: fontWeightSemiBold,
-    textAlign: 'center',
-  },
-  mapCard: {
-    borderRadius: 16,
-    overflow: 'hidden',
-    elevation: 4,
-  },
-  map: {
-    height: width * 0.65,
-    width: '100%',
-  },
-  customMarker: { alignItems: 'center' },
-  pinContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 3,
-    borderColor: 'white',
-    elevation: 6,
-  },
-  pinPoint: {
-    width: 0,
-    height: 0,
-    borderLeftWidth: 6,
-    borderRightWidth: 6,
-    borderTopWidth: 8,
-    borderLeftColor: 'transparent',
-    borderRightColor: 'transparent',
-    marginTop: -1,
-  },
-  calloutContainer: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 14,
-    minWidth: 180,
-    maxWidth: 220,
-    shadowColor: '#000',
-    shadowOpacity: 0.25,
-    shadowOffset: { width: 0, height: 3 },
-    shadowRadius: 6,
-    elevation: 5,
-  },
-  calloutTitle: {
-    fontWeight: fontWeightBold,
-    fontSize: 15,
-    marginBottom: 8,
-    color: '#1A1A1A',
-  },
-  calloutDivider: {
-    height: 1,
-    backgroundColor: Colors.cardBackground,
-    marginBottom: 8,
-  },
-  calloutText: {
-    fontSize: 13,
-    marginBottom: 4,
-    color: '#444',
-  },
-  calloutDate: {
-    fontSize: 12,
-    color: '#888',
-    marginTop: 6,
-  },
-  noLocation: {
-    textAlign: 'center',
-    padding: 20,
-    color: '#666',
-    fontSize: 14,
-  },
-  center: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 10,
-    color: Colors.secondary,
-    fontSize: 15,
-  },
-  errorText: {
-    color: '#E53935',
-    fontSize: 16,
-    textAlign: 'center',
-    fontWeight: fontWeightMedium,
-  },
-});
+// 7. Convertir el StyleSheet en una función
+const getStyles = (colors: ColorsType, isDark: boolean) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background }, // Dinámico
+    scrollContent: {
+      padding: 20,
+      paddingBottom: 50,
+    },
+    headerDetail: {
+      marginTop: 20,
+      marginBottom: 24,
+    },
+    title: {
+      fontSize: 26,
+      fontWeight: fontWeightBold,
+      color: colors.text, // Dinámico
+      letterSpacing: 0.3,
+      marginBottom: 8,
+    },
+    typeBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: `${colors.info}20`, // Dinámico
+      borderRadius: 20,
+      alignSelf: 'flex-start',
+      paddingHorizontal: 12,
+      paddingVertical: 5,
+      borderWidth: 1,
+      borderColor: `${colors.info}40`, // Dinámico
+      gap: 6,
+    },
+    subtitle: {
+      fontSize: 14,
+      fontWeight: fontWeightSemiBold,
+      color: colors.secondary, // Dinámico
+    },
+    card: {
+      backgroundColor: colors.cardBackground, // Dinámico
+      borderRadius: 20,
+      padding: 18,
+      marginBottom: 20,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: isDark ? 0.1 : 0.08, // Dinámico
+      shadowRadius: 6,
+      elevation: 3,
+    },
+    sectionTitle: {
+      fontWeight: fontWeightBold,
+      marginBottom: 12,
+      fontSize: 17,
+      color: colors.text, // Dinámico
+    },
+    description: {
+      fontSize: 15,
+      color: colors.darkGray, // Dinámico
+      lineHeight: 22,
+    },
+    infoContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+    },
+    infoItem: {
+      flex: 1,
+      alignItems: 'center',
+      gap: 4,
+    },
+    infoLabel: {
+      fontSize: 11,
+      color: colors.darkGray, // Dinámico
+      textTransform: 'uppercase',
+    },
+    infoValue: {
+      fontSize: 14,
+      fontWeight: fontWeightSemiBold,
+      textAlign: 'center',
+      color: colors.text, // Dinámico
+    },
+    mapCard: {
+      borderRadius: 16,
+      overflow: 'hidden',
+      elevation: 4,
+    },
+    map: {
+      height: width * 0.65,
+      width: '100%',
+    },
+    customMarker: { alignItems: 'center' },
+    pinContainer: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderWidth: 3,
+      borderColor: colors.cardBackground, // Dinámico
+      elevation: 6,
+    },
+    pinPoint: {
+      width: 0,
+      height: 0,
+      borderLeftWidth: 6,
+      borderRightWidth: 6,
+      borderTopWidth: 8,
+      borderLeftColor: 'transparent',
+      borderRightColor: 'transparent',
+      marginTop: -1,
+    },
+    calloutContainer: {
+      backgroundColor: colors.cardBackground, // Dinámico
+      borderRadius: 12,
+      padding: 14,
+      minWidth: 180,
+      maxWidth: 220,
+      shadowColor: '#000',
+      shadowOpacity: 0.25,
+      shadowOffset: { width: 0, height: 3 },
+      shadowRadius: 6,
+      elevation: 5,
+    },
+    calloutTitle: {
+      fontWeight: fontWeightBold,
+      fontSize: 15,
+      marginBottom: 8,
+      color: colors.text, // Dinámico
+    },
+    calloutDivider: {
+      height: 1,
+      backgroundColor: colors.backgroundSecon, // Dinámico
+      marginBottom: 8,
+    },
+    calloutText: {
+      fontSize: 13,
+      marginBottom: 4,
+      color: colors.darkGray, // Dinámico
+    },
+    calloutDate: {
+      fontSize: 12,
+      color: colors.darkGray, // Dinámico
+      marginTop: 6,
+    },
+    noLocation: {
+      textAlign: 'center',
+      padding: 20,
+      color: colors.darkGray, // Dinámico
+      fontSize: 14,
+    },
+    center: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    loadingText: {
+      marginTop: 10,
+      color: colors.secondary, // Dinámico
+      fontSize: 15,
+    },
+    errorText: {
+      color: colors.danger, // Dinámico
+      fontSize: 16,
+      textAlign: 'center',
+      fontWeight: fontWeightMedium,
+    },
+  });

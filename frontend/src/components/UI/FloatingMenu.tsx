@@ -7,13 +7,18 @@ import {
   Easing,
   Platform,
 } from 'react-native';
-import { Colors } from '@/src/constants/colors';
+// 1. Quitar la importación estática
+// import { Colors } from '@/src/constants/colors';
 import {
   fontWeightBold,
   fontWeightSemiBold,
   fontWeightMedium,
   AppText,
 } from '@/src/components/AppText';
+
+// 2. Importar el hook y los tipos de tema
+import { useTheme } from '@/src/contexts/ThemeContext';
+import { ColorsType } from '@/src/constants/colors';
 
 type FloatingAction = {
   key: string;
@@ -45,6 +50,10 @@ const FloatingSpeedDial: React.FC<FloatingSpeedDialProps> = ({
   persistentTooltips = true,
   labelMaxWidth = 220,
 }) => {
+  // 3. Llamar al hook y generar los estilos
+  const { colors, isDark } = useTheme();
+  const styles = getStyles(colors, isDark);
+
   // Animaciones del contenedor
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.96)).current;
@@ -243,79 +252,79 @@ const FloatingSpeedDial: React.FC<FloatingSpeedDialProps> = ({
 
 export default FloatingSpeedDial;
 
-const styles = StyleSheet.create({
-  fab: {
-    position: 'absolute',
-    bottom: 24,
-    right: 24,
-    backgroundColor: Colors.primary,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: Colors.accent,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-    elevation: 6,
-    zIndex: 1000,
-  },
-  fabText: {
-    color: Colors.lightText,
-    fontSize: 26,
-    fontWeight: fontWeightSemiBold,
-    marginTop: Platform.OS === 'ios' ? -2 : 0,
-  },
+// 4. Convertir el StyleSheet en una función
+const getStyles = (colors: ColorsType, isDark: boolean) =>
+  StyleSheet.create({
+    fab: {
+      position: 'absolute',
+      bottom: 24,
+      right: 24,
+      backgroundColor: colors.primary, // Dinámico
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      justifyContent: 'center',
+      alignItems: 'center',
+      shadowColor: colors.accent, // Dinámico
+      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: 0.3,
+      shadowRadius: 5,
+      elevation: 6,
+      zIndex: 1000,
+    },
+    fabText: {
+      color: colors.text, // Dinámico (Texto oscuro sobre fondo amarillo)
+      fontSize: 26,
+      fontWeight: fontWeightSemiBold,
+      marginTop: Platform.OS === 'ios' ? -2 : 0,
+    },
 
-  menuContainer: {
-    position: 'absolute',
-    // El contenedor ya no es una “card”; las acciones se apilan como en SpeedDial
-    zIndex: 999,
-  },
-  stack: {
-    alignItems: 'flex-end', // alinea acciones a la derecha para que el tooltip quede a la izquierda
-  },
+    menuContainer: {
+      position: 'absolute',
+      zIndex: 999,
+    },
+    stack: {
+      alignItems: 'flex-end',
+    },
 
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
 
-  actionFab: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: Colors.lightText,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    elevation: 4,
-  },
-  actionIcon: {
-    color: Colors.secondary,
-    fontSize: 20,
-    fontWeight: fontWeightSemiBold,
-  },
+    actionFab: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      backgroundColor: colors.cardBackground, // Dinámico
+      justifyContent: 'center',
+      alignItems: 'center',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: isDark ? 0.4 : 0.2, // Dinámico
+      shadowRadius: 3,
+      elevation: 4,
+    },
+    actionIcon: {
+      color: colors.secondary, // Dinámico
+      fontSize: 20,
+      fontWeight: fontWeightSemiBold,
+    },
 
-  tooltip: {
-    backgroundColor: '#222',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-    // sutil sombra
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3,
-    elevation: 3,
-  },
-  tooltipText: {
-    color: '#fff',
-    fontSize: 13,
-    fontWeight: fontWeightMedium,
-  },
-});
+    tooltip: {
+      backgroundColor: isDark ? colors.gray : colors.text, // Dinámico
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      borderRadius: 8,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: isDark ? 0.4 : 0.25, // Dinámico
+      shadowRadius: 3,
+      elevation: 3,
+    },
+    tooltipText: {
+      color: isDark ? colors.text : colors.lightText, // Dinámico
+      fontSize: 13,
+      fontWeight: fontWeightMedium,
+    },
+  });

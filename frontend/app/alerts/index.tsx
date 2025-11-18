@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   FlatList,
@@ -9,6 +9,8 @@ import {
   Platform,
   Image,
   RefreshControl,
+  Text, // Asegúrate de que Text esté importado
+  Pressable, // Asegúrate de que Pressable esté importado
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Alert, FilterOptions } from '../../src/types/alert';
@@ -21,7 +23,8 @@ import { REFRESH_KEYS } from '@/src/constants/refreshKeys';
 import { Ionicons } from '@expo/vector-icons';
 import FloatingSpeedDial from '../../src/components/UI/FloatingMenu';
 import CustomHeader from '@/src/components/UI/CustomHeader';
-import { Colors } from '@/src/constants/colors';
+// 1. Quitar la importación estática
+// import { Colors } from '@/src/constants/colors';
 import {
   fontWeightBold,
   fontWeightSemiBold,
@@ -30,7 +33,15 @@ import {
 } from '@/src/components/AppText';
 import Spinner from '@/src/components/UI/Spinner';
 
+// 2. Importar el hook y los tipos de tema
+import { useTheme } from '@/src/contexts/ThemeContext';
+import { ColorsType } from '@/src/constants/colors';
+
 const CommunityAlertsScreen = () => {
+  // 3. Llamar al hook y generar los estilos
+  const { colors, isDark } = useTheme();
+  const styles = getStyles(colors, isDark);
+
   const router = useRouter();
   const [allAlerts, setAllAlerts] = useState<Alert[]>([]);
   const [filteredAlerts, setFilteredAlerts] = useState<Alert[]>([]);
@@ -156,7 +167,7 @@ const CommunityAlertsScreen = () => {
   // UI
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: Colors.background }}
+      style={styles.container} // 4. Usar estilos dinámicos
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <CustomHeader
@@ -165,7 +176,12 @@ const CommunityAlertsScreen = () => {
           <TouchableOpacity onPress={() => router.back()}>
             <Image
               source={require('../../assets/images/volver.png')}
-              style={{ width: 24, height: 24, tintColor: '#fff' }}
+              // 4. Usar colores del tema (texto oscuro sobre fondo amarillo)
+              style={{
+                width: 24,
+                height: 24,
+                tintColor: isDark ? colors.lightText : colors.text,
+              }}
             />
           </TouchableOpacity>
         }
@@ -174,7 +190,12 @@ const CommunityAlertsScreen = () => {
             style={styles.filterButton}
             onPress={() => setShowFilters(true)}
           >
-            <Ionicons name="options-outline" size={22} color="#fff" />
+            {/* 4. Usar colores del tema (texto oscuro sobre fondo amarillo) */}
+            <Ionicons
+              name="options-outline"
+              size={22}
+              color={isDark ? colors.lightText : colors.text}
+            />
           </TouchableOpacity>
         }
       />
@@ -186,7 +207,7 @@ const CommunityAlertsScreen = () => {
           filters.status !== 'activas' ||
           filters.timeRange !== 'todas') && (
           <View style={styles.filtersBar}>
-            <Ionicons name="options-outline" size={16} color="#374151" />
+            <Ionicons name="options-outline" size={16} color={colors.text} />
             <AppText style={styles.filtersBarLabel}>Filtros:</AppText>
 
             {/* Chip combinado (texto resumido) */}
@@ -208,7 +229,7 @@ const CommunityAlertsScreen = () => {
                 onPress={clearAllFilters}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
-                <Ionicons name="close" size={14} color="#6B7280" />
+                <Ionicons name="close" size={14} color={colors.darkGray} />
               </TouchableOpacity>
             </View>
           </View>
@@ -220,14 +241,18 @@ const CommunityAlertsScreen = () => {
             <Ionicons
               name="cloud-offline-outline"
               size={56}
-              color={Colors.primary}
+              color={colors.primary} // 4. Usar colores del tema
             />
             <AppText style={styles.emptyTitle}>
               No se pudo cargar la información
             </AppText>
             <AppText style={styles.emptySubtitle}>{error}</AppText>
             <TouchableOpacity style={styles.retryBtn} onPress={onRefresh}>
-              <Ionicons name="refresh" size={18} color="#fff" />
+              <Ionicons
+                name="refresh"
+                size={18}
+                color={isDark ? colors.lightText : colors.text} // 4. Usar colores del tema
+              />
               <AppText style={styles.retryText}>Reintentar</AppText>
             </TouchableOpacity>
           </View>
@@ -236,7 +261,7 @@ const CommunityAlertsScreen = () => {
             <Ionicons
               name="notifications-off-outline"
               size={56}
-              color={Colors.primary}
+              color={colors.primary} // 4. Usar colores del tema
             />
             <AppText style={styles.emptyTitle}>
               No hay alertas para mostrar
@@ -250,7 +275,11 @@ const CommunityAlertsScreen = () => {
               style={styles.primaryBtn}
               onPress={() => router.push('/alerts/create-alert')}
             >
-              <Ionicons name="add" size={18} color="#fff" />
+              <Ionicons
+                name="add"
+                size={18}
+                color={isDark ? colors.lightText : colors.text} // 4. Usar colores del tema
+              />
               <AppText style={styles.primaryBtnText}>Crear alerta</AppText>
             </TouchableOpacity>
           </View>
@@ -264,7 +293,7 @@ const CommunityAlertsScreen = () => {
               <RefreshControl
                 refreshing={refreshing}
                 onRefresh={onRefresh}
-                tintColor={Colors.primary}
+                tintColor={colors.primary} // 4. Usar colores del tema
               />
             }
             contentContainerStyle={{ paddingBottom: 16 }}
@@ -294,7 +323,7 @@ const CommunityAlertsScreen = () => {
                 <Ionicons
                   name="document-text-outline"
                   size={22}
-                  color={Colors.secondary}
+                  color={colors.secondary} // 4. Usar colores del tema
                 />
               ),
             },
@@ -309,7 +338,7 @@ const CommunityAlertsScreen = () => {
                 <Ionicons
                   name="alert-circle-outline"
                   size={22}
-                  color={Colors.secondary}
+                  color={colors.secondary} // 4. Usar colores del tema
                 />
               ),
             },
@@ -326,130 +355,132 @@ const CommunityAlertsScreen = () => {
 
 export default CommunityAlertsScreen;
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    backgroundColor: Colors.background,
-  },
+// 5. Convertir el StyleSheet en una función
+const getStyles = (colors: ColorsType, isDark: boolean) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      paddingHorizontal: 16,
+      paddingTop: 8,
+      backgroundColor: colors.background, // Dinámico
+    },
 
-  filterButton: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 16,
-    borderWidth: 0,
-    backgroundColor: 'transparent',
-  },
+    filterButton: {
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 16,
+      borderWidth: 0,
+      backgroundColor: 'transparent',
+    },
 
-  // Nueva barra de filtros con chips
-  filtersBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    backgroundColor: '#FFF',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    marginHorizontal: 0,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 1,
-  },
-  filtersBarLabel: {
-    fontSize: 13,
-    color: '#374151',
-    fontWeight: fontWeightSemiBold,
-    marginRight: 4,
-  },
-  filterChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F3F4F6',
-    borderColor: '#E5E7EB',
-    borderWidth: 1,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
-    maxWidth: '86%',
-  },
-  filterChipText: {
-    color: '#374151',
-    fontSize: 12,
-    fontWeight: fontWeightMedium,
-    maxWidth: '90%',
-  },
-  chipClose: {
-    marginLeft: 8,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+    // Nueva barra de filtros con chips
+    filtersBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      flexWrap: 'wrap',
+      gap: 8,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      backgroundColor: colors.cardBackground, // Dinámico
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.gray, // Dinámico
+      marginHorizontal: 0,
+      marginBottom: 12,
+      shadowColor: '#000',
+      shadowOpacity: 0.06,
+      shadowRadius: 6,
+      shadowOffset: { width: 0, height: 3 },
+      elevation: 1,
+    },
+    filtersBarLabel: {
+      fontSize: 13,
+      color: colors.text, // Dinámico
+      fontWeight: fontWeightSemiBold,
+      marginRight: 4,
+    },
+    filterChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.backgroundSecon, // Dinámico
+      borderColor: colors.gray, // Dinámico
+      borderWidth: 1,
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      borderRadius: 999,
+      maxWidth: '86%',
+    },
+    filterChipText: {
+      color: colors.text, // Dinámico
+      fontSize: 12,
+      fontWeight: fontWeightMedium,
+      maxWidth: '90%',
+    },
+    chipClose: {
+      marginLeft: 8,
+      backgroundColor: colors.cardBackground, // Dinámico
+      borderWidth: 1,
+      borderColor: colors.gray, // Dinámico
+      width: 20,
+      height: 20,
+      borderRadius: 10,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
 
-  center: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: Colors.background,
-  },
-  loadingText: { marginTop: 8, color: Colors.secondary },
+    center: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: colors.background, // Dinámico
+    },
+    loadingText: { marginTop: 8, color: colors.secondary }, // Dinámico
 
-  emptyState: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 24,
-    gap: 8,
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: fontWeightSemiBold,
-    color: Colors.lightText,
-    textAlign: 'center',
-    marginTop: 8,
-  },
-  emptySubtitle: {
-    fontSize: 14,
-    color: Colors.secondary,
-    textAlign: 'center',
-    marginBottom: 12,
-  },
-  retryBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: Colors.primary,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 10,
-  },
-  retryText: {
-    color: '#fff',
-    fontWeight: fontWeightMedium,
-  },
+    emptyState: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 24,
+      gap: 8,
+    },
+    emptyTitle: {
+      fontSize: 18,
+      fontWeight: fontWeightSemiBold,
+      color: colors.text, // Dinámico
+      textAlign: 'center',
+      marginTop: 8,
+    },
+    emptySubtitle: {
+      fontSize: 14,
+      color: colors.darkGray, // Dinámico
+      textAlign: 'center',
+      marginBottom: 12,
+    },
+    retryBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      backgroundColor: colors.primary, // Dinámico
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      borderRadius: 10,
+    },
+    retryText: {
+      color: isDark ? colors.lightText : colors.text, // Dinámico
+      fontWeight: fontWeightMedium,
+    },
 
-  primaryBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: Colors.primary,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 10,
-  },
-  primaryBtnText: {
-    color: '#fff',
-    fontWeight: fontWeightSemiBold,
-  },
-});
+    primaryBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      backgroundColor: colors.primary, // Dinámico
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      borderRadius: 10,
+    },
+    primaryBtnText: {
+      color: isDark ? colors.lightText : colors.text, // Dinámico
+      fontWeight: fontWeightSemiBold,
+    },
+  });

@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   StyleSheet,
-  Switch,
   TouchableOpacity,
+  Switch,
   Platform,
+  Image, // Importar Image
 } from 'react-native';
 import CustomHeader from '@/src/components/UI/CustomHeader';
 import { AppText } from '@/src/components/AppText';
@@ -21,6 +22,13 @@ import {
   deletePushToken,
 } from '@/src/api/notifications';
 
+// 1. Quitar la importación estática
+// import { Colors } from '@/src/constants/colors';
+
+// 2. Importar el hook y los tipos de tema
+import { useTheme } from '@/src/contexts/ThemeContext';
+import { ColorsType } from '@/src/constants/colors';
+
 async function getExpoTokenString() {
   try {
     const tokenResult = await Notifications.getExpoPushTokenAsync();
@@ -32,6 +40,10 @@ async function getExpoTokenString() {
 }
 
 export default function NotificationsScreen() {
+  // 3. Llamar al hook y generar los estilos
+  const { colors, isDark } = useTheme();
+  const styles = getStyles(colors, isDark);
+
   const [enabled, setEnabled] = useState(false);
   const [marketing, setMarketing] = useState(false);
   const [system, setSystem] = useState(true);
@@ -152,34 +164,45 @@ export default function NotificationsScreen() {
             onPress={() => router.back()}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            <Ionicons name="chevron-back" size={24} color="#fff" />
+            {/* 4. Usar colores del tema (texto oscuro sobre fondo amarillo) */}
+            <Ionicons
+              name="chevron-back"
+              size={24}
+              color={isDark ? colors.lightText : colors.text}
+            />
           </TouchableOpacity>
         }
       />
       <View style={styles.card}>
         <View style={styles.row}>
-          <AppText>Habilitar notificaciones</AppText>
+          <AppText style={styles.text}>Habilitar notificaciones</AppText>
           <Switch
             value={enabled}
             onValueChange={(v) =>
               v ? requestPerms() : toggle(setEnabled, 'notif_enabled', v)
             }
+            trackColor={{ false: colors.gray, true: colors.primary }}
+            thumbColor={enabled ? colors.secondary : colors.cardBackground}
           />
         </View>
         <View style={styles.row}>
-          <AppText>Sistema</AppText>
+          <AppText style={styles.text}>Sistema</AppText>
           <Switch
             value={system}
             onValueChange={(v) => toggle(setSystem, 'notif_system', v)}
             disabled={!enabled}
+            trackColor={{ false: colors.gray, true: colors.primary }}
+            thumbColor={system ? colors.secondary : colors.cardBackground}
           />
         </View>
         <View style={styles.row}>
-          <AppText>Marketing</AppText>
+          <AppText style={styles.text}>Marketing</AppText>
           <Switch
             value={marketing}
             onValueChange={(v) => toggle(setMarketing, 'notif_marketing', v)}
             disabled={!enabled}
+            trackColor={{ false: colors.gray, true: colors.primary }}
+            thumbColor={marketing ? colors.secondary : colors.cardBackground}
           />
         </View>
         <CustomButton
@@ -193,25 +216,33 @@ export default function NotificationsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FAF7EF',
-    paddingHorizontal: 16,
-    paddingBottom: 32,
-  },
-  card: {
-    backgroundColor: '#FFFDF4',
-    borderRadius: 12,
-    padding: 16,
-    marginTop: 16,
-    borderWidth: 1,
-    borderColor: '#F2D8A7',
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-  },
-});
+// 5. Convertir el StyleSheet en una función
+const getStyles = (colors: ColorsType, isDark: boolean) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background, // Dinámico
+      paddingHorizontal: 16,
+      paddingBottom: 32,
+    },
+    card: {
+      backgroundColor: colors.cardBackground, // Dinámico
+      borderRadius: 12,
+      padding: 16,
+      marginTop: 16,
+      borderWidth: 1,
+      borderColor: colors.secondary, // Dinámico
+    },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingVertical: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.gray, // Dinámico
+    },
+    text: {
+      color: colors.text, // Dinámico
+      fontSize: 16,
+    },
+  });

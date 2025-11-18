@@ -1,28 +1,38 @@
+import React, { useState } from 'react';
+import {
+  View,
+  TouchableOpacity,
+  StyleSheet,
+  Dimensions,
+  KeyboardAvoidingView,
+  Platform,
+  Image,
+} from 'react-native';
 import apiClient from '@/src/api/client';
 import {
   AppText,
   fontWeightMedium,
   fontWeightSemiBold,
+  fontWeightBold, // Importar fontWeightBold
 } from '@/src/components/AppText';
 import { useNotification } from '@/src/components/notifications';
 import DynamicForm, { FormField } from '@/src/components/UI/DynamicForm';
-import { Colors } from '@/src/constants/colors';
+// 1. Quitar la importación estática
+// import { Colors } from '@/src/constants/colors';
 import { isAxiosError } from 'axios';
 import { router } from 'expo-router';
-import React, { useState } from 'react';
-import {
-  Dimensions,
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  StyleSheet,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+
+// 2. Importar el hook y los tipos de tema
+import { useTheme } from '@/src/contexts/ThemeContext';
+import { ColorsType } from '@/src/constants/colors';
 
 const { width } = Dimensions.get('window');
 
 export default function Index() {
+  // 3. Llamar al hook y generar los estilos
+  const { colors, isDark } = useTheme();
+  const styles = getStyles(colors, isDark);
+
   const [loading, setLoading] = useState(false);
   const { showError, showSuccess, showWarning } = useNotification();
 
@@ -105,14 +115,17 @@ export default function Index() {
     >
       {/* Botón volver */}
       <TouchableOpacity
-        style={{ position: 'absolute', top: 50, left: 20, zIndex: 1 }}
+        style={styles.backButton}
         activeOpacity={0.8}
         onPress={() => router.push('/auth')}
       >
-        <Image
-          source={require('../../assets/images/volver.png')}
-          style={{ width: 24, height: 24 }}
-        />
+        {/* 4. Usar estilos dinámicos */}
+        <View style={styles.backButtonInner}>
+          <Image
+            source={require('../../assets/images/volver.png')}
+            style={styles.backIcon}
+          />
+        </View>
       </TouchableOpacity>
 
       <View style={styles.container}>
@@ -146,34 +159,70 @@ export default function Index() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.lightText,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  formContainer: {
-    width: width * 0.85,
-    maxWidth: 400,
-    paddingHorizontal: 20,
-  },
-  welcomeTitle: {
-    fontSize: 28,
-    fontWeight: fontWeightSemiBold,
-    color: '#1F2937',
-    textAlign: 'center',
-    marginBottom: 40,
-    letterSpacing: 0.5,
-  },
-  registerContainer: {
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  registerText: {
-    color: Colors.primary,
-    fontSize: 16,
-    fontWeight: fontWeightMedium,
-    textDecorationLine: 'underline',
-  },
-});
+// 5. Convertir el StyleSheet en una función
+const getStyles = (colors: ColorsType, isDark: boolean) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background, // Dinámico
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    formContainer: {
+      width: width * 0.85,
+      maxWidth: 400,
+      paddingHorizontal: 20,
+      backgroundColor: colors.cardBackground, // Dinámico
+      borderRadius: 16,
+      paddingVertical: 30,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: isDark ? 0.2 : 0.1, // Dinámico
+      shadowRadius: 3.84,
+      elevation: 5,
+    },
+    welcomeTitle: {
+      fontSize: 28,
+      fontWeight: fontWeightSemiBold,
+      color: colors.text, // Dinámico
+      textAlign: 'center',
+      marginBottom: 40,
+      letterSpacing: 0.5,
+    },
+    registerContainer: {
+      alignItems: 'center',
+      marginTop: 20,
+    },
+    registerText: {
+      color: colors.primary, // Dinámico
+      fontSize: 16,
+      fontWeight: fontWeightMedium,
+      textDecorationLine: 'underline',
+    },
+    backButton: {
+      position: 'absolute',
+      top: 50,
+      left: 20,
+      zIndex: 1,
+    },
+    backButtonInner: {
+      backgroundColor: colors.cardBackground, // Dinámico
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      justifyContent: 'center',
+      alignItems: 'center',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 3,
+      borderWidth: 1,
+      borderColor: colors.gray, // Dinámico
+    },
+    backIcon: {
+      width: 24,
+      height: 24,
+      tintColor: colors.text, // Dinámico
+    },
+  });

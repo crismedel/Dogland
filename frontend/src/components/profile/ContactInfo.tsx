@@ -1,9 +1,13 @@
-// ContactInfo.tsx
 import React from 'react';
 import { View, StyleSheet, Pressable } from 'react-native';
-import { Colors } from '@/src/constants/colors';
+// 1. Quitar la importación estática
+// import { Colors } from '@/src/constants/colors';
 import { fontWeightMedium, AppText } from '@/src/components/AppText';
 import { Ionicons } from '@expo/vector-icons';
+
+// 2. Importar el hook y los tipos de tema
+import { useTheme } from '@/src/contexts/ThemeContext';
+import { ColorsType } from '@/src/constants/colors';
 
 interface ContactInfoProps {
   user: any;
@@ -11,6 +15,10 @@ interface ContactInfoProps {
 }
 
 export default function ContactInfo({ user, showInfo }: ContactInfoProps) {
+  // 3. Llamar al hook y generar los estilos
+  const { colors, isDark } = useTheme();
+  const styles = getStyles(colors, isDark);
+
   const formatPhone = (value?: string | number) => {
     if (!value) return '-';
     const digits = String(value).replace(/\D/g, '');
@@ -33,7 +41,8 @@ export default function ContactInfo({ user, showInfo }: ContactInfoProps) {
 
         <View style={styles.row}>
           <View style={styles.chip}>
-            <Ionicons name="mail-outline" size={16} color={Colors.secondary} />
+            {/* 4. Usar colores del tema */}
+            <Ionicons name="mail-outline" size={16} color={colors.secondary} />
             <AppText numberOfLines={2} style={styles.chipText}>
               {user.email}
             </AppText>
@@ -46,7 +55,8 @@ export default function ContactInfo({ user, showInfo }: ContactInfoProps) {
               pressed && { transform: [{ scale: 0.95 }] },
             ]}
           >
-            <Ionicons name="copy-outline" size={14} color={Colors.secondary} />
+            {/* 4. Usar colores del tema */}
+            <Ionicons name="copy-outline" size={14} color={colors.secondary} />
             <AppText style={styles.copyPillText}>Copiar</AppText>
           </Pressable>
         </View>
@@ -60,7 +70,8 @@ export default function ContactInfo({ user, showInfo }: ContactInfoProps) {
 
         <View style={styles.row}>
           <View style={styles.chip}>
-            <Ionicons name="call-outline" size={16} color={Colors.secondary} />
+            {/* 4. Usar colores del tema */}
+            <Ionicons name="call-outline" size={16} color={colors.secondary} />
             <AppText numberOfLines={1} style={styles.chipText}>
               {formatPhone(user.telefono)}
             </AppText>
@@ -73,7 +84,8 @@ export default function ContactInfo({ user, showInfo }: ContactInfoProps) {
               pressed && { transform: [{ scale: 0.95 }] },
             ]}
           >
-            <Ionicons name="copy-outline" size={14} color={Colors.secondary} />
+            {/* 4. Usar colores del tema */}
+            <Ionicons name="copy-outline" size={14} color={colors.secondary} />
             <AppText style={styles.copyPillText}>Copiar</AppText>
           </Pressable>
         </View>
@@ -84,7 +96,12 @@ export default function ContactInfo({ user, showInfo }: ContactInfoProps) {
       {/* CIUDAD */}
       <AppText style={styles.infoLabel}>Ciudad</AppText>
       <View style={styles.chip}>
-        <Ionicons name="location-outline" size={16} color={Colors.secondary} />
+        {/* 4. Usar colores del tema */}
+        <Ionicons
+          name="location-outline"
+          size={16}
+          color={colors.secondary}
+        />
         <AppText numberOfLines={1} style={styles.chipText}>
           {user.nombre_ciudad}
         </AppText>
@@ -93,73 +110,82 @@ export default function ContactInfo({ user, showInfo }: ContactInfoProps) {
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: Colors.cardBackground,
-    borderRadius: 20,
-    paddingVertical: 16,
-    paddingHorizontal: 18,
-    marginTop: 20,
-    borderWidth: 1,
-    borderColor: Colors.secondary,
-    shadowColor: '#000',
-    shadowOpacity: 0.045,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 4,
-  },
+// 5. Convertir el StyleSheet en una función
+const getStyles = (colors: ColorsType, isDark: boolean) =>
+  StyleSheet.create({
+    card: {
+      backgroundColor: colors.cardBackground, // Dinámico
+      borderRadius: 20,
+      paddingVertical: 16,
+      paddingHorizontal: 18,
+      marginTop: 20,
+      borderWidth: 1,
+      borderColor: colors.secondary, // Dinámico
+      shadowColor: '#000',
+      shadowOpacity: isDark ? 0.1 : 0.045, // Dinámico
+      shadowRadius: 10,
+      shadowOffset: { width: 0, height: 6 },
+      elevation: 4,
+    },
 
-  sectionTitle: {
-    color: Colors.secondary,
-    fontSize: 16,
-    fontWeight: fontWeightMedium,
-    marginBottom: 12,
-  },
-  infoLabel: {
-    color: Colors.darkGray,
-    fontWeight: fontWeightMedium,
-    fontSize: 12,
-    marginBottom: 6,
-  },
+    sectionTitle: {
+      color: colors.secondary, // Dinámico
+      fontSize: 16,
+      fontWeight: fontWeightMedium,
+      marginBottom: 12,
+    },
+    infoLabel: {
+      color: colors.darkGray, // Dinámico
+      fontWeight: fontWeightMedium,
+      fontSize: 12,
+      marginBottom: 6,
+    },
 
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+    },
 
-  // CHIP NUEVO
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: Colors.background,
-    borderWidth: 1,
-    borderColor: Colors.backgroundSecon,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-    flexShrink: 1,
-  },
-  chipText: { color: Colors.text, fontSize: 14, flexShrink: 1 },
+    // CHIP NUEVO
+    chip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      backgroundColor: colors.background, // Dinámico
+      borderWidth: 1,
+      borderColor: colors.backgroundSecon, // Dinámico
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+      borderRadius: 12,
+      flexShrink: 1,
+    },
+    chipText: {
+      color: colors.text, // Dinámico
+      fontSize: 14,
+      flexShrink: 1,
+    },
 
-  // Pill copiar
-  copyPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: Colors.lightText,
-    borderWidth: 1,
-    borderColor: 'rgba(242,216,167,0.28)',
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 999,
-  },
-  copyPillText: { color: Colors.text, fontSize: 12 },
+    // Pill copiar
+    copyPill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      backgroundColor: colors.cardBackground, // Dinámico
+      borderWidth: 1,
+      borderColor: `${colors.secondary}47`, // Dinámico (secondary con 28% alpha)
+      paddingHorizontal: 12,
+      paddingVertical: 7,
+      borderRadius: 999,
+    },
+    copyPillText: {
+      color: colors.text, // Dinámico
+      fontSize: 12,
+    },
 
-  divider: {
-    height: 1,
-    backgroundColor: 'rgba(0,0,0,0.05)',
-    marginVertical: 12,
-  },
-});
+    divider: {
+      height: 1,
+      backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)', // Dinámico
+      marginVertical: 12,
+    },
+  });

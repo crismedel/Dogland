@@ -1,12 +1,29 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView, // Importar ScrollView (aunque no se usa, estaba en el original)
+  Image,
+} from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import TarjetaSoli from './component/tarjetaSoli';
 import CustomHeader from '@/src/components/UI/CustomHeader';
-import { Colors } from '@/src/constants/colors';
+// 1. Quitar la importación estática
+// import { Colors } from '@/src/constants/colors';
 import { useNotification } from '@/src/components/notifications';
+import { AppText } from '@/src/components/AppText'; // Importar AppText
+
+// 2. Importar el hook y los tipos de tema
+import { useTheme } from '@/src/contexts/ThemeContext';
+import { ColorsType } from '@/src/constants/colors';
+import { Ionicons } from '@expo/vector-icons'; // Importar Ionicons
 
 const SolicitudAdopcion = () => {
+  // 3. Llamar al hook y generar los estilos
+  const { colors, isDark } = useTheme();
+  const styles = getStyles(colors, isDark);
+
   const router = useRouter();
   const params = useLocalSearchParams();
 
@@ -100,13 +117,18 @@ const SolicitudAdopcion = () => {
           <TouchableOpacity onPress={() => router.back()}>
             <Image
               source={require('../../assets/images/volver.png')}
-              style={{ width: 24, height: 24, tintColor: '#fff' }}
+              // 4. Usar colores del tema (texto oscuro sobre fondo amarillo)
+              style={{
+                width: 24,
+                height: 24,
+                tintColor: isDark ? colors.lightText : colors.text,
+              }}
             />
           </TouchableOpacity>
         }
       />
 
-      {/* Tarjeta con formulario */}
+      {/* TarjetaSoli debe ser refactorizada internamente para usar useTheme */}
       <TarjetaSoli
         formData={formData}
         loading={loading}
@@ -118,11 +140,13 @@ const SolicitudAdopcion = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-});
+// 5. Convertir el StyleSheet en una función
+const getStyles = (colors: ColorsType, isDark: boolean) =>
+  StyleSheet.create({
+    screen: {
+      flex: 1,
+      backgroundColor: colors.background, // Dinámico
+    },
+  });
 
 export default SolicitudAdopcion;

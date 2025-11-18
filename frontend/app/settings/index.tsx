@@ -8,7 +8,8 @@ import {
 import { useNotification } from '@/src/components/notifications';
 import CustomButton from '@/src/components/UI/CustomButton';
 import CustomHeader from '@/src/components/UI/CustomHeader';
-import { Colors } from '@/src/constants/colors';
+import { ColorsType } from '@/src/constants/colors';
+import { useTheme } from '@/src/contexts/ThemeContext';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -25,6 +26,8 @@ import {
 export default function SettingsScreen() {
   const { confirm, showSuccess, showError } = useNotification();
   const { logout } = useAuth();
+  const { colors, isDark } = useTheme();
+  const styles = getStyles(colors);
   const [has2FA, setHas2FA] = useState(false);
   const [isLoading2FA, setIsLoading2FA] = useState(false);
   const [isFetchingProfile, setIsFetchingProfile] = useState(true);
@@ -103,7 +106,7 @@ export default function SettingsScreen() {
             onPress={() => router.back()}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            <Ionicons name="chevron-back" size={24} color="#fff" />
+            <Ionicons name="chevron-back" size={24} color={colors.lightText} />
           </TouchableOpacity>
         }
       />
@@ -125,15 +128,15 @@ export default function SettingsScreen() {
               </AppText>
             </View>
             {isFetchingProfile ? (
-              <ActivityIndicator size="small" color="#CC5803" />
+              <ActivityIndicator size="small" color={colors.secondary} />
             ) : (
               <Switch
                 value={has2FA}
                 onValueChange={handleToggle2FA}
                 disabled={isLoading2FA}
-                trackColor={{ false: '#D1D5DB', true: '#FBBF24' }}
-                thumbColor={has2FA ? '#CC5803' : '#F3F4F6'}
-                ios_backgroundColor="#D1D5DB"
+                trackColor={{ false: colors.gray, true: colors.primary }}
+                thumbColor={has2FA ? colors.secondary : colors.gray}
+                ios_backgroundColor={colors.gray}
               />
             )}
           </View>
@@ -226,54 +229,55 @@ export default function SettingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-    paddingHorizontal: 16,
-  },
-  scrollContent: {
-    paddingBottom: 32,
-  },
-  card: {
-    backgroundColor: '#FAF7EF',
-    borderRadius: 12,
-    padding: 16,
-    marginTop: 16,
-    borderWidth: 1,
-    borderColor: '#F2D8A7',
-  },
-  sectionTitle: {
-    color: '#CC5803',
-    fontSize: 18,
-    fontWeight: fontWeightSemiBold,
-    marginBottom: 16,
-  },
-  buttonGroup: {
-    gap: 12, // Espaciado consistente entre botones
-  },
-  button: {
-    width: '100%', // Todos los botones ocupan el 100% del ancho disponible
-  },
-  settingRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 8,
-  },
-  settingInfo: {
-    flex: 1,
-    marginRight: 16,
-  },
-  settingLabel: {
-    fontSize: 16,
-    fontWeight: fontWeightMedium,
-    color: '#1F2937',
-    marginBottom: 4,
-  },
-  settingDescription: {
-    fontSize: 14,
-    color: '#6B7280',
-    lineHeight: 18,
-  },
-});
+const getStyles = (colors: ColorsType) =>
+   StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+      paddingHorizontal: 16,
+    },
+    scrollContent: {
+      paddingBottom: 32,
+    },
+    card: {
+      backgroundColor: colors.cardBackground,
+      borderRadius: 12,
+      padding: 16,
+      marginTop: 16,
+      borderWidth: 1,
+      borderColor: colors.backgroundSecon,
+    },
+    sectionTitle: {
+      color: colors.secondary,
+      fontSize: 18,
+      fontWeight: fontWeightSemiBold,
+      marginBottom: 16,
+    },
+    buttonGroup: {
+      gap: 12, // Espaciado consistente entre botones
+    },
+    button: {
+      width: '100%', // Todos los botones ocupan el 100% del ancho disponible
+    },
+    settingRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingVertical: 8,
+    },
+    settingInfo: {
+      flex: 1,
+      marginRight: 16,
+    },
+    settingLabel: {
+      fontSize: 16,
+      fontWeight: fontWeightMedium,
+      color: colors.text,
+      marginBottom: 4,
+    },
+    settingDescription: {
+      fontSize: 14,
+      color: colors.darkGray,
+      lineHeight: 18,
+    },
+  });

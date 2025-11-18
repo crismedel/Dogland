@@ -7,6 +7,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Image,
+  Text, // Asegúrate de que Text esté importado
 } from 'react-native';
 import apiClient from '@/src/api/client';
 import { useAuth } from '@/src/contexts/AuthContext';
@@ -14,7 +15,8 @@ import { isAxiosError } from 'axios';
 import { router, useLocalSearchParams } from 'expo-router';
 import DynamicForm, { FormField } from '@/src/components/UI/DynamicForm';
 import { useNotification } from '@/src/components/notifications';
-import { Colors } from '@/src/constants/colors';
+// 1. Quitar la importación estática
+// import { Colors } from '@/src/constants/colors';
 import {
   fontWeightBold,
   fontWeightSemiBold,
@@ -24,6 +26,11 @@ import Constants from 'expo-constants';
 import { getExpoPushTokenAsync } from '@/src/utils/expoNotifications';
 import { registerPushToken } from '@/src/api/notifications';
 import * as SecureStore from 'expo-secure-store';
+
+// 2. Importar el hook y los tipos de tema
+import { useTheme } from '@/src/contexts/ThemeContext';
+import { ColorsType } from '@/src/constants/colors';
+import { Ionicons } from '@expo/vector-icons'; // Asegurarse que Ionicons esté importado
 
 const { width } = Dimensions.get('window');
 
@@ -40,6 +47,10 @@ const verifyFields: FormField[] = [
 ];
 
 const Verify2FA: React.FC = () => {
+  // 3. Llamar al hook y generar los estilos
+  const { colors, isDark } = useTheme();
+  const styles = getStyles(colors, isDark);
+
   const [loading, setLoading] = useState<boolean>(false);
   const { showInfo, showError, showSuccess } = useNotification();
   const { login } = useAuth();
@@ -58,7 +69,7 @@ const Verify2FA: React.FC = () => {
     try {
       const projectId =
         Constants?.expoConfig?.extra?.eas?.projectId ||
-        Constants?.easConfig?.projectId ||
+        (Constants?.easConfig as any)?.projectId || // Ajuste para tipo
         undefined;
 
       const tokenResult = await getExpoPushTokenAsync({
@@ -170,7 +181,7 @@ const Verify2FA: React.FC = () => {
           <View style={styles.backButtonInner}>
             <Image
               source={require('../../assets/images/volver.png')}
-              style={{ width: 24, height: 24, tintColor: '#374151' }}
+              style={{ width: 24, height: 24, tintColor: styles.backButtonInner.tintColor }}
             />
           </View>
         </TouchableOpacity>
@@ -212,60 +223,63 @@ const Verify2FA: React.FC = () => {
 
 export default Verify2FA;
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  titleContainer: {
-    marginBottom: 40,
-    alignItems: 'center',
-  },
-  welcomeTitle: {
-    fontSize: 24,
-    fontWeight: fontWeightBold,
-    color: '#1F2937',
-    textAlign: 'center',
-    letterSpacing: 0.5,
-    marginBottom: 10,
-  },
-  subtitleText: {
-    fontSize: 14,
-    color: '#6B7280',
-    textAlign: 'center',
-  },
-  backButton: {
-    alignSelf: 'flex-start',
-    marginBottom: 20,
-  },
-  backButtonInner: {
-    backgroundColor: Colors.lightText,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: '#F3F4F6',
-  },
-  formWrapper: {
-    width: width * 0.85,
-    maxWidth: 400,
-  },
-  resendButton: {
-    marginTop: 20,
-    alignItems: 'center',
-  },
-  resendText: {
-    color: Colors.primary,
-    fontSize: 14,
-    fontWeight: fontWeightSemiBold,
-  },
-});
+// 5. Convertir el StyleSheet en una función
+const getStyles = (colors: ColorsType, isDark: boolean) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background, // Dinámico
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    titleContainer: {
+      marginBottom: 40,
+      alignItems: 'center',
+    },
+    welcomeTitle: {
+      fontSize: 24,
+      fontWeight: fontWeightBold,
+      color: colors.text, // Dinámico
+      textAlign: 'center',
+      letterSpacing: 0.5,
+      marginBottom: 10,
+    },
+    subtitleText: {
+      fontSize: 14,
+      color: colors.darkGray, // Dinámico
+      textAlign: 'center',
+    },
+    backButton: {
+      alignSelf: 'flex-start',
+      marginBottom: 20,
+    },
+    backButtonInner: {
+      backgroundColor: colors.cardBackground, // Dinámico
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      justifyContent: 'center',
+      alignItems: 'center',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 3,
+      borderWidth: 1,
+      borderColor: colors.gray, // Dinámico
+      tintColor: colors.text, // Dinámico (para la imagen)
+    },
+    formWrapper: {
+      width: width * 0.85,
+      maxWidth: 400,
+    },
+    resendButton: {
+      marginTop: 20,
+      alignItems: 'center',
+    },
+    resendText: {
+      color: colors.primary, // Dinámico
+      fontSize: 14,
+      fontWeight: fontWeightSemiBold,
+    },
+  });

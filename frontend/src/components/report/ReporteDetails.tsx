@@ -11,9 +11,13 @@ import {
   obtenerNombreEspecie,
   obtenerNombreEstadoSalud,
 } from '../../types/report';
-// --- AÑADIMOS IMPORTS ---
-import { Colors } from '@/src/constants/colors';
+// 1. Quitar la importación estática
+// import { Colors } from '@/src/constants/colors';
 import { Ionicons } from '@expo/vector-icons';
+
+// 2. Importar el hook y los tipos de tema
+import { useTheme } from '@/src/contexts/ThemeContext';
+import { ColorsType } from '@/src/constants/colors';
 
 // --- DEFINIMOS LAS PROPS CON TYPESCRIPT ---
 interface ReporteDetailsProps {
@@ -29,6 +33,10 @@ export const ReporteDetails = ({
   onDelete,
   distance, // <-- Recibimos la prop
 }: ReporteDetailsProps) => {
+  // 3. Llamar al hook y generar los estilos
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
+
   return (
     <View style={styles.floatingDetailsContainer}>
       <TouchableOpacity onPress={onClose} style={styles.closeButton}>
@@ -45,7 +53,7 @@ export const ReporteDetails = ({
               <Ionicons
                 name="location-outline"
                 size={16} // Ajustamos tamaño
-                color={Colors.primary}
+                color={colors.primary} // 4. Usar colores del tema
                 style={styles.detailIcon}
               />
               <AppText style={styles.distanceText}>Estás a {distance}</AppText>
@@ -103,69 +111,83 @@ export const ReporteDetails = ({
   );
 };
 
-const styles = StyleSheet.create({
-  floatingDetailsContainer: {
-    position: 'absolute',
-    bottom: 20,
-    left: 20,
-    right: 20,
-    backgroundColor: 'white',
-    padding: 16,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-    elevation: 5, // Añadido para Android
-  },
-  closeButton: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    zIndex: 10, // Asegura que esté por encima
-  },
-  closeButtonText: { fontSize: 18, color: '#999' },
-  scrollableContent: { paddingTop: 20 },
-  detailTitle: {
-    fontSize: 18,
-    fontWeight: fontWeightSemiBold,
-    marginBottom: 10,
-    paddingRight: 20, // Espacio para el botón de cerrar
-  },
-  detailCard: { padding: 10, backgroundColor: '#f5f5f5', borderRadius: 8 },
-  detailRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 6,
-    paddingVertical: 2, // Espaciado
-  },
-  detailIcon: { marginRight: 8, width: 20, textAlign: 'center' }, // Ancho fijo para alinear
-  detailValue: { fontSize: 14, flexShrink: 1 }, // flexShrink para que el texto no se desborde
-  deleteButton: {
-    backgroundColor: Colors.danger || '#f44336', // Fallback
-    padding: 12,
-    borderRadius: 8,
-    marginTop: 10,
-  },
-  deleteButtonText: {
-    color: 'white',
-    fontWeight: fontWeightBold,
-    textAlign: 'center',
-  },
+// 5. Convertir el StyleSheet en una función
+const getStyles = (colors: ColorsType) =>
+  StyleSheet.create({
+    floatingDetailsContainer: {
+      position: 'absolute',
+      bottom: 20,
+      left: 20,
+      right: 20,
+      backgroundColor: colors.cardBackground, // Dinámico
+      padding: 16,
+      borderRadius: 12,
+      shadowColor: '#000',
+      shadowOpacity: 0.2,
+      shadowOffset: { width: 0, height: 2 },
+      shadowRadius: 4,
+      elevation: 5,
+    },
+    closeButton: {
+      position: 'absolute',
+      top: 10,
+      right: 10,
+      zIndex: 10,
+    },
+    closeButtonText: {
+      fontSize: 18,
+      color: colors.darkGray, // Dinámico
+    },
+    scrollableContent: { paddingTop: 20 },
+    detailTitle: {
+      fontSize: 18,
+      fontWeight: fontWeightSemiBold,
+      marginBottom: 10,
+      paddingRight: 20,
+      color: colors.text, // Dinámico
+    },
+    detailCard: {
+      padding: 10,
+      backgroundColor: colors.backgroundSecon, // Dinámico
+      borderRadius: 8,
+    },
+    detailRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 6,
+      paddingVertical: 2,
+    },
+    detailIcon: { marginRight: 8, width: 20, textAlign: 'center' },
+    detailValue: {
+      fontSize: 14,
+      flexShrink: 1,
+      color: colors.text, // Dinámico (default)
+    },
+    deleteButton: {
+      backgroundColor: colors.danger, // Dinámico
+      padding: 12,
+      borderRadius: 8,
+      marginTop: 10,
+    },
+    deleteButtonText: {
+      color: colors.lightText, // Dinámico
+      fontWeight: fontWeightBold,
+      textAlign: 'center',
+    },
 
-  // --- ESTILOS AÑADIDOS PARA LA DISTANCIA ---
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-    backgroundColor: '#E6F0FF', // Un fondo suave azul
-    borderRadius: 8,
-    padding: 10,
-  },
-  distanceText: {
-    fontSize: 14,
-    fontWeight: fontWeightBold,
-    color: Colors.primary || '#007AFF', // Fallback
-    marginLeft: 4, // Pequeño ajuste
-  },
-});
+    // --- ESTILOS AÑADIDOS PARA LA DISTANCIA ---
+    infoRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 8,
+      backgroundColor: `${colors.info}20`, // Dinámico (light blue)
+      borderRadius: 8,
+      padding: 10,
+    },
+    distanceText: {
+      fontSize: 14,
+      fontWeight: fontWeightBold,
+      color: colors.primary, // Dinámico
+      marginLeft: 4,
+    },
+  });

@@ -1,15 +1,23 @@
-// AdditionalInfo.tsx
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Colors } from '@/src/constants/colors';
+// 1. Quitar la importación estática
+// import { Colors } from '@/src/constants/colors';
 import { fontWeightMedium, AppText } from '@/src/components/AppText';
 import { Ionicons } from '@expo/vector-icons';
+
+// 2. Importar el hook y los tipos de tema
+import { useTheme } from '@/src/contexts/ThemeContext';
+import { ColorsType } from '@/src/constants/colors';
 
 interface AdditionalInfoProps {
   user: any;
 }
 
 export default function AdditionalInfo({ user }: AdditionalInfoProps) {
+  // 3. Llamar al hook y generar los estilos
+  const { colors, isDark } = useTheme();
+  const styles = getStyles(colors, isDark);
+
   const formatDate = (dateStr: string, opts?: Intl.DateTimeFormatOptions) =>
     new Intl.DateTimeFormat('es-CL', {
       day: 'numeric',
@@ -32,7 +40,7 @@ export default function AdditionalInfo({ user }: AdditionalInfoProps) {
           <Ionicons
             name="calendar-outline"
             size={16}
-            color={Colors.secondary}
+            color={colors.secondary} // 4. Usar colores del tema
           />
           <AppText style={styles.chipText}>{fechaNacimiento}</AppText>
         </View>
@@ -44,7 +52,11 @@ export default function AdditionalInfo({ user }: AdditionalInfoProps) {
       <View style={{ marginBottom: user.nombre_organizacion ? 18 : 0 }}>
         <AppText style={styles.infoLabel}>Miembro desde</AppText>
         <View style={styles.chip}>
-          <Ionicons name="time-outline" size={16} color={Colors.secondary} />
+          <Ionicons
+            name="time-outline"
+            size={16}
+            color={colors.secondary} // 4. Usar colores del tema
+          />
           <AppText style={styles.chipText}>{fechaCreacion}</AppText>
         </View>
       </View>
@@ -59,7 +71,7 @@ export default function AdditionalInfo({ user }: AdditionalInfoProps) {
             <Ionicons
               name="business-outline"
               size={16}
-              color={Colors.secondary}
+              color={colors.secondary} // 4. Usar colores del tema
             />
             <AppText numberOfLines={2} style={styles.chipText}>
               {user.nombre_organizacion}
@@ -71,52 +83,54 @@ export default function AdditionalInfo({ user }: AdditionalInfoProps) {
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: Colors.cardBackground,
-    borderRadius: 20,
-    paddingVertical: 16,
-    paddingHorizontal: 18,
-    marginTop: 20,
-    borderWidth: 1,
-    borderColor: Colors.secondary,
-    shadowColor: '#000',
-    shadowOpacity: 0.045,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 4,
-  },
+// 5. Convertir el StyleSheet en una función
+const getStyles = (colors: ColorsType, isDark: boolean) =>
+  StyleSheet.create({
+    card: {
+      backgroundColor: colors.cardBackground, // Dinámico
+      borderRadius: 20,
+      paddingVertical: 16,
+      paddingHorizontal: 18,
+      marginTop: 20,
+      borderWidth: 1,
+      borderColor: colors.secondary, // Dinámico
+      shadowColor: '#000',
+      shadowOpacity: isDark ? 0.1 : 0.045, // Dinámico
+      shadowRadius: 10,
+      shadowOffset: { width: 0, height: 6 },
+      elevation: 4,
+    },
 
-  sectionTitle: {
-    color: Colors.secondary,
-    fontSize: 16,
-    fontWeight: fontWeightMedium,
-    marginBottom: 12,
-  },
-  infoLabel: {
-    color: Colors.darkGray,
-    fontWeight: fontWeightMedium,
-    fontSize: 12,
-    marginBottom: 6,
-  },
+    sectionTitle: {
+      color: colors.secondary, // Dinámico
+      fontSize: 16,
+      fontWeight: fontWeightMedium,
+      marginBottom: 12,
+    },
+    infoLabel: {
+      color: colors.darkGray, // Dinámico
+      fontWeight: fontWeightMedium,
+      fontSize: 12,
+      marginBottom: 6,
+    },
 
-  // NUEVO ESTILO TIPO CHIP
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: Colors.background,
-    borderWidth: 1,
-    borderColor: Colors.backgroundSecon,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-  },
-  chipText: { color: Colors.text, fontSize: 14, flexShrink: 1 },
+    // NUEVO ESTILO TIPO CHIP
+    chip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      backgroundColor: colors.background, // Dinámico
+      borderWidth: 1,
+      borderColor: colors.backgroundSecon, // Dinámico
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+      borderRadius: 12,
+    },
+    chipText: { color: colors.text, fontSize: 14, flexShrink: 1 }, // Dinámico
 
-  divider: {
-    height: 1,
-    backgroundColor: 'rgba(0,0,0,0.05)',
-    marginVertical: 12,
-  },
-});
+    divider: {
+      height: 1,
+      backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)', // Dinámico
+      marginVertical: 12,
+    },
+  });

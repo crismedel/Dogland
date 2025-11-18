@@ -17,12 +17,14 @@ import {
   AppText,
   fontWeightBold,
   fontWeightSemiBold,
+  fontWeightMedium, // Importar fontWeightMedium
 } from '@/src/components/AppText';
 import CustomHeader from '@/src/components/UI/CustomHeader';
-import { Colors } from '@/src/constants/colors';
+// 1. Quitar la importación estática
+// import { Colors } from '@/src/constants/colors';
 import AnimalCard from './component/card';
 import FiltroCan from './component/filtroCan';
-import Pagination from './component/Pagination';
+import Pagination from '@/app/adoption/component/Pagination'; // Ajustar ruta si es necesario
 import useAnimals from '@/src/hooks/useAnimals';
 import { ListRenderItem } from 'react-native';
 import { Animal } from '@/src/types/animals';
@@ -33,6 +35,10 @@ import {
   BREED_MAPPING,
 } from '@/src/utils/animalUtils';
 import Spinner from '@/src/components/UI/Spinner';
+
+// 2. Importar el hook y los tipos de tema
+import { useTheme } from '@/src/contexts/ThemeContext';
+import { ColorsType } from '@/src/constants/colors';
 
 const { width } = Dimensions.get('window');
 const SPACING = 10;
@@ -48,6 +54,10 @@ interface AppliedFilters {
 }
 
 const AdoptionIndex = () => {
+  // 3. Llamar al hook y generar los estilos
+  const { colors, isDark } = useTheme();
+  const styles = getStyles(colors, isDark);
+
   const [showFilters, setShowFilters] = useState(false);
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -216,13 +226,23 @@ const AdoptionIndex = () => {
           <TouchableOpacity onPress={() => router.back()}>
             <Image
               source={require('../../assets/images/volver.png')}
-              style={{ width: 24, height: 24, tintColor: '#fff' }}
+              // 4. Usar colores del tema
+              style={{
+                width: 24,
+                height: 24,
+                tintColor: isDark ? colors.lightText : colors.text,
+              }}
             />
           </TouchableOpacity>
         }
         rightComponent={
           <TouchableOpacity onPress={() => setShowFilters(true)}>
-            <Ionicons name="options-outline" size={24} color="#fff" />
+            {/* 4. Usar colores del tema */}
+            <Ionicons
+              name="options-outline"
+              size={24}
+              color={isDark ? colors.lightText : colors.text}
+            />
           </TouchableOpacity>
         }
       />
@@ -235,7 +255,7 @@ const AdoptionIndex = () => {
           <Ionicons
             name="medkit-outline"
             size={18}
-            color="#fff"
+            color={colors.lightText} // 4. Usar colores del tema
             style={{ marginRight: 6 }}
           />
           <AppText style={styles.medicalButtonText}>
@@ -250,7 +270,7 @@ const AdoptionIndex = () => {
           <Ionicons
             name="add-circle-outline"
             size={20}
-            color="#fff"
+            color={colors.lightText} // 4. Usar colores del tema
             style={{ marginRight: 6 }}
           />
           <AppText style={styles.addButtonText}>
@@ -293,8 +313,8 @@ const AdoptionIndex = () => {
             <RefreshControl
               refreshing={isFetching}
               onRefresh={handleRefresh}
-              colors={[Colors.primary]}
-              tintColor={Colors.primary}
+              colors={[colors.primary]} // 4. Usar colores del tema
+              tintColor={colors.primary} // 4. Usar colores del tema
               progressViewOffset={10}
             />
           }
@@ -312,7 +332,11 @@ const AdoptionIndex = () => {
           ListEmptyComponent={
             !isLoading && appliedFilters ? (
               <View style={styles.noResults}>
-                <Ionicons name="search-outline" size={50} color="#b0bec5" />
+                <Ionicons
+                  name="search-outline"
+                  size={50}
+                  color={colors.gray} // 4. Usar colores del tema
+                />
                 <AppText style={styles.noResultsText}>
                   No se encontraron animales
                 </AppText>
@@ -333,91 +357,97 @@ const AdoptionIndex = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background ?? '#F4F6F9' },
-  medicalButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1976d2',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    alignSelf: 'center',
-    marginBottom: 10,
-  },
-  medicalButtonText: {
-    color: '#fff',
-    fontWeight: fontWeightBold,
-    fontSize: 12,
-  },
-  addButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#4CAF50',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    alignSelf: 'center',
-    marginBottom: 10,
-  },
-  addButtonText: {
-    color: '#fff',
-    fontWeight: fontWeightBold,
-    fontSize: 12,
-  },
-  activeFiltersContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginHorizontal: 16,
-    marginBottom: 8,
-    backgroundColor: '#EAF3FE',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 12,
-  },
-  activeFiltersText: {
-    fontSize: 13,
-    color: '#1976d2',
-    flex: 1,
-    marginRight: 12,
-  },
-  clearFiltersText: {
-    fontSize: 13,
-    color: '#f44336',
-    fontWeight: fontWeightSemiBold,
-  },
-  listContent: {
-    paddingHorizontal: 16,
-    paddingBottom: 10,
-    paddingTop: 6,
-    flexGrow: 1,
-  },
-  footerPagination: {
-    paddingVertical: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  noResults: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 60,
-    gap: 6,
-  },
-  noResultsText: {
-    fontSize: 16,
-    color: '#607d8b',
-    marginTop: 10,
-    fontWeight: fontWeightSemiBold,
-  },
-  noResultsSubtext: { fontSize: 13, color: '#90a4ae', marginTop: 2 },
-  center: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: Colors.background,
-  },
-});
+// 5. Convertir el StyleSheet en una función
+const getStyles = (colors: ColorsType, isDark: boolean) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background }, // Dinámico
+    medicalButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.info, // Dinámico
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+      borderRadius: 8,
+      alignSelf: 'center',
+      marginBottom: 10,
+    },
+    medicalButtonText: {
+      color: colors.lightText, // Dinámico
+      fontWeight: fontWeightBold,
+      fontSize: 12,
+    },
+    addButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.success, // Dinámico
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+      borderRadius: 8,
+      alignSelf: 'center',
+      marginBottom: 10,
+    },
+    addButtonText: {
+      color: colors.lightText, // Dinámico
+      fontWeight: fontWeightBold,
+      fontSize: 12,
+    },
+    activeFiltersContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginHorizontal: 16,
+      marginBottom: 8,
+      backgroundColor: `${colors.info}20`, // Dinámico
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderRadius: 12,
+    },
+    activeFiltersText: {
+      fontSize: 13,
+      color: colors.info, // Dinámico
+      flex: 1,
+      marginRight: 12,
+    },
+    clearFiltersText: {
+      fontSize: 13,
+      color: colors.danger, // Dinámico
+      fontWeight: fontWeightSemiBold,
+    },
+    listContent: {
+      paddingHorizontal: 16,
+      paddingBottom: 10,
+      paddingTop: 6,
+      flexGrow: 1,
+    },
+    footerPagination: {
+      paddingVertical: 8,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    noResults: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 60,
+      gap: 6,
+    },
+    noResultsText: {
+      fontSize: 16,
+      color: colors.text, // Dinámico
+      marginTop: 10,
+      fontWeight: fontWeightSemiBold,
+    },
+    noResultsSubtext: {
+      fontSize: 13,
+      color: colors.darkGray, // Dinámico
+      marginTop: 2,
+    },
+    center: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: colors.background, // Dinámico
+    },
+  });
 
 export default AdoptionIndex;

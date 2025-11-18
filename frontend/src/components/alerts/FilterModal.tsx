@@ -11,7 +11,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { FilterOptions } from '../../types/alert';
-import { Colors } from '@/src/constants/colors';
+// 1. Quitar la importación estática
+// import { Colors } from '@/src/constants/colors';
 import {
   fontWeightBold,
   fontWeightSemiBold,
@@ -19,6 +20,10 @@ import {
   AppText,
 } from '@/src/components/AppText';
 import CustomPicker from '@/src/components/UI/CustomPicker';
+
+// 2. Importar el hook y los tipos de tema
+import { useTheme } from '@/src/contexts/ThemeContext';
+import { ColorsType } from '@/src/constants/colors';
 
 interface FilterModalProps {
   visible: boolean;
@@ -35,6 +40,10 @@ const FilterModal: React.FC<FilterModalProps> = ({
   filters,
   onFiltersChange,
 }) => {
+  // 3. Llamar al hook y generar los estilos
+  const { colors, isDark } = useTheme();
+  const styles = getStyles(colors, isDark);
+
   const [tempFilters, setTempFilters] = useState<FilterOptions>(filters);
   const [slideAnim] = useState(new Animated.Value(SCREEN_HEIGHT));
 
@@ -55,6 +64,13 @@ const FilterModal: React.FC<FilterModalProps> = ({
     }
   }, [visible]);
 
+  useEffect(() => {
+    // Sincronizar los filtros temporales si los filtros externos cambian
+    if (visible) {
+      setTempFilters(filters);
+    }
+  }, [filters, visible]);
+
   const applyFilters = () => {
     onFiltersChange(tempFilters);
     onClose();
@@ -68,6 +84,9 @@ const FilterModal: React.FC<FilterModalProps> = ({
       timeRange: 'todas',
     };
     setTempFilters(defaultFilters);
+    // Aplicar inmediatamente al resetear
+    onFiltersChange(defaultFilters);
+    onClose();
   };
 
   const tipoAlertaOptions = [
@@ -81,9 +100,10 @@ const FilterModal: React.FC<FilterModalProps> = ({
 
   const nivelRiesgoOptions = [
     { label: 'Todos', value: 'todos' },
-    { label: 'Bajo', value: 'bajo' },
-    { label: 'Medio', value: 'medio' },
-    { label: 'Alto', value: 'alto' },
+    { label: 'Bajo', value: 'Bajo' },
+    { label: 'Medio', value: 'Medio' },
+    { label: 'Alto', value: 'Alto' },
+    { label: 'Crítico', value: 'Crítico' },
   ];
 
   const estadoOptions = [
@@ -124,7 +144,8 @@ const FilterModal: React.FC<FilterModalProps> = ({
           <View style={styles.modalHeader}>
             <AppText style={styles.modalTitle}>Filtrar Alertas</AppText>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <Ionicons name="close" size={24} color="#6B7280" />
+              {/* 4. Usar colores del tema */}
+              <Ionicons name="close" size={24} color={colors.darkGray} />
             </TouchableOpacity>
           </View>
 
@@ -201,7 +222,8 @@ const FilterModal: React.FC<FilterModalProps> = ({
               onPress={resetFilters}
               activeOpacity={0.7}
             >
-              <Ionicons name="refresh-outline" size={18} color="#FFF" />
+              {/* 4. Usar colores del tema */}
+              <Ionicons name="refresh-outline" size={18} color={colors.lightText} />
               <AppText style={styles.resetButtonText}>Limpiar</AppText>
             </TouchableOpacity>
 
@@ -210,7 +232,12 @@ const FilterModal: React.FC<FilterModalProps> = ({
               onPress={onClose}
               activeOpacity={0.7}
             >
-              <Ionicons name="close-circle-outline" size={18} color="#FFF" />
+              {/* 4. Usar colores del tema */}
+              <Ionicons
+                name="close-circle-outline"
+                size={18}
+                color={colors.lightText}
+              />
               <AppText style={styles.cancelButtonText}>Cancelar</AppText>
             </TouchableOpacity>
 
@@ -219,10 +246,11 @@ const FilterModal: React.FC<FilterModalProps> = ({
               onPress={applyFilters}
               activeOpacity={0.7}
             >
+              {/* 4. Usar colores del tema */}
               <Ionicons
                 name="checkmark-circle-outline"
                 size={18}
-                color="#FFF"
+                color={colors.lightText}
               />
               <AppText style={styles.applyButtonText}>Aplicar</AppText>
             </TouchableOpacity>
@@ -235,117 +263,119 @@ const FilterModal: React.FC<FilterModalProps> = ({
 
 export default FilterModal;
 
-const styles = StyleSheet.create({
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: '#FFF',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    maxHeight: SCREEN_HEIGHT * 0.85,
-    paddingBottom: 0,
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-  },
-  handleBar: {
-    width: 40,
-    height: 4,
-    backgroundColor: '#D1D5DB',
-    borderRadius: 2,
-    alignSelf: 'center',
-    marginTop: 12,
-    marginBottom: 8,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: fontWeightBold,
-    color: '#111827',
-  },
-  closeButton: {
-    padding: 4,
-  },
-  filtersContainer: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-  },
-  filterSection: {
-    marginBottom: 24,
-  },
-  filterLabel: {
-    fontSize: 15,
-    fontWeight: fontWeightSemiBold,
-    color: '#111827',
-    marginBottom: 10,
-  },
-  modalFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    paddingBottom: 20,
-    borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
-    backgroundColor: '#FFF',
-    gap: 10,
-  },
-  resetButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#6B7280',
-    paddingVertical: 12,
-    borderRadius: 12,
-    gap: 6,
-  },
-  resetButtonText: {
-    color: '#FFF',
-    fontSize: 14,
-    fontWeight: fontWeightSemiBold,
-  },
-  cancelButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Colors.danger,
-    paddingVertical: 12,
-    borderRadius: 12,
-    gap: 6,
-  },
-  cancelButtonText: {
-    color: '#FFF',
-    fontSize: 14,
-    fontWeight: fontWeightSemiBold,
-  },
-  applyButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#10B981',
-    paddingVertical: 12,
-    borderRadius: 12,
-    gap: 6,
-  },
-  applyButtonText: {
-    color: '#FFF',
-    fontSize: 14,
-    fontWeight: fontWeightSemiBold,
-  },
-});
+// 5. Convertir el StyleSheet en una función
+const getStyles = (colors: ColorsType, isDark: boolean) =>
+  StyleSheet.create({
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      justifyContent: 'flex-end',
+    },
+    modalContent: {
+      backgroundColor: colors.cardBackground, // Dinámico
+      borderTopLeftRadius: 24,
+      borderTopRightRadius: 24,
+      maxHeight: SCREEN_HEIGHT * 0.85,
+      paddingBottom: 0,
+      elevation: 5,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: -2 },
+      shadowOpacity: 0.25,
+      shadowRadius: 3.84,
+    },
+    handleBar: {
+      width: 40,
+      height: 4,
+      backgroundColor: colors.gray, // Dinámico
+      borderRadius: 2,
+      alignSelf: 'center',
+      marginTop: 12,
+      marginBottom: 8,
+    },
+    modalHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 20,
+      paddingVertical: 16,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.gray, // Dinámico
+    },
+    modalTitle: {
+      fontSize: 20,
+      fontWeight: fontWeightBold,
+      color: colors.text, // Dinámico
+    },
+    closeButton: {
+      padding: 4,
+    },
+    filtersContainer: {
+      paddingHorizontal: 20,
+      paddingTop: 20,
+    },
+    filterSection: {
+      marginBottom: 24,
+    },
+    filterLabel: {
+      fontSize: 15,
+      fontWeight: fontWeightSemiBold,
+      color: colors.text, // Dinámico
+      marginBottom: 10,
+    },
+    modalFooter: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      paddingHorizontal: 16,
+      paddingVertical: 16,
+      paddingBottom: 20,
+      borderTopWidth: 1,
+      borderTopColor: colors.gray, // Dinámico
+      backgroundColor: colors.cardBackground, // Dinámico
+      gap: 10,
+    },
+    resetButton: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.darkGray, // Dinámico
+      paddingVertical: 12,
+      borderRadius: 12,
+      gap: 6,
+    },
+    resetButtonText: {
+      color: colors.lightText, // Dinámico
+      fontSize: 14,
+      fontWeight: fontWeightSemiBold,
+    },
+    cancelButton: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.danger, // Dinámico
+      paddingVertical: 12,
+      borderRadius: 12,
+      gap: 6,
+    },
+    cancelButtonText: {
+      color: colors.lightText, // Dinámico
+      fontSize: 14,
+      fontWeight: fontWeightSemiBold,
+    },
+    applyButton: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.success, // Dinámico
+      paddingVertical: 12,
+      borderRadius: 12,
+      gap: 6,
+    },
+    applyButtonText: {
+      color: colors.lightText, // Dinámico
+      fontSize: 14,
+      fontWeight: fontWeightSemiBold,
+    },
+  });

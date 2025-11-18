@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Image,
@@ -9,17 +9,21 @@ import {
   Share,
   ActivityIndicator,
   Platform,
+  Pressable, // Importar Pressable
+  Text, // Importar Text
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import CustomHeader from '@/src/components/UI/CustomHeader';
 import TarjetaMedica from './component/terjetasMedicas';
-import { Colors } from '@/src/constants/colors';
+// 1. Quitar la importación estática
+// import { Colors } from '@/src/constants/colors';
 import CustomButton from '@/src/components/UI/CustomButton';
 import {
   fontWeightBold,
   fontWeightSemiBold,
   AppText,
+  fontWeightMedium, // Importar fontWeightMedium
 } from '@/src/components/AppText';
 import {
   getHealthLabel,
@@ -34,7 +38,15 @@ import { fetchAnimalById } from '@/src/api/animals';
 import { RoleGuard } from '@/src/components/auth'; // Importa RoleGuard
 import Spinner from '@/src/components/UI/Spinner';
 
+// 2. Importar el hook y los tipos de tema
+import { useTheme } from '@/src/contexts/ThemeContext';
+import { ColorsType } from '@/src/constants/colors';
+
 const PerfilCan = () => {
+  // 3. Llamar al hook y generar los estilos
+  const { colors, isDark } = useTheme();
+  const styles = getStyles(colors, isDark);
+
   const params = useLocalSearchParams();
   const router = useRouter();
   const { showError } = useNotification();
@@ -123,7 +135,12 @@ const PerfilCan = () => {
             onPress={() => router.back()}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            <Ionicons name="chevron-back" size={24} color="#fff" />
+            {/* 4. Usar colores del tema */}
+            <Ionicons
+              name="chevron-back"
+              size={24}
+              color={isDark ? colors.lightText : colors.text}
+            />
           </TouchableOpacity>
         }
         rightComponent={
@@ -131,7 +148,12 @@ const PerfilCan = () => {
             onPress={handleShare}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            <Ionicons name="share-social-outline" size={20} color="#fff" />
+            {/* 4. Usar colores del tema */}
+            <Ionicons
+              name="share-social-outline"
+              size={20}
+              color={isDark ? colors.lightText : colors.text}
+            />
           </TouchableOpacity>
         }
       />
@@ -168,7 +190,11 @@ const PerfilCan = () => {
         <View style={styles.pillsRow}>
           {animal.species && (
             <View style={styles.pill}>
-              <Ionicons name="paw-outline" size={14} color="#1565c0" />
+              <Ionicons
+                name="paw-outline"
+                size={14}
+                color={colors.info} // 4. Usar colores del tema
+              />
               <AppText numberOfLines={1} style={styles.pillText}>
                 {animal.species}
               </AppText>
@@ -176,7 +202,11 @@ const PerfilCan = () => {
           )}
           {animal.size && (
             <View style={styles.pillLight}>
-              <Ionicons name="resize-outline" size={14} color={Colors.text} />
+              <Ionicons
+                name="resize-outline"
+                size={14}
+                color={colors.darkGray} // 4. Usar colores del tema
+              />
               <AppText numberOfLines={1} style={styles.pillTextDark}>
                 {animal.size}
               </AppText>
@@ -253,25 +283,40 @@ const Row = ({
   value: string;
   truncate?: boolean;
   valueColor?: string;
-}) => (
-  <View style={styles.row}>
-    <AppText style={styles.rowLabel}>{label}</AppText>
-    <AppText
-      numberOfLines={truncate ? 1 : undefined}
-      ellipsizeMode={truncate ? 'tail' : undefined}
-      style={[styles.rowValue, valueColor ? { color: valueColor } : null]}
-    >
-      {value}
-    </AppText>
-  </View>
-);
+}) => {
+  // 3. Subcomponente usa el hook
+  const { colors, isDark } = useTheme();
+  const styles = getStyles(colors, isDark);
 
-const Divider = () => <View style={styles.separator} />;
+  return (
+    <View style={styles.row}>
+      <AppText style={styles.rowLabel}>{label}</AppText>
+      <AppText
+        numberOfLines={truncate ? 1 : undefined}
+        ellipsizeMode={truncate ? 'tail' : undefined}
+        style={[styles.rowValue, valueColor ? { color: valueColor } : null]}
+      >
+        {value}
+      </AppText>
+    </View>
+  );
+};
+
+const Divider = () => {
+  // 3. Subcomponente usa el hook
+  const { colors, isDark } = useTheme();
+  const styles = getStyles(colors, isDark);
+  return <View style={styles.separator} />;
+};
 
 const NeumorphCard: React.FC<{ title: string; children: React.ReactNode }> = ({
   title,
   children,
 }) => {
+  // 3. Subcomponente usa el hook
+  const { colors, isDark } = useTheme();
+  const styles = getStyles(colors, isDark);
+
   const scale = new Animated.Value(1);
 
   const onPressIn = () =>
@@ -310,188 +355,201 @@ const NeumorphCard: React.FC<{ title: string; children: React.ReactNode }> = ({
 
 const PERF_RADIUS = 18;
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: Colors.background },
-  container: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    alignItems: 'center',
-  },
-  neuImageWrapper: {
-    width: '100%',
-    borderRadius: PERF_RADIUS,
-    backgroundColor: Colors.background,
-    padding: 6,
-    marginBottom: 6,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOpacity: 0.1,
-        shadowRadius: 20,
-        shadowOffset: { width: 10, height: 10 },
-      },
-      android: { elevation: 6 },
-    }),
-  },
-  imageWrap: {
-    width: '100%',
-    height: 260,
-    borderRadius: PERF_RADIUS,
-    overflow: 'hidden',
-    backgroundColor: '#e0e6eb',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOpacity: 0.06,
-        shadowRadius: 14,
-        shadowOffset: { width: -6, height: -6 },
-      },
-      android: { elevation: 2 },
-    }),
-  },
-  image: { width: '100%', height: '100%' },
-  innerShadowBottom: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: 80,
-    backgroundColor: 'rgba(0,0,0,0.12)',
-  },
-  estadoBadge: {
-    position: 'absolute',
-    top: 12,
-    left: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 18,
-  },
-  estadoText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: fontWeightSemiBold,
-    letterSpacing: 0.2,
-  },
-  name: {
-    marginTop: 16,
-    fontSize: 26,
-    fontWeight: fontWeightBold,
-    color: Colors.text,
-    textAlign: 'center',
-  },
-  subtle: {
-    fontSize: 14,
-    color: Colors.text,
-    textAlign: 'center',
-    marginTop: 2,
-  },
-  pillsRow: { flexDirection: 'row', gap: 8, marginTop: 10, marginBottom: 6 },
-  pill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#e3f2fd',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 14,
-  },
-  pillLight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#eceff1',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 14,
-  },
-  pillText: {
-    fontSize: 12,
-    color: Colors.secondary,
-    fontWeight: fontWeightSemiBold,
-  },
-  pillTextDark: {
-    fontSize: 12,
-    color: '#546e7a',
-    fontWeight: fontWeightSemiBold,
-  },
-  neuWrapper: {
-    width: '100%',
-    marginTop: 16,
-    borderRadius: PERF_RADIUS,
-    backgroundColor: Colors.background,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOpacity: 0.08,
-        shadowRadius: 20,
-        shadowOffset: { width: 12, height: 12 },
-      },
-      android: { elevation: 4 },
-    }),
-  },
-  cardNeu: {
-    borderRadius: PERF_RADIUS,
-    backgroundColor: Colors.cardBackground,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: Colors.secondary,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOpacity: 0.06,
-        shadowRadius: 14,
-        shadowOffset: { width: -6, height: -6 },
-      },
-      android: { elevation: 2 },
-    }),
-  },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: fontWeightBold,
-    color: Colors.secondary,
-    marginBottom: 10,
-    letterSpacing: 0.2,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 6,
-  },
-  rowLabel: {
-    fontSize: 13,
-    color: '#607d8b',
-    fontWeight: fontWeightSemiBold,
-    letterSpacing: 0.2,
-    textTransform: 'uppercase',
-  },
-  rowValue: {
-    fontSize: 14,
-    color: Colors.text,
-    maxWidth: '60%',
-    textAlign: 'right',
-  },
-  separator: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: '#eef2f6',
-    marginVertical: 6,
-  },
-  bulletRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 8,
-    paddingVertical: 4,
-  },
-  bulletDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#90a4ae',
-    marginTop: 6,
-  },
-  bulletText: { flex: 1, color: '#455a64', fontSize: 14, lineHeight: 20 },
-  ctaWrap: { position: 'absolute', left: 0, right: 0, bottom: 10, margin: 10 },
-  center: { justifyContent: 'center', alignItems: 'center' },
-});
+// 5. Convertir el StyleSheet en una función
+const getStyles = (colors: ColorsType, isDark: boolean) =>
+  StyleSheet.create({
+    screen: { flex: 1, backgroundColor: colors.background }, // Dinámico
+    container: {
+      paddingHorizontal: 16,
+      paddingTop: 16,
+      alignItems: 'center',
+    },
+    neuImageWrapper: {
+      width: '100%',
+      borderRadius: PERF_RADIUS,
+      backgroundColor: colors.background, // Dinámico
+      padding: 6,
+      marginBottom: 6,
+      ...Platform.select({
+        ios: {
+          shadowColor: '#000',
+          shadowOpacity: 0.1,
+          shadowRadius: 20,
+          shadowOffset: { width: 10, height: 10 },
+        },
+        android: { elevation: 6 },
+      }),
+    },
+    imageWrap: {
+      width: '100%',
+      height: 260,
+      borderRadius: PERF_RADIUS,
+      overflow: 'hidden',
+      backgroundColor: colors.gray, // Dinámico
+      ...Platform.select({
+        ios: {
+          shadowColor: '#000',
+          shadowOpacity: 0.06,
+          shadowRadius: 14,
+          shadowOffset: { width: -6, height: -6 },
+        },
+        android: { elevation: 2 },
+      }),
+    },
+    image: { width: '100%', height: '100%' },
+    innerShadowBottom: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      bottom: 0,
+      height: 80,
+      backgroundColor: 'rgba(0,0,0,0.12)',
+    },
+    estadoBadge: {
+      position: 'absolute',
+      top: 12,
+      left: 12,
+      paddingHorizontal: 12,
+      paddingVertical: 7,
+      borderRadius: 18,
+    },
+    estadoText: {
+      color: isDark ? colors.text : colors.lightText, // Dinámico
+      fontSize: 12,
+      fontWeight: fontWeightSemiBold,
+      letterSpacing: 0.2,
+    },
+    name: {
+      marginTop: 16,
+      fontSize: 26,
+      fontWeight: fontWeightBold,
+      color: colors.text, // Dinámico
+      textAlign: 'center',
+    },
+    subtle: {
+      fontSize: 14,
+      color: colors.text, // Dinámico
+      textAlign: 'center',
+      marginTop: 2,
+    },
+    pillsRow: { flexDirection: 'row', gap: 8, marginTop: 10, marginBottom: 6 },
+    pill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      backgroundColor: `${colors.info}20`, // Dinámico
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      borderRadius: 14,
+    },
+    pillLight: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      backgroundColor: colors.gray, // Dinámico
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      borderRadius: 14,
+    },
+    pillText: {
+      fontSize: 12,
+      color: colors.info, // Dinámico
+      fontWeight: fontWeightSemiBold,
+    },
+    pillTextDark: {
+      fontSize: 12,
+      color: colors.darkGray, // Dinámico
+      fontWeight: fontWeightSemiBold,
+    },
+    neuWrapper: {
+      width: '100%',
+      marginTop: 16,
+      borderRadius: PERF_RADIUS,
+      backgroundColor: colors.background, // Dinámico
+      ...Platform.select({
+        ios: {
+          shadowColor: '#000',
+          shadowOpacity: 0.08,
+          shadowRadius: 20,
+          shadowOffset: { width: 12, height: 12 },
+        },
+        android: { elevation: 4 },
+      }),
+    },
+    cardNeu: {
+      borderRadius: PERF_RADIUS,
+      backgroundColor: colors.cardBackground, // Dinámico
+      padding: 16,
+      borderWidth: 1,
+      borderColor: colors.secondary, // Dinámico
+      ...Platform.select({
+        ios: {
+          shadowColor: '#000',
+          shadowOpacity: 0.06,
+          shadowRadius: 14,
+          shadowOffset: { width: -6, height: -6 },
+        },
+        android: { elevation: 2 },
+      }),
+    },
+    cardTitle: {
+      fontSize: 16,
+      fontWeight: fontWeightBold,
+      color: colors.secondary, // Dinámico
+      marginBottom: 10,
+      letterSpacing: 0.2,
+    },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingVertical: 6,
+    },
+    rowLabel: {
+      fontSize: 13,
+      color: colors.darkGray, // Dinámico
+      fontWeight: fontWeightSemiBold,
+      letterSpacing: 0.2,
+      textTransform: 'uppercase',
+    },
+    rowValue: {
+      fontSize: 14,
+      color: colors.text, // Dinámico
+      maxWidth: '60%',
+      textAlign: 'right',
+    },
+    separator: {
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: colors.gray, // Dinámico
+      marginVertical: 6,
+    },
+    bulletRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: 8,
+      paddingVertical: 4,
+    },
+    bulletDot: {
+      width: 6,
+      height: 6,
+      borderRadius: 3,
+      backgroundColor: colors.darkGray, // Dinámico
+      marginTop: 6,
+    },
+    bulletText: {
+      flex: 1,
+      color: colors.darkGray, // Dinámico
+      fontSize: 14,
+      lineHeight: 20,
+    },
+    ctaWrap: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      bottom: 10,
+      margin: 10,
+    },
+    center: { justifyContent: 'center', alignItems: 'center' },
+  });
 
 export default PerfilCan;

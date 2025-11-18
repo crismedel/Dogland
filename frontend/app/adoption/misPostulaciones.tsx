@@ -1,24 +1,31 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
-  FlatList,
   StyleSheet,
-  ActivityIndicator,
   TouchableOpacity,
+  ScrollView, // Importar ScrollView (aunque no se usa, estaba en el original)
+  Image,
+  FlatList,
+  ActivityIndicator,
+  RefreshControl, // Importar RefreshControl
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import CustomHeader from '@/src/components/UI/CustomHeader';
+// 1. Quitar la importación estática
+// import { Colors } from '@/src/constants/colors';
+import { useNotification } from '@/src/components/notifications';
+import {
+  AppText,
+  fontWeightBold,
+  fontWeightMedium, // Importar fontWeightMedium
+  fontWeightSemiBold,
+} from '@/src/components/AppText';
+import Spinner from '@/src/components/UI/Spinner';
 import { Ionicons } from '@expo/vector-icons';
 
-import {
-  fontWeightBold,
-  fontWeightSemiBold,
-  AppText,
-} from '@/src/components/AppText';
-
-import CustomHeader from '@/src/components/UI/CustomHeader';
-import { Colors } from '@/src/constants/colors';
-import { useNotification } from '@/src/components/notifications';
-import Spinner from '@/src/components/UI/Spinner';
+// 2. Importar el hook y los tipos de tema
+import { useTheme } from '@/src/contexts/ThemeContext';
+import { ColorsType } from '@/src/constants/colors';
 
 // 🟦 Mock con los 4 estados
 const mockPostulaciones = [
@@ -29,6 +36,10 @@ const mockPostulaciones = [
 ];
 
 const MisPostulaciones = () => {
+  // 3. Llamar al hook y generar los estilos
+  const { colors, isDark } = useTheme();
+  const styles = getStyles(colors, isDark);
+
   const [postulaciones, setPostulaciones] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
@@ -74,36 +85,32 @@ const MisPostulaciones = () => {
     });
   };
 
-  if (loading) {
-    return <Spinner />;
-  }
-
-  // Badge dinámico estados: pendiente, aprobada, rechazada, cancelada
+  // 4. Mover la función aquí para que acceda a 'colors'
   const getEstadoBadge = (estado: string) => {
     const e = estado.toLowerCase();
 
     const estilos: any = {
       pendiente: {
-        bg: 'rgba(255,193,7,0.18)',
-        color: '#b28704',
+        bg: `${colors.warning}30`, // Dinámico
+        color: colors.secondary, // Dinámico
         icon: 'time-outline',
         label: 'Pendiente',
       },
       aprobada: {
-        bg: 'rgba(76,175,80,0.18)',
-        color: '#2e7d32',
+        bg: `${colors.success}30`, // Dinámico
+        color: colors.success, // Dinámico
         icon: 'checkmark-circle-outline',
         label: 'Aprobada',
       },
       rechazada: {
-        bg: 'rgba(244,67,54,0.18)',
-        color: '#d32f2f',
+        bg: `${colors.danger}30`, // Dinámico
+        color: colors.danger, // Dinámico
         icon: 'close-circle-outline',
         label: 'Rechazada',
       },
       cancelada: {
-        bg: 'rgba(97,97,97,0.18)',
-        color: '#616161',
+        bg: `${colors.gray}30`, // Dinámico
+        color: colors.darkGray, // Dinámico
         icon: 'ban-outline',
         label: 'Cancelada',
       },
@@ -112,13 +119,22 @@ const MisPostulaciones = () => {
     return estilos[e] ?? estilos.pendiente;
   };
 
+  if (loading) {
+    return <Spinner />;
+  }
+
   return (
     <View style={styles.container}>
       <CustomHeader
         title={`Mis Postulaciones (${postulaciones.length})`}
         leftComponent={
           <TouchableOpacity onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
+            {/* 5. Usar colores del tema */}
+            <Ionicons
+              name="arrow-back"
+              size={24}
+              color={isDark ? colors.lightText : colors.text}
+            />
           </TouchableOpacity>
         }
       />
@@ -158,7 +174,7 @@ const MisPostulaciones = () => {
                   <Ionicons
                     name="close-circle-outline"
                     size={18}
-                    color="#d32f2f"
+                    color={colors.danger} // 5. Usar colores del tema
                   />
                   <AppText style={styles.cancelText}>Cancelar</AppText>
                 </TouchableOpacity>
@@ -173,75 +189,79 @@ const MisPostulaciones = () => {
 
 export default MisPostulaciones;
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
+// 6. Convertir el StyleSheet en una función
+const getStyles = (colors: ColorsType, isDark: boolean) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background, // Dinámico
+    },
 
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 
-  // Tarjeta
-  card: {
-    backgroundColor: Colors.cardBackground,
-    padding: 18,
-    borderRadius: 14,
-    marginBottom: 14,
-    borderWidth: 1,
-    borderColor: Colors.secondary,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
+    // Tarjeta
+    card: {
+      backgroundColor: colors.cardBackground, // Dinámico
+      padding: 18,
+      borderRadius: 14,
+      marginBottom: 14,
+      borderWidth: 1,
+      borderColor: colors.secondary, // Dinámico
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: isDark ? 0.2 : 0.1, // Dinámico
+      shadowRadius: 4,
+      elevation: 3,
+    },
 
-  cardTitle: {
-    fontSize: 17,
-    fontWeight: fontWeightBold,
-    color: '#2c2c2c',
-  },
+    cardTitle: {
+      fontSize: 17,
+      fontWeight: fontWeightBold,
+      color: colors.text, // Dinámico
+    },
 
-  rowBetween: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
+    rowBetween: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
 
-  cardFecha: {
-    marginTop: 6,
-    fontSize: 14,
-    color: '#555',
-  },
+    cardFecha: {
+      marginTop: 6,
+      fontSize: 14,
+      color: colors.darkGray, // Dinámico
+    },
 
-  // Badge de estado
-  estadoBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 20,
-    gap: 6,
-  },
-  estadoText: {
-    fontSize: 13,
-    fontWeight: fontWeightSemiBold,
-  },
+    // Badge de estado
+    estadoBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: 20,
+      gap: 6,
+      // backgroundColor es dinámico
+    },
+    estadoText: {
+      fontSize: 13,
+      fontWeight: fontWeightSemiBold,
+      // color es dinámico
+    },
 
-  // Cancelar
-  cancelBtn: {
-    marginTop: 14,
-    alignSelf: 'flex-start',
-    flexDirection: 'row',
-    gap: 6,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    backgroundColor: 'rgba(211,47,47,0.12)',
-    borderRadius: 20,
-  },
-  cancelText: {
-    color: '#d32f2f',
-    fontSize: 14,
-    fontWeight: fontWeightSemiBold,
-  },
-});
+    // Cancelar
+    cancelBtn: {
+      marginTop: 14,
+      alignSelf: 'flex-start',
+      flexDirection: 'row',
+      gap: 6,
+      paddingVertical: 8,
+      paddingHorizontal: 14,
+      backgroundColor: `${colors.danger}20`, // Dinámico
+      borderRadius: 20,
+    },
+    cancelText: {
+      color: colors.danger, // Dinámico
+      fontSize: 14,
+      fontWeight: fontWeightSemiBold,
+    },
+  });

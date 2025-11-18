@@ -1,15 +1,22 @@
 import React, { useState } from 'react';
 import {
-  Modal,
   View,
+  Modal,
   Text,
   TouchableOpacity,
   StyleSheet,
   FlatList,
   Pressable,
 } from 'react-native';
-import { Colors } from '@/src/constants/colors';
+// 1. Quitar la importación estática
+// import { Colors } from '@/src/constants/colors';
 import { NotificationItem } from '@/src/api/notifications';
+import { AppText } from '@/src/components/AppText'; // Importar AppText si es necesario
+import { Ionicons } from '@expo/vector-icons'; // Importar Ionicons
+
+// 2. Importar el hook y los tipos de tema
+import { useTheme } from '@/src/contexts/ThemeContext';
+import { ColorsType } from '@/src/constants/colors';
 
 type Props = {
   visible: boolean;
@@ -28,6 +35,10 @@ export default function NotificationOptionsModal({
   onDeleteSelected,
   notifications,
 }: Props) {
+  // 3. Llamar al hook y generar los estilos
+  const { colors, isDark } = useTheme();
+  const styles = getStyles(colors, isDark);
+
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
 
@@ -154,129 +165,131 @@ export default function NotificationOptionsModal({
   );
 }
 
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    justifyContent: 'flex-end',
-  },
+// 5. Convertir el StyleSheet en una función
+const getStyles = (colors: ColorsType, isDark: boolean) =>
+  StyleSheet.create({
+    overlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.55)',
+      justifyContent: 'flex-end',
+    },
 
-  sheet: {
-    backgroundColor: Colors.background,
-    borderTopLeftRadius: 26,
-    borderTopRightRadius: 26,
-    paddingHorizontal: 24,
-    paddingTop: 18,
-    paddingBottom: 36,
-    shadowColor: '#000',
-    shadowOpacity: 0.18,
-    shadowRadius: 10,
-    elevation: 10,
-    maxHeight: '90%',
-  },
+    sheet: {
+      backgroundColor: colors.cardBackground, // Dinámico
+      borderTopLeftRadius: 26,
+      borderTopRightRadius: 26,
+      paddingHorizontal: 24,
+      paddingTop: 18,
+      paddingBottom: 36,
+      shadowColor: '#000',
+      shadowOpacity: 0.18,
+      shadowRadius: 10,
+      elevation: 10,
+      maxHeight: '90%',
+    },
 
-  header: {
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  headerLine: {
-    width: 45,
-    height: 5,
-    backgroundColor: '#ccc',
-    borderRadius: 4,
-    marginBottom: 12,
-    opacity: 0.5,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: Colors.text,
-  },
+    header: {
+      alignItems: 'center',
+      marginBottom: 20,
+    },
+    headerLine: {
+      width: 45,
+      height: 5,
+      backgroundColor: colors.gray, // Dinámico
+      borderRadius: 4,
+      marginBottom: 12,
+      opacity: 0.5,
+    },
+    headerTitle: {
+      fontSize: 20,
+      fontWeight: '700',
+      color: colors.text, // Dinámico
+    },
 
-  /* LIST ITEMS */
-  listItem: {
-    paddingVertical: 16,
-    paddingHorizontal: 6,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.accent + '55',
-  },
-  listItemText: {
-    fontSize: 17,
-    color: Colors.text,
-  },
+    /* LIST ITEMS */
+    listItem: {
+      paddingVertical: 16,
+      paddingHorizontal: 6,
+      borderBottomWidth: 1,
+      borderBottomColor: `${colors.accent}55`, // Dinámico
+    },
+    listItemText: {
+      fontSize: 17,
+      color: colors.text, // Dinámico
+    },
 
-  /* DANGER OPTION */
-  dangerItem: {
-    backgroundColor: '#ffebee',
-  },
-  dangerText: {
-    color: '#d32f2f',
-    fontWeight: '600',
-  },
+    /* DANGER OPTION */
+    dangerItem: {
+      backgroundColor: `${colors.danger}15`, // Dinámico
+    },
+    dangerText: {
+      color: colors.danger, // Dinámico
+      fontWeight: '600',
+    },
 
-  /* CANCEL BUTTON */
-  cancelButton: {
-    marginTop: 18,
-    paddingVertical: 16,
-  },
-  cancelText: {
-    fontSize: 17,
-    textAlign: 'center',
-    color: Colors.text,
-    opacity: 0.8,
-  },
+    /* CANCEL BUTTON */
+    cancelButton: {
+      marginTop: 18,
+      paddingVertical: 16,
+    },
+    cancelText: {
+      fontSize: 17,
+      textAlign: 'center',
+      color: colors.text, // Dinámico
+      opacity: 0.8,
+    },
 
-  /* CARDS (SELECTION MODE) */
-  card: {
-    backgroundColor: Colors.backgroundSecon ?? '#fff',
-    paddingVertical: 16,
-    paddingHorizontal: 14,
-    borderRadius: 14,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#e6e6e6',
-    elevation: 1.5,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 3,
-  },
-  cardSelected: {
-    backgroundColor: '#ffe6e6',
-    borderColor: '#d32f2f',
-  },
-  cardPressed: {
-    opacity: 0.7,
-  },
-  cardTitle: {
-    fontSize: 16,
-    color: Colors.text,
-    fontWeight: '500',
-  },
+    /* CARDS (SELECTION MODE) */
+    card: {
+      backgroundColor: colors.backgroundSecon, // Dinámico
+      paddingVertical: 16,
+      paddingHorizontal: 14,
+      borderRadius: 14,
+      marginBottom: 12,
+      borderWidth: 1,
+      borderColor: colors.gray, // Dinámico
+      elevation: 1.5,
+      shadowColor: '#000',
+      shadowOpacity: 0.08,
+      shadowRadius: 3,
+    },
+    cardSelected: {
+      backgroundColor: `${colors.danger}20`, // Dinámico
+      borderColor: colors.danger, // Dinámico
+    },
+    cardPressed: {
+      opacity: 0.7,
+    },
+    cardTitle: {
+      fontSize: 16,
+      color: colors.text, // Dinámico
+      fontWeight: '500',
+    },
 
-  /* SELECTION BUTTONS */
-  selectionButtons: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 20,
-  },
+    /* SELECTION BUTTONS */
+    selectionButtons: {
+      flexDirection: 'row',
+      gap: 12,
+      marginTop: 20,
+    },
 
-  deleteSelectedButton: {
-    flex: 1,
-    backgroundColor: '#d32f2f',
-    paddingVertical: 14,
-    borderRadius: 10,
-  },
-  deleteSelectedText: {
-    color: 'white',
-    textAlign: 'center',
-    fontSize: 16,
-    fontWeight: '600',
-  },
+    deleteSelectedButton: {
+      flex: 1,
+      backgroundColor: colors.danger, // Dinámico
+      paddingVertical: 14,
+      borderRadius: 10,
+    },
+    deleteSelectedText: {
+      color: colors.lightText, // Dinámico
+      textAlign: 'center',
+      fontSize: 16,
+      fontWeight: '600',
+    },
 
-  cancelSelectionButton: {
-    flex: 1,
-    backgroundColor: '#f3f3f3',
-    paddingVertical: 14,
-    borderRadius: 10,
-  },
-});
+    cancelSelectionButton: {
+      flex: 1,
+      backgroundColor: colors.backgroundSecon, // Dinámico
+      paddingVertical: 14,
+      borderRadius: 10,
+    },
+  });

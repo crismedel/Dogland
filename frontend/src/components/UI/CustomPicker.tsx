@@ -1,4 +1,3 @@
-// CustomPicker.tsx
 import React, { useState } from 'react';
 import {
   View,
@@ -9,12 +8,17 @@ import {
   Pressable,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '@/src/constants/colors';
+// 1. Quitar la importación estática
+// import { Colors } from '@/src/constants/colors';
 import {
   fontWeightSemiBold,
   fontWeightMedium,
   AppText,
 } from '@/src/components/AppText';
+
+// 2. Importar el hook y los tipos de tema
+import { useTheme } from '@/src/contexts/ThemeContext';
+import { ColorsType } from '@/src/constants/colors';
 
 interface PickerOption {
   label: string;
@@ -38,6 +42,10 @@ const CustomPicker: React.FC<CustomPickerProps> = ({
   icon,
   disabled = false,
 }) => {
+  // 3. Llamar al hook y generar los estilos
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
+
   const [modalVisible, setModalVisible] = useState(false);
 
   const selectedOption = options.find((opt) => opt.value === selectedValue);
@@ -56,7 +64,7 @@ const CustomPicker: React.FC<CustomPickerProps> = ({
             <Ionicons
               name={icon}
               size={20}
-              color="#9CA3AF"
+              color={colors.darkGray} // 4. Usar colores del tema
               style={{ marginRight: 8 }}
             />
           )}
@@ -71,7 +79,7 @@ const CustomPicker: React.FC<CustomPickerProps> = ({
           <Ionicons
             name="chevron-down"
             size={20}
-            color="#9CA3AF"
+            color={colors.darkGray} // 4. Usar colores del tema
             style={{ marginLeft: 'auto' }}
           />
         </View>
@@ -94,7 +102,11 @@ const CustomPicker: React.FC<CustomPickerProps> = ({
                 onPress={() => setModalVisible(false)}
                 style={styles.closeButton}
               >
-                <Ionicons name="close" size={24} color="#6B7280" />
+                <Ionicons
+                  name="close"
+                  size={24}
+                  color={colors.darkGray} // 4. Usar colores del tema
+                />
               </TouchableOpacity>
             </View>
 
@@ -132,7 +144,7 @@ const CustomPicker: React.FC<CustomPickerProps> = ({
                       <Ionicons
                         name="checkmark-circle"
                         size={22}
-                        color={Colors.primary}
+                        color={colors.primary} // 4. Usar colores del tema
                       />
                     )}
                   </TouchableOpacity>
@@ -148,93 +160,95 @@ const CustomPicker: React.FC<CustomPickerProps> = ({
 
 export default CustomPicker;
 
-const styles = StyleSheet.create({
-  pickerButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFF',
-    borderRadius: 14,
-    borderWidth: 1.5,
-    borderColor: Colors.secondary,
-    paddingHorizontal: 12,
-    minHeight: 50,
-  },
-  pickerButtonText: {
-    flex: 1,
-    fontSize: 15,
-    color: '#1F2937',
-    paddingVertical: 14,
-  },
-  placeholderText: {
-    color: '#9CA3AF',
-  },
-  disabled: {
-    backgroundColor: '#F3F4F6',
-    opacity: 0.6,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    backgroundColor: '#FFF',
-    borderRadius: 20,
-    width: '85%',
-    maxHeight: '70%',
-    overflow: 'hidden',
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: fontWeightSemiBold,
-    color: '#111827',
-  },
-  closeButton: {
-    padding: 4,
-  },
-  optionsList: {
-    maxHeight: 400,
-  },
-  optionItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
-  },
-  optionItemSelected: {
-    backgroundColor: '#FEF3C7',
-  },
-  optionItemDisabled: {
-    opacity: 0.5,
-  },
-  optionText: {
-    fontSize: 16,
-    color: '#374151',
-    fontWeight: fontWeightMedium,
-  },
-  optionTextSelected: {
-    color: '#111827',
-    fontWeight: fontWeightSemiBold,
-  },
-  optionTextDisabled: {
-    color: '#9CA3AF',
-  },
-});
+// 5. Convertir el StyleSheet en una función
+const getStyles = (colors: ColorsType) =>
+  StyleSheet.create({
+    pickerButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.cardBackground, // Dinámico
+      borderRadius: 14,
+      borderWidth: 1.5,
+      borderColor: colors.secondary, // Dinámico
+      paddingHorizontal: 12,
+      minHeight: 50,
+    },
+    pickerButtonText: {
+      flex: 1,
+      fontSize: 15,
+      color: colors.text, // Dinámico
+      paddingVertical: 14,
+    },
+    placeholderText: {
+      color: colors.darkGray, // Dinámico
+    },
+    disabled: {
+      backgroundColor: colors.backgroundSecon, // Dinámico
+      opacity: 0.6,
+    },
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    modalContent: {
+      backgroundColor: colors.cardBackground, // Dinámico
+      borderRadius: 20,
+      width: '85%',
+      maxHeight: '70%',
+      overflow: 'hidden',
+      elevation: 5,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.25,
+      shadowRadius: 3.84,
+    },
+    modalHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 20,
+      paddingVertical: 16,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.gray, // Dinámico
+    },
+    modalTitle: {
+      fontSize: 18,
+      fontWeight: fontWeightSemiBold,
+      color: colors.text, // Dinámico
+    },
+    closeButton: {
+      padding: 4,
+    },
+    optionsList: {
+      maxHeight: 400,
+    },
+    optionItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 20,
+      paddingVertical: 16,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.gray, // Dinámico
+    },
+    optionItemSelected: {
+      backgroundColor: `${colors.primary}30`, // Dinámico (light yellow)
+    },
+    optionItemDisabled: {
+      opacity: 0.5,
+    },
+    optionText: {
+      fontSize: 16,
+      color: colors.text, // Dinámico
+      fontWeight: fontWeightMedium,
+    },
+    optionTextSelected: {
+      color: colors.text, // Dinámico
+      fontWeight: fontWeightSemiBold,
+    },
+    optionTextDisabled: {
+      color: colors.darkGray, // Dinámico
+    },
+  });

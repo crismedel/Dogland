@@ -9,14 +9,27 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Colors } from '@/src/constants/colors';
+// 1. Quitar la importación estática
+// import { Colors } from '@/src/constants/colors';
 import { fontWeightSemiBold, AppText } from '@/src/components/AppText';
 import { useAuth } from '@/src/contexts/AuthContext';
+
+// 2. Importar el hook y los tipos de tema
+import { useTheme } from '@/src/contexts/ThemeContext';
+import { ColorsType } from '@/src/constants/colors';
 
 type IoniconName = ComponentProps<typeof Ionicons>['name'];
 
 type NavItem = {
-  name: 'home' | 'alerts' | 'adoption' | 'community_maps' | 'profile' | 'stats' | 'users' | 'management';
+  name:
+    | 'home'
+    | 'alerts'
+    | 'adoption'
+    | 'community_maps'
+    | 'profile'
+    | 'stats'
+    | 'users'
+    | 'management';
   icon: IoniconName;
   iconOutline: IoniconName;
   label: string;
@@ -81,6 +94,7 @@ const adminNavItems: NavItem[] = [
 ];
 
 const TAB_HEIGHT = 64;
+// Estos RGB son correctos para ambos temas, ya que primary/secondary no cambian
 const PRIMARY_RGB = '251,191,36'; // #fbbf24
 const SECONDARY_RGB = '217,119,6'; // #d97706
 
@@ -90,6 +104,10 @@ export default function BottomNavBar() {
   const bottomInset = Math.max(insets.bottom, Platform.OS === 'ios' ? 8 : 10);
   const { user } = useAuth();
 
+  // 3. Llamar al hook y generar los estilos
+  const { colors, isDark } = useTheme();
+  const styles = getStyles(colors, isDark);
+
   // Determinar qué tabs mostrar según el rol
   const navItems = useMemo(() => {
     if (user?.role === 'Admin') {
@@ -98,16 +116,18 @@ export default function BottomNavBar() {
     return defaultNavItems;
   }, [user?.role]);
 
-  // ✅ Colores fijos (solo modo claro)
-  const containerBg = Colors.backgroundSecon;
-  const containerBorder = 'rgba(0,0,0,0.04)';
-  const inactiveColor = Colors.darkGray;
-  const activeIconColor = Colors.primary;
-  const activeLabelColor = Colors.secondary;
+  // 4. Mover todas las variables de color aquí para que usen 'colors'
+  const containerBg = colors.backgroundSecon;
+  const containerBorder = isDark
+    ? 'rgba(255,255,255,0.06)'
+    : 'rgba(0,0,0,0.04)';
+  const inactiveColor = colors.darkGray;
+  const activeIconColor = colors.primary;
+  const activeLabelColor = colors.secondary;
   const pillBg = `rgba(${PRIMARY_RGB}, 0.18)`;
   const pillBorder = `rgba(${PRIMARY_RGB}, 0.28)`;
   const indicatorGlow = `rgba(${SECONDARY_RGB}, 0.16)`;
-  const indicatorColor = Colors.secondary;
+  const indicatorColor = colors.secondary;
 
   return (
     <View style={styles.root} pointerEvents="box-none">
@@ -222,150 +242,161 @@ export default function BottomNavBar() {
   );
 }
 
-const styles = StyleSheet.create({
-  root: { left: 0, right: 0, bottom: 0 },
-  container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderTopLeftRadius: 18,
-    borderTopRightRadius: 18,
-    borderTopWidth: 1,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: -6 },
-        shadowOpacity: 0.1,
-        shadowRadius: 16,
-      },
-      android: { elevation: 10 },
-    }),
-    overflow: 'hidden',
-  },
-  containerSheen: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: TAB_HEIGHT,
-    backgroundColor: 'rgba(255,255,255,0.04)',
-  },
-  topBevelHighlight: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 3,
-    backgroundColor: 'rgba(255,255,255,0.55)',
-  },
-  topBevelShadow: {
-    position: 'absolute',
-    top: 3,
-    left: 0,
-    right: 0,
-    height: 8,
-    backgroundColor: 'transparent',
-    borderTopColor: 'rgba(0,0,0,0.06)',
-    borderTopWidth: 1,
-  },
-  navItem: {
-    flex: 1,
-    height: TAB_HEIGHT,
-    marginHorizontal: 6,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: 14,
-  },
-  content: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    zIndex: 1,
-    minWidth: 64,
-  },
-  activePill: {
-    position: 'absolute',
-    top: 6,
-    left: 6,
-    right: 6,
-    bottom: 6,
-    borderRadius: 18,
-    borderWidth: 1,
-    zIndex: 0,
-    overflow: 'hidden',
-  },
-  pillShadowBottom: {
-    position: 'absolute',
-    bottom: 6,
-    left: 14,
-    right: 14,
-    height: 8,
-    borderBottomLeftRadius: 12,
-    borderBottomRightRadius: 12,
-    backgroundColor: 'rgba(0,0,0,0.06)',
-  },
-  pillHighlightTop: {
-    position: 'absolute',
-    top: 6,
-    left: 10,
-    right: 10,
-    height: 8,
-    borderTopLeftRadius: 12,
-    borderTopRightRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.16)',
-  },
-  topIndicatorGlow: {
-    position: 'absolute',
-    top: 2,
-    height: 8,
-    width: 40,
-    borderRadius: 10,
-    alignSelf: 'center',
-    zIndex: 3,
-  },
-  topIndicator: {
-    position: 'absolute',
-    top: 5,
-    height: 5,
-    width: 28,
-    borderRadius: 6,
-    alignSelf: 'center',
-    zIndex: 4,
-  },
-  icon3DWrap: {
-    position: 'relative',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  iconHighlight: {
-    position: 'absolute',
-    top: -2,
-    width: 18,
-    height: 6,
-    borderRadius: 8,
-    backgroundColor: 'rgba(255,255,255,0.36)',
-  },
-  iconShadow: {
-    position: 'absolute',
-    bottom: -2,
-    width: 20,
-    height: 7,
-    borderRadius: 8,
-    backgroundColor: 'rgba(0,0,0,0.08)',
-  },
-  labelBox: {
-    height: 18,
-    justifyContent: 'center',
-  },
-  label: {
-    fontSize: 15,
-    textAlign: 'center',
-    marginTop: 2,
-    fontWeight: Platform.OS === 'android' ? '500' : '400',
-    letterSpacing: 0.2,
-  },
-  labelActive: {
-    opacity: 1,
-    fontWeight: fontWeightSemiBold,
-  },
-});
+// 5. Convertir el StyleSheet en una función
+const getStyles = (colors: ColorsType, isDark: boolean) =>
+  StyleSheet.create({
+    root: { left: 0, right: 0, bottom: 0 },
+    container: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      borderTopLeftRadius: 18,
+      borderTopRightRadius: 18,
+      borderTopWidth: 1,
+      ...Platform.select({
+        ios: {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: -6 },
+          shadowOpacity: isDark ? 0.3 : 0.1,
+          shadowRadius: 16,
+        },
+        android: { elevation: 10 },
+      }),
+      overflow: 'hidden',
+    },
+    containerSheen: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      height: TAB_HEIGHT,
+      backgroundColor: isDark
+        ? 'rgba(255,255,255,0.03)'
+        : 'rgba(255,255,255,0.04)',
+    },
+    topBevelHighlight: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      height: 3,
+      backgroundColor: isDark
+        ? 'rgba(255,255,255,0.1)'
+        : 'rgba(255,255,255,0.55)',
+    },
+    topBevelShadow: {
+      position: 'absolute',
+      top: 3,
+      left: 0,
+      right: 0,
+      height: 8,
+      backgroundColor: 'transparent',
+      borderTopColor: isDark ? 'rgba(0,0,0,0.4)' : 'rgba(0,0,0,0.06)',
+      borderTopWidth: 1,
+    },
+    navItem: {
+      flex: 1,
+      height: TAB_HEIGHT,
+      marginHorizontal: 6,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingTop: 14,
+    },
+    content: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 4,
+      zIndex: 1,
+      minWidth: 64,
+    },
+    activePill: {
+      position: 'absolute',
+      top: 6,
+      left: 6,
+      right: 6,
+      bottom: 6,
+      borderRadius: 18,
+      borderWidth: 1,
+      zIndex: 0,
+      overflow: 'hidden',
+    },
+    pillShadowBottom: {
+      position: 'absolute',
+      bottom: 6,
+      left: 14,
+      right: 14,
+      height: 8,
+      borderBottomLeftRadius: 12,
+      borderBottomRightRadius: 12,
+      backgroundColor: isDark ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.06)',
+    },
+    pillHighlightTop: {
+      position: 'absolute',
+      top: 6,
+      left: 10,
+      right: 10,
+      height: 8,
+      borderTopLeftRadius: 12,
+      borderTopRightRadius: 12,
+      backgroundColor: isDark
+        ? 'rgba(255,255,255,0.08)'
+        : 'rgba(255,255,255,0.16)',
+    },
+    topIndicatorGlow: {
+      position: 'absolute',
+      top: 2,
+      height: 8,
+      width: 40,
+      borderRadius: 10,
+      alignSelf: 'center',
+      zIndex: 3,
+    },
+    topIndicator: {
+      position: 'absolute',
+      top: 5,
+      height: 5,
+      width: 28,
+      borderRadius: 6,
+      alignSelf: 'center',
+      zIndex: 4,
+    },
+    icon3DWrap: {
+      position: 'relative',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    iconHighlight: {
+      position: 'absolute',
+      top: -2,
+      width: 18,
+      height: 6,
+      borderRadius: 8,
+      backgroundColor: isDark
+        ? 'rgba(255,255,255,0.15)'
+        : 'rgba(255,255,255,0.36)',
+    },
+    iconShadow: {
+      position: 'absolute',
+      bottom: -2,
+      width: 20,
+      height: 7,
+      borderRadius: 8,
+      backgroundColor: isDark ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.08)',
+    },
+    labelBox: {
+      height: 18,
+      justifyContent: 'center',
+    },
+    label: {
+      fontSize: 15,
+      textAlign: 'center',
+      marginTop: 2,
+      fontWeight: Platform.OS === 'android' ? '500' : '400',
+      letterSpacing: 0.2,
+      // color se aplica dinámicamente
+    },
+    labelActive: {
+      opacity: 1,
+      fontWeight: fontWeightSemiBold,
+    },
+  });

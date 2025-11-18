@@ -1,37 +1,48 @@
+import React, { useState, useEffect } from 'react';
 import {
-  AppText,
-  fontWeightMedium
-} from '@/src/components/AppText';
-import { useNotification } from '@/src/components/notifications';
-import CustomButton from '@/src/components/UI/CustomButton';
-import CustomHeader from '@/src/components/UI/CustomHeader';
-import { Colors } from '@/src/constants/colors';
-import { Ionicons } from '@expo/vector-icons';
-import * as Location from 'expo-location';
-import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  Dimensions,
+  View,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
   Image,
+  ActivityIndicator,
+  Dimensions,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
-  StyleSheet,
+  Linking,
+  Text, // Asegúrate de que Text esté importado
   TextInput,
-  TouchableOpacity,
-  View,
+  Pressable, // Importar Pressable si se usa
 } from 'react-native';
-import DropDownPicker from 'react-native-dropdown-picker';
+import { useRouter } from 'expo-router';
+import DynamicForm, { FormField } from '@/src/components/UI/DynamicForm';
+import CustomHeader from '@/src/components/UI/CustomHeader';
+import {
+  AppText,
+  fontWeightBold,
+  fontWeightMedium,
+  fontWeightSemiBold,
+} from '@/src/components/AppText';
+// 1. Quitar la importación estática
+// import { Colors } from '@/src/constants/colors';
+import { fetchUserProfile } from '@/src/api/users';
+import { useAuth } from '@/src/contexts/AuthContext';
+import { fetchNotifications } from '@/src/api/notifications';
+import Spinner from '@/src/components/UI/Spinner';
+import { Ionicons } from '@expo/vector-icons';
+import * as Location from 'expo-location';
 import MapView, { Marker } from 'react-native-maps';
 import apiClient from '../../src/api/client';
-
-// --- INICIO DE IMPORTACIONES OFFLINE ---
+import { useNotification } from '@/src/components/notifications';
 import { useNetInfo } from '@react-native-community/netinfo';
-import { useReportSync } from '../../src/hooks/useReportSync'; // Ajusta la ruta si es necesario
-import { saveReportOffline } from '../../src/utils/offlineStorage'; // Ajusta la ruta si es necesario
-// --- FIN DE IMPORTACIONES OFFLINE ---
+import { useReportSync } from '../../src/hooks/useReportSync';
+import { saveReportOffline } from '../../src/utils/offlineStorage';
+import DropDownPicker from 'react-native-dropdown-picker';
+import CustomButton from '../../src/components/UI/CustomButton';
+
+// 2. Importar el hook y los tipos de tema
+import { useTheme } from '@/src/contexts/ThemeContext';
+import { ColorsType } from '@/src/constants/colors';
 
 const { width } = Dimensions.get('window');
 
@@ -41,13 +52,15 @@ interface ErrorData {
 }
 
 const CreateReportScreen = () => {
+  // 3. Llamar al hook y generar los estilos
+  const { colors, isDark } = useTheme();
+  const styles = getStyles(colors, isDark);
+
   const router = useRouter();
-  const { showError, showSuccess, showInfo } = useNotification();
+  const { showError, showSuccess, showInfo, confirm } = useNotification(); // Asegurarse de tener 'confirm'
 
   // --- HOOKS OFFLINE ---
   const netInfo = useNetInfo();
-  // Llamamos a useReportSync() aquí para activar el listener de conexión
-  // que subirá los reportes pendientes automáticamente.
   useReportSync();
   // --- FIN HOOKS OFFLINE ---
 
@@ -55,7 +68,6 @@ const CreateReportScreen = () => {
   const [descripcion, setDescripcion] = useState('');
   const [titulo, setTitulo] = useState('');
   const [imageUrl, setImageUrl] = useState('');
-
   const [loading, setLoading] = useState(false);
 
   // ESTADOS DE DROPDOWN
@@ -95,7 +107,7 @@ const CreateReportScreen = () => {
   } | null>(null);
   const [mostrarMapa, setMostrarMapa] = useState(false);
 
-  // --- LÓGICA DE UBICACIÓN (sin cambios) ---
+  // --- LÓGICA DE UBICACIÓN (Modificada para no usar Alert) ---
   const obtenerUbicacionActual = async () => {
     let { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== 'granted') {
@@ -110,11 +122,12 @@ const CreateReportScreen = () => {
   const handleMapPress = (event: any) => {
     const { coordinate } = event.nativeEvent;
     setUbicacion(coordinate);
-    Alert.alert(
+    // 5. Reemplazar Alert con showInfo
+    showInfo(
       'Ubicación Seleccionada',
-      `Lat: ${coordinate.latitude.toFixed(
+      `Lat: ${coordinate.latitude.toFixed(4)}, Lon: ${coordinate.longitude.toFixed(
         4,
-      )}, Lon: ${coordinate.longitude.toFixed(4)}`,
+      )}`,
     );
     setMostrarMapa(false);
   };
@@ -131,7 +144,7 @@ const CreateReportScreen = () => {
     setLoading(false);
   };
 
-  // --- FUNCIÓN DE ENVÍO (MODIFICADA PARA OFFLINE) ---
+  // --- FUNCIÓN DE ENVÍO (MODIFICADA PARA OFFLINE Y SIN ALERTS) ---
   const handleCreateReport = async () => {
     // 1. Validaciones
     if (
@@ -142,6 +155,7 @@ const CreateReportScreen = () => {
       estadoAvistamiento === null ||
       !ubicacion
     ) {
+      // 5. Reemplazar Alert con showError
       showError(
         'Error',
         'Todos los campos (título, descripción, selecciones y ubicación) son obligatorios.',
@@ -193,23 +207,24 @@ const CreateReportScreen = () => {
         }
       } catch (error) {
         // El envío online falló (ej. 500 o error de red)
-        console.error('Error al enviar online, preguntando para guardar offline:', error);
-        setLoading(false);
-        Alert.alert(
-          'Error de Envío',
-          'No pudimos subir el reporte. ¿Quieres guardarlo para intentarlo más tarde?',
-          [
-            { text: 'Cancelar', style: 'cancel' },
-            {
-              text: 'Guardar Offline',
-              onPress: async () => {
-                await saveReportOffline(reportData);
-                resetForm();
-                router.back();
-              },
-            },
-          ],
+        console.error(
+          'Error al enviar online, preguntando para guardar offline:',
+          error,
         );
+        setLoading(false);
+        // 5. Reemplazar Alert con confirm
+        confirm({
+          title: 'Error de Envío',
+          message:
+            'No pudimos subir el reporte. ¿Quieres guardarlo para intentarlo más tarde?',
+          confirmLabel: 'Guardar Offline',
+          cancelLabel: 'Cancelar',
+          onConfirm: async () => {
+            await saveReportOffline(reportData);
+            resetForm();
+            router.back();
+          },
+        });
       }
     } else {
       // --- MODO OFFLINE (SIN CONEXIÓN) ---
@@ -239,16 +254,28 @@ const CreateReportScreen = () => {
           <TouchableOpacity onPress={() => router.back()}>
             <Image
               source={require('../../assets/images/volver.png')}
-              style={{ width: 24, height: 24, tintColor: '#fff' }}
+              // 6. Usar colores del tema (texto oscuro sobre fondo amarillo)
+              style={{
+                width: 24,
+                height: 24,
+                tintColor: isDark ? colors.lightText : colors.text,
+              }}
             />
           </TouchableOpacity>
         }
         rightComponent={
           <TouchableOpacity onPress={handleCreateReport}>
             {loading ? (
-              <ActivityIndicator size="small" color="#fff" />
+              <ActivityIndicator
+                size="small"
+                color={isDark ? colors.lightText : colors.text} // 6. Usar colores del tema
+              />
             ) : (
-              <Ionicons name="checkmark-done-outline" size={22} color="#fff" />
+              <Ionicons
+                name="checkmark-done-outline"
+                size={22}
+                color={isDark ? colors.lightText : colors.text} // 6. Usar colores del tema
+              />
             )}
           </TouchableOpacity>
         }
@@ -267,6 +294,7 @@ const CreateReportScreen = () => {
               placeholder="Ej: Perro herido en Av. Principal"
               value={titulo}
               onChangeText={setTitulo}
+              placeholderTextColor={colors.darkGray} // 6. Usar colores del tema
             />
           </View>
 
@@ -283,6 +311,7 @@ const CreateReportScreen = () => {
               value={descripcion}
               onChangeText={setDescripcion}
               multiline
+              placeholderTextColor={colors.darkGray} // 6. Usar colores del tema
             />
           </View>
 
@@ -303,6 +332,9 @@ const CreateReportScreen = () => {
               placeholder="Seleccionar Especie"
               style={styles.dropdownStyle}
               dropDownContainerStyle={styles.dropdownContainerStyle}
+              placeholderStyle={styles.dropdownPlaceholder} // 6. Usar estilos
+              textStyle={styles.dropdownText} // 6. Usar estilos
+              theme={isDark ? 'DARK' : 'LIGHT'}
             />
           </View>
 
@@ -325,6 +357,9 @@ const CreateReportScreen = () => {
               placeholder="Seleccionar Estado de Salud"
               style={styles.dropdownStyle}
               dropDownContainerStyle={styles.dropdownContainerStyle}
+              placeholderStyle={styles.dropdownPlaceholder} // 6. Usar estilos
+              textStyle={styles.dropdownText} // 6. Usar estilos
+              theme={isDark ? 'DARK' : 'LIGHT'}
             />
           </View>
 
@@ -347,6 +382,9 @@ const CreateReportScreen = () => {
               placeholder="Seleccionar Estado del Avistamiento"
               style={styles.dropdownStyle}
               dropDownContainerStyle={styles.dropdownContainerStyle}
+              placeholderStyle={styles.dropdownPlaceholder} // 6. Usar estilos
+              textStyle={styles.dropdownText} // 6. Usar estilos
+              theme={isDark ? 'DARK' : 'LIGHT'}
             />
           </View>
 
@@ -361,6 +399,7 @@ const CreateReportScreen = () => {
               onChangeText={setImageUrl}
               keyboardType="url"
               autoCapitalize="none"
+              placeholderTextColor={colors.darkGray} // 6. Usar colores del tema
             />
             {imageUrl.startsWith('http') && (
               <View style={styles.imagePreviewContainer}>
@@ -375,36 +414,34 @@ const CreateReportScreen = () => {
             )}
           </View>
 
-          <View style={styles.inputContainer}>
+          {/* 5. Reemplazo de Alert por botones */}
+          <View style={[styles.inputContainer, { zIndex: 1000 }]}>
             <AppText style={styles.inputLabel}>Ubicación:</AppText>
-            <TouchableOpacity
-              style={styles.textInput}
-              onPress={() =>
-                Alert.alert(
-                  'Selecciona una opción',
-                  '¿Quieres seleccionar en el mapa o usar tu ubicación actual?',
-                  [
-                    {
-                      text: 'Ver en Mapa',
-                      onPress: () => setMostrarMapa(true),
-                    },
-                    {
-                      text: 'Usar Ubicación Actual',
-                      onPress: obtenerUbicacionActual,
-                    },
-                    { text: 'Cancelar', style: 'cancel' },
-                  ],
-                )
-              }
-            >
-              <AppText style={{ color: ubicacion ? '#000' : '#888' }}>
-                {ubicacion
-                  ? `${ubicacion.latitude.toFixed(
-                      4,
-                    )}, ${ubicacion.longitude.toFixed(4)}`
-                  : 'Seleccionar ubicación'}
+            <View style={styles.locationButtonRow}>
+              <CustomButton
+                title="Usar Actual"
+                onPress={obtenerUbicacionActual}
+                icon="navigate-outline"
+                style={styles.locationButton}
+                textStyle={styles.locationButtonText}
+                variant="secondary"
+              />
+              <CustomButton
+                title="Seleccionar"
+                onPress={() => setMostrarMapa(true)}
+                icon="map-outline"
+                style={styles.locationButton}
+                textStyle={styles.locationButtonText}
+                variant="secondary"
+              />
+            </View>
+            {ubicacion && (
+              <AppText style={styles.locationText}>
+                {`Lat: ${ubicacion.latitude.toFixed(
+                  4,
+                )}, Lon: ${ubicacion.longitude.toFixed(4)}`}
               </AppText>
-            </TouchableOpacity>
+            )}
           </View>
 
           {mostrarMapa && (
@@ -445,95 +482,121 @@ const CreateReportScreen = () => {
 };
 
 // --- ESTILOS (sin cambios, excepto por un scroll más grande) ---
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.lightText,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: Colors.lightText,
-  },
-  loadingText: {
-    marginTop: 10,
-    fontSize: 16,
-    color: Colors.background,
-  },
-  scrollContainer: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 30,
-    paddingBottom: 150,
-  },
-  formContainer: {
-    width: width * 0.9,
-    maxWidth: 400,
-    paddingHorizontal: 20,
-    backgroundColor: '#F9FAFB',
-    borderRadius: 16,
-    paddingVertical: 30,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  inputContainer: {
-    marginBottom: 20,
-  },
-  inputLabel: {
-    fontSize: 16,
-    fontWeight: fontWeightMedium,
-    color: '#374151',
-    marginBottom: 6,
-  },
-  textInput: {
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    fontSize: 16,
-    color: '#1F2937',
-    backgroundColor: Colors.lightText,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  dropdownStyle: {
-    backgroundColor: Colors.lightText,
-    borderColor: '#D1D5DB',
-    borderRadius: 12,
-  },
-  dropdownContainerStyle: {
-    borderColor: '#D1D5DB',
-    borderRadius: 12,
-    marginTop: 0,
-  },
-  mapContainer: {
-    width: '100%',
-    height: 300,
-    marginVertical: 20,
-  },
-  map: {
-    width: '100%',
-    height: '100%',
-  },
-  imagePreviewContainer: {
-    marginTop: 15,
-    borderRadius: 12,
-    overflow: 'hidden',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-  },
-  imagePreview: {
-    width: '100%',
-    height: 200,
-    resizeMode: 'cover',
-  },
-});
+// 7. Convertir el StyleSheet en una función
+const getStyles = (colors: ColorsType, isDark: boolean) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background, // Dinámico
+    },
+    loadingContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: colors.background, // Dinámico
+    },
+    loadingText: {
+      marginTop: 10,
+      fontSize: 16,
+      color: colors.primary, // Dinámico
+    },
+    scrollContainer: {
+      flexGrow: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingVertical: 30,
+      paddingBottom: 150,
+    },
+    formContainer: {
+      width: width * 0.9,
+      maxWidth: 400,
+      paddingHorizontal: 20,
+      backgroundColor: colors.cardBackground, // Dinámico
+      borderRadius: 16,
+      paddingVertical: 30,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: isDark ? 0.2 : 0.1, // Dinámico
+      shadowRadius: 3.84,
+      elevation: 5,
+    },
+    inputContainer: {
+      marginBottom: 20,
+    },
+    inputLabel: {
+      fontSize: 16,
+      fontWeight: fontWeightMedium,
+      color: colors.text, // Dinámico
+      marginBottom: 6,
+    },
+    textInput: {
+      borderWidth: 1,
+      borderColor: colors.gray, // Dinámico
+      borderRadius: 12,
+      paddingVertical: 14,
+      paddingHorizontal: 16,
+      fontSize: 16,
+      color: colors.text, // Dinámico
+      backgroundColor: colors.background, // Dinámico
+      justifyContent: 'center',
+      minHeight: 50, // Asegurar altura mínima
+    },
+    dropdownStyle: {
+      backgroundColor: colors.background, // Dinámico
+      borderColor: colors.gray, // Dinámico
+      borderRadius: 12,
+    },
+    dropdownContainerStyle: {
+      borderColor: colors.gray, // Dinámico
+      borderRadius: 12,
+      marginTop: 0,
+    },
+    dropdownText: {
+      color: colors.text, // Dinámico
+    },
+    dropdownPlaceholder: {
+      color: colors.darkGray, // Dinámico
+    },
+    mapContainer: {
+      width: '100%',
+      height: 300,
+      marginVertical: 20,
+    },
+    map: {
+      width: '100%',
+      height: '100%',
+    },
+    imagePreviewContainer: {
+      marginTop: 15,
+      borderRadius: 12,
+      overflow: 'hidden',
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: colors.gray, // Dinámico
+    },
+    imagePreview: {
+      width: '100%',
+      height: 200,
+      resizeMode: 'cover',
+    },
+    // 5. Nuevos estilos para los botones de ubicación
+    locationButtonRow: {
+      flexDirection: 'row',
+      gap: 10,
+      zIndex: 1000,
+    },
+    locationButton: {
+      flex: 1,
+    },
+    locationButtonText: {
+      fontSize: 14,
+    },
+    locationText: {
+      textAlign: 'center',
+      marginTop: 12,
+      color: colors.darkGray, // Dinámico
+      fontSize: 14,
+    },
+  });
 
 export default CreateReportScreen;

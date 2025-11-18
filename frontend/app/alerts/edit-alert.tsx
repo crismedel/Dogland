@@ -2,9 +2,13 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
+  ScrollView,
   Image,
+  ActivityIndicator,
+  Platform, // Importar Platform
+  KeyboardAvoidingView, // Importar KeyboardAvoidingView
+  Dimensions, // Importar Dimensions
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as Location from 'expo-location';
@@ -13,11 +17,17 @@ import type { Alert as AlertTypeFromAPI } from '../../src/types/alert';
 import { useNotification } from '@/src/components/notifications';
 import { useRefresh } from '@/src/contexts/RefreshContext';
 import { REFRESH_KEYS } from '@/src/constants/refreshKeys';
-import { Colors } from '@/src/constants/colors';
+// 1. Quitar la importación estática
+// import { Colors } from '@/src/constants/colors';
 import { AppText } from '@/src/components/AppText';
 import CustomHeader from '@/src/components/UI/CustomHeader';
 import DynamicForm, { FormField } from '@/src/components/UI/DynamicForm';
 import Spinner from '@/src/components/UI/Spinner';
+import { Ionicons } from '@expo/vector-icons'; // Importar Ionicons
+
+// 2. Importar el hook y los tipos de tema
+import { useTheme } from '@/src/contexts/ThemeContext';
+import { ColorsType } from '@/src/constants/colors';
 
 const MOCK_TIPOS_ALERTA = [
   { id: 1, nombre: 'Jauria' },
@@ -35,6 +45,10 @@ const MOCK_NIVELES_RIESGO = [
 ];
 
 export default function EditAlertScreen() {
+  // 3. Llamar al hook y generar los estilos
+  const { colors, isDark } = useTheme();
+  const styles = getStyles(colors, isDark);
+
   const router = useRouter();
   const { id } = useLocalSearchParams();
   const { showError, showSuccess } = useNotification();
@@ -272,7 +286,8 @@ export default function EditAlertScreen() {
       type: 'date',
       dateMode: 'date',
       icon: 'calendar-outline',
-      calendarTheme: 'light',
+      // 4. Usar el tema dinámico
+      calendarTheme: isDark ? 'dark' : 'light',
     },
   ];
 
@@ -288,7 +303,7 @@ export default function EditAlertScreen() {
           <TouchableOpacity onPress={() => router.back()}>
             <Image
               source={require('../../assets/images/volver.png')}
-              style={styles.backIcon}
+              style={styles.backIcon} // 4. Usar estilos dinámicos
             />
           </TouchableOpacity>
         }
@@ -315,25 +330,28 @@ export default function EditAlertScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  contentContainer: {
-    padding: 20,
-  },
-  center: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  backIcon: {
-    width: 24,
-    height: 24,
-    tintColor: '#fff',
-  },
-});
+// 5. Convertir el StyleSheet en una función
+const getStyles = (colors: ColorsType, isDark: boolean) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background, // Dinámico
+    },
+    scrollView: {
+      flex: 1,
+    },
+    contentContainer: {
+      padding: 20,
+    },
+    center: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    backIcon: {
+      width: 24,
+      height: 24,
+      // 4. Usar colores del tema (texto oscuro sobre fondo amarillo)
+      tintColor: isDark ? colors.lightText : colors.text,
+    },
+  });

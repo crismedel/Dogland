@@ -10,6 +10,8 @@ import {
   ScrollView,
   TextInput,
   ActivityIndicator,
+  Text,
+  Pressable, // Añadir Pressable
 } from 'react-native';
 import { router } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
@@ -18,7 +20,8 @@ import { Ionicons } from '@expo/vector-icons';
 import apiClient from '@/src/api/client';
 import { useNotification } from '@/src/components/notifications';
 import { Region, Ciudad } from '@/src/types/location';
-import { Colors } from '@/src/constants/colors';
+// 1. Quitar la importación estática
+// import { Colors } from '@/src/constants/colors';
 import { registerSchema } from '@/src/schemas/';
 import {
   fontWeightBold,
@@ -28,10 +31,23 @@ import {
 } from '@/src/components/AppText';
 import CustomPicker from '@/src/components/UI/CustomPicker';
 import CustomCalendar from '@/src/components/UI/calendary/CustomCalendar';
+import { useAuth } from '@/src/contexts/AuthContext';
+import Constants from 'expo-constants';
+import { getExpoPushTokenAsync } from '@/src/utils/expoNotifications';
+import { registerPushToken } from '@/src/api/notifications';
+import * as SecureStore from 'expo-secure-store';
+
+// 2. Importar el hook y los tipos de tema
+import { useTheme } from '@/src/contexts/ThemeContext';
+import { ColorsType } from '@/src/constants/colors';
 
 const { width } = Dimensions.get('window');
 
 export default function RegisterWithValidation() {
+  // 3. Llamar al hook y generar los estilos
+  const { colors, isDark } = useTheme();
+  const styles = getStyles(colors, isDark);
+
   const [regiones, setRegiones] = useState<Region[]>([]);
   const [ciudades, setCiudades] = useState<Ciudad[]>([]);
   const [isLoadingRegions, setIsLoadingRegions] = useState(true);
@@ -176,7 +192,7 @@ export default function RegisterWithValidation() {
       <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
         <Image
           source={require('../../assets/images/volver.png')}
-          style={{ width: 24, height: 24 }}
+          style={styles.backIcon} // 4. Usar estilos dinámicos
         />
       </TouchableOpacity>
 
@@ -203,7 +219,12 @@ export default function RegisterWithValidation() {
                     <Ionicons
                       name="person-outline"
                       size={20}
-                      color={errors.nombre_usuario ? '#EF4444' : '#6B7280'}
+                      // 4. Usar colores del tema
+                      color={
+                        errors.nombre_usuario
+                          ? colors.danger
+                          : colors.darkGray
+                      }
                       style={styles.icon}
                     />
                     <TextInput
@@ -212,6 +233,7 @@ export default function RegisterWithValidation() {
                       value={value}
                       onChangeText={onChange}
                       onBlur={onBlur}
+                      placeholderTextColor={colors.darkGray} // 4. Usar colores del tema
                     />
                   </View>
                   {errors.nombre_usuario && (
@@ -241,7 +263,11 @@ export default function RegisterWithValidation() {
                     <Ionicons
                       name="person-outline"
                       size={20}
-                      color={errors.apellido_paterno ? '#EF4444' : '#6B7280'}
+                      color={
+                        errors.apellido_paterno
+                          ? colors.danger
+                          : colors.darkGray
+                      }
                       style={styles.icon}
                     />
                     <TextInput
@@ -250,6 +276,7 @@ export default function RegisterWithValidation() {
                       value={value}
                       onChangeText={onChange}
                       onBlur={onBlur}
+                      placeholderTextColor={colors.darkGray} // 4. Usar colores del tema
                     />
                   </View>
                   {errors.apellido_paterno && (
@@ -275,7 +302,7 @@ export default function RegisterWithValidation() {
                   <Ionicons
                     name="person-outline"
                     size={20}
-                    color="#6B7280"
+                    color={colors.darkGray} // 4. Usar colores del tema
                     style={styles.icon}
                   />
                   <TextInput
@@ -284,6 +311,7 @@ export default function RegisterWithValidation() {
                     value={value || ''}
                     onChangeText={onChange}
                     onBlur={onBlur}
+                    placeholderTextColor={colors.darkGray} // 4. Usar colores del tema
                   />
                 </View>
               )}
@@ -307,7 +335,7 @@ export default function RegisterWithValidation() {
                     <Ionicons
                       name="call-outline"
                       size={20}
-                      color={errors.telefono ? '#EF4444' : '#6B7280'}
+                      color={errors.telefono ? colors.danger : colors.darkGray}
                       style={styles.icon}
                     />
                     <TextInput
@@ -317,6 +345,7 @@ export default function RegisterWithValidation() {
                       onChangeText={onChange}
                       onBlur={onBlur}
                       keyboardType="phone-pad"
+                      placeholderTextColor={colors.darkGray} // 4. Usar colores del tema
                     />
                   </View>
                   {errors.telefono && (
@@ -350,13 +379,17 @@ export default function RegisterWithValidation() {
                       <Ionicons
                         name="calendar-outline"
                         size={20}
-                        color={errors.fecha_nacimiento ? '#EF4444' : '#6B7280'}
+                        color={
+                          errors.fecha_nacimiento
+                            ? colors.danger
+                            : colors.darkGray
+                        }
                         style={styles.icon}
                       />
                       <AppText
                         style={[
                           styles.inputText,
-                          !value && { color: '#9CA3AF' },
+                          !value && { color: colors.darkGray },
                         ]}
                       >
                         {value
@@ -375,12 +408,11 @@ export default function RegisterWithValidation() {
                     }}
                     selectedDate={value}
                     title="Fecha de Nacimiento"
-                    theme="light"
                   />
 
                   {errors.fecha_nacimiento && (
                     <AppText style={styles.errorText}>
-                      {errors.fecha_nacimiento.message}
+                      {errors.fecha_nacimiento.message as string}
                     </AppText>
                   )}
                 </>
@@ -449,7 +481,7 @@ export default function RegisterWithValidation() {
                 <>
                   {isLoadingCities ? (
                     <View style={styles.inputWrapper}>
-                      <ActivityIndicator size="small" color={Colors.primary} />
+                      <ActivityIndicator size="small" color={colors.primary} />
                     </View>
                   ) : (
                     <CustomPicker
@@ -469,6 +501,7 @@ export default function RegisterWithValidation() {
                       onValueChange={onChange}
                       placeholder="Selecciona una ciudad"
                       icon="location-outline"
+                      disabled={!selectedRegion || isLoadingCities}
                     />
                   )}
                   {errors.id_ciudad && (
@@ -498,7 +531,7 @@ export default function RegisterWithValidation() {
                     <Ionicons
                       name="mail-outline"
                       size={20}
-                      color={errors.email ? '#EF4444' : '#6B7280'}
+                      color={errors.email ? colors.danger : colors.darkGray}
                       style={styles.icon}
                     />
                     <TextInput
@@ -509,6 +542,7 @@ export default function RegisterWithValidation() {
                       onBlur={onBlur}
                       keyboardType="email-address"
                       autoCapitalize="none"
+                      placeholderTextColor={colors.darkGray}
                     />
                   </View>
                   {errors.email && (
@@ -538,7 +572,7 @@ export default function RegisterWithValidation() {
                     <Ionicons
                       name="lock-closed-outline"
                       size={20}
-                      color={errors.password ? '#EF4444' : '#6B7280'}
+                      color={errors.password ? colors.danger : colors.darkGray}
                       style={styles.icon}
                     />
                     <TextInput
@@ -549,12 +583,15 @@ export default function RegisterWithValidation() {
                       onBlur={onBlur}
                       secureTextEntry={!showPassword}
                       autoCapitalize="none"
+                      placeholderTextColor={colors.darkGray}
                     />
-                    <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                    <TouchableOpacity
+                      onPress={() => setShowPassword(!showPassword)}
+                    >
                       <Ionicons
                         name={showPassword ? 'eye-off-outline' : 'eye-outline'}
                         size={20}
-                        color="#6B7280"
+                        color={colors.darkGray}
                       />
                     </TouchableOpacity>
                   </View>
@@ -570,12 +607,12 @@ export default function RegisterWithValidation() {
                               width: `${(passwordStrength / 4) * 100}%`,
                               backgroundColor:
                                 passwordStrength <= 1
-                                  ? '#EF4444'
+                                  ? colors.danger
                                   : passwordStrength === 2
-                                    ? '#F59E0B'
-                                    : passwordStrength === 3
-                                      ? '#FBBF24'
-                                      : '#10B981',
+                                  ? colors.warning
+                                  : passwordStrength === 3
+                                  ? colors.primary
+                                  : colors.success,
                             },
                           ]}
                         />
@@ -584,10 +621,10 @@ export default function RegisterWithValidation() {
                         {passwordStrength <= 1
                           ? '⚠️ Vulnerable'
                           : passwordStrength === 2
-                            ? '⚡ Aceptable'
-                            : passwordStrength === 3
-                              ? '✅ Fuerte'
-                              : '🔒 Muy fuerte'}
+                          ? '⚡ Aceptable'
+                          : passwordStrength === 3
+                          ? '✅ Fuerte'
+                          : '🔒 Muy fuerte'}
                       </AppText>
                     </View>
                   )}
@@ -653,7 +690,11 @@ export default function RegisterWithValidation() {
                     <Ionicons
                       name="lock-closed-outline"
                       size={20}
-                      color={errors.confirmPassword ? '#EF4444' : '#6B7280'}
+                      color={
+                        errors.confirmPassword
+                          ? colors.danger
+                          : colors.darkGray
+                      }
                       style={styles.icon}
                     />
                     <TextInput
@@ -664,12 +705,17 @@ export default function RegisterWithValidation() {
                       onBlur={onBlur}
                       secureTextEntry={!showConfirmPassword}
                       autoCapitalize="none"
+                      placeholderTextColor={colors.darkGray}
                     />
-                    <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
+                    <TouchableOpacity
+                      onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                    >
                       <Ionicons
-                        name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'}
+                        name={
+                          showConfirmPassword ? 'eye-off-outline' : 'eye-outline'
+                        }
                         size={20}
-                        color="#6B7280"
+                        color={colors.darkGray}
                       />
                     </TouchableOpacity>
                   </View>
@@ -710,13 +756,15 @@ export default function RegisterWithValidation() {
             activeOpacity={0.8}
           >
             {isSubmitting ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator
+                color={isDark ? colors.lightText : colors.text} // 4. Usar colores del tema
+              />
             ) : (
               <>
                 <Ionicons
                   name="checkmark-circle-outline"
                   size={20}
-                  color="#fff"
+                  color={isDark ? colors.lightText : colors.text} // 4. Usar colores del tema
                   style={styles.buttonIcon}
                 />
                 <AppText style={styles.submitButtonText}>Crear Cuenta</AppText>
@@ -736,150 +784,158 @@ export default function RegisterWithValidation() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.lightText,
-  },
-  backButton: {
-    position: 'absolute',
-    top: 60,
-    left: 20,
-    zIndex: 10,
-  },
-  scrollContainer: {
-    paddingTop: 100,
-    paddingBottom: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  formContainer: {
-    width: width * 0.9,
-    maxWidth: 400,
-  },
-  welcomeTitle: {
-    fontSize: 28,
-    fontWeight: fontWeightSemiBold,
-    color: '#1F2937',
-    textAlign: 'center',
-    marginBottom: 30,
-  },
-  inputContainer: {
-    marginBottom: 20,
-  },
-  inputLabel: {
-    fontSize: 14,
-    fontWeight: fontWeightSemiBold,
-    color: '#374151',
-    marginBottom: 8,
-  },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F9FAFB',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    minHeight: 50,
-  },
-  inputError: {
-    borderColor: '#EF4444',
-    backgroundColor: '#FEF2F2',
-  },
-  icon: {
-    marginRight: 8,
-  },
-  input: {
-    flex: 1,
-    fontSize: 16,
-    color: '#1F2937',
-  },
-  inputText: {
-    flex: 1,
-    fontSize: 16,
-    color: '#1F2937',
-  },
-  errorText: {
-    color: '#EF4444',
-    fontSize: 12,
-    marginTop: 4,
-    marginLeft: 4,
-  },
-  strengthContainer: {
-    marginTop: 8,
-  },
-  strengthBar: {
-    height: 4,
-    backgroundColor: '#E5E7EB',
-    borderRadius: 2,
-    overflow: 'hidden',
-  },
-  strengthFill: {
-    height: '100%',
-  },
-  strengthText: {
-    fontSize: 12,
-    marginTop: 4,
-    color: '#6B7280',
-  },
-  requirements: {
-    marginTop: 8,
-  },
-  valid: {
-    color: '#10B981',
-    fontSize: 12,
-    marginBottom: 2,
-  },
-  invalid: {
-    color: '#9CA3AF',
-    fontSize: 12,
-    marginBottom: 2,
-  },
-  matchContainer: {
-    marginTop: 4,
-  },
-  match: {
-    color: '#10B981',
-    fontSize: 12,
-  },
-  noMatch: {
-    color: '#EF4444',
-    fontSize: 12,
-  },
-  submitButton: {
-    backgroundColor: Colors.primary,
-    paddingVertical: 16,
-    borderRadius: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 10,
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  submitButtonDisabled: {
-    backgroundColor: '#9CA3AF',
-  },
-  buttonIcon: {
-    marginRight: 8,
-  },
-  submitButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: fontWeightSemiBold,
-  },
-  loginLinkContainer: {
-    alignItems: 'center',
-    marginTop: 15,
-  },
-  loginLinkText: {
-    color: Colors.primary,
-    fontSize: 16,
-    fontWeight: fontWeightMedium,
-    textDecorationLine: 'underline',
-  },
-});
+// 5. Convertir el StyleSheet en una función
+const getStyles = (colors: ColorsType, isDark: boolean) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background, // Dinámico
+    },
+    backButton: {
+      position: 'absolute',
+      top: 60,
+      left: 20,
+      zIndex: 10,
+    },
+    backIcon: {
+      width: 24,
+      height: 24,
+      tintColor: colors.text, // Dinámico
+    },
+    scrollContainer: {
+      paddingTop: 100,
+      paddingBottom: 40,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    formContainer: {
+      width: width * 0.9,
+      maxWidth: 400,
+    },
+    welcomeTitle: {
+      fontSize: 28,
+      fontWeight: fontWeightSemiBold,
+      color: colors.text, // Dinámico
+      textAlign: 'center',
+      marginBottom: 30,
+    },
+    inputContainer: {
+      marginBottom: 20,
+    },
+    inputLabel: {
+      fontSize: 14,
+      fontWeight: fontWeightSemiBold,
+      color: colors.text, // Dinámico
+      marginBottom: 8,
+    },
+    inputWrapper: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.backgroundSecon, // Dinámico
+      borderWidth: 1,
+      borderColor: colors.gray, // Dinámico
+      borderRadius: 12,
+      paddingHorizontal: 12,
+      minHeight: 50,
+    },
+    inputError: {
+      borderColor: colors.danger, // Dinámico
+      backgroundColor: `${colors.danger}15`, // Dinámico
+    },
+    icon: {
+      marginRight: 8,
+    },
+    input: {
+      flex: 1,
+      fontSize: 16,
+      color: colors.text, // Dinámico
+    },
+    inputText: {
+      flex: 1,
+      fontSize: 16,
+      color: colors.text, // Dinámico
+    },
+    errorText: {
+      color: colors.danger, // Dinámico
+      fontSize: 12,
+      marginTop: 4,
+      marginLeft: 4,
+    },
+    strengthContainer: {
+      marginTop: 8,
+    },
+    strengthBar: {
+      height: 4,
+      backgroundColor: colors.gray, // Dinámico
+      borderRadius: 2,
+      overflow: 'hidden',
+    },
+    strengthFill: {
+      height: '100%',
+    },
+    strengthText: {
+      fontSize: 12,
+      marginTop: 4,
+      color: colors.darkGray, // Dinámico
+    },
+    requirements: {
+      marginTop: 8,
+    },
+    valid: {
+      color: colors.success, // Dinámico
+      fontSize: 12,
+      marginBottom: 2,
+    },
+    invalid: {
+      color: colors.darkGray, // Dinámico
+      fontSize: 12,
+      marginBottom: 2,
+    },
+    matchContainer: {
+      marginTop: 4,
+    },
+    match: {
+      color: colors.success, // Dinámico
+      fontSize: 12,
+    },
+    noMatch: {
+      color: colors.danger, // Dinámico
+      fontSize: 12,
+    },
+    submitButton: {
+      backgroundColor: colors.primary, // Dinámico
+      paddingVertical: 16,
+      borderRadius: 14,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: 10,
+      shadowColor: colors.primary, // Dinámico
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 6,
+    },
+    submitButtonDisabled: {
+      backgroundColor: colors.darkGray, // Dinámico
+      opacity: 0.7,
+    },
+    buttonIcon: {
+      marginRight: 8,
+    },
+    submitButtonText: {
+      color: isDark ? colors.lightText : colors.text, // Dinámico
+      fontSize: 16,
+      fontWeight: fontWeightSemiBold,
+    },
+    loginLinkContainer: {
+      alignItems: 'center',
+      marginTop: 15,
+    },
+    loginLinkText: {
+      color: colors.primary, // Dinámico
+      fontSize: 16,
+      fontWeight: fontWeightMedium,
+      textDecorationLine: 'underline',
+    },
+  });

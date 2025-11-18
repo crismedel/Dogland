@@ -1,22 +1,36 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
+  ScrollView,
   Image,
+  Dimensions,
+  KeyboardAvoidingView,
+  Platform,
+  ActivityIndicator,
 } from 'react-native';
 import * as Location from 'expo-location';
 import { useNotification } from '@/src/components/notifications';
 import { useRouter } from 'expo-router';
 import { createAlert } from '../../src/api/alerts';
-import { Colors } from '@/src/constants/colors';
+// 1. Quitar la importación estática
+// import { Colors } from '@/src/constants/colors';
 import CustomHeader from '@/src/components/UI/CustomHeader';
 import { Ionicons } from '@expo/vector-icons';
 import { useRefresh } from '@/src/contexts/RefreshContext';
 import { REFRESH_KEYS } from '@/src/constants/refreshKeys';
-import { fontWeightBold, AppText } from '@/src/components/AppText';
+import {
+  fontWeightBold,
+  AppText,
+  fontWeightMedium, // Importar fontWeightMedium
+  fontWeightSemiBold, // Importar fontWeightSemiBold
+} from '@/src/components/AppText';
 import DynamicForm, { FormField } from '@/src/components/UI/DynamicForm';
+
+// 2. Importar el hook y los tipos de tema
+import { useTheme } from '@/src/contexts/ThemeContext';
+import { ColorsType } from '@/src/constants/colors';
 
 const MOCK_TIPOS_ALERTA = [
   { label: '-- Selecciona un tipo --', value: null },
@@ -36,6 +50,10 @@ const MOCK_NIVELES_RIESGO = [
 ];
 
 export default function CreateAlertScreen() {
+  // 3. Llamar al hook y generar los estilos
+  const { colors, isDark } = useTheme();
+  const styles = getStyles(colors, isDark);
+
   const { showError, showSuccess } = useNotification();
   const router = useRouter();
   const { triggerRefresh } = useRefresh();
@@ -174,7 +192,8 @@ export default function CreateAlertScreen() {
       dateMode: 'datetime',
       timeStep: 5,
       minDate: new Date().toISOString().split('T')[0],
-      calendarTheme: 'light',
+      // 4. Usar el tema dinámico
+      calendarTheme: isDark ? 'dark' : 'light',
     },
     {
       name: 'location',
@@ -267,7 +286,7 @@ export default function CreateAlertScreen() {
           <TouchableOpacity onPress={() => router.back()}>
             <Image
               source={require('../../assets/images/volver.png')}
-              style={{ width: 24, height: 24, tintColor: '#fff' }}
+              style={styles.backIcon} // 4. Usar estilos dinámicos
             />
           </TouchableOpacity>
         }
@@ -276,7 +295,19 @@ export default function CreateAlertScreen() {
             onPress={() => handleSubmit(formValues)}
             disabled={isSubmitting}
           >
-            <Ionicons name="checkmark-done-outline" size={22} color="#fff" />
+            {isSubmitting ? (
+              // 4. Usar colores del tema
+              <ActivityIndicator
+                size="small"
+                color={isDark ? colors.lightText : colors.text}
+              />
+            ) : (
+              <Ionicons
+                name="checkmark-done-outline"
+                size={22}
+                color={isDark ? colors.lightText : colors.text} // 4. Usar colores del tema
+              />
+            )}
           </TouchableOpacity>
         }
       />
@@ -306,14 +337,22 @@ export default function CreateAlertScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  scrollContainer: { flex: 1 },
-  contentContainer: { padding: 20 },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: fontWeightBold,
-    marginBottom: 12,
-    color: '#333',
-  },
-});
+// 5. Convertir el StyleSheet en una función
+const getStyles = (colors: ColorsType, isDark: boolean) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background }, // Dinámico
+    scrollContainer: { flex: 1 },
+    contentContainer: { padding: 20 },
+    sectionTitle: {
+      fontSize: 16,
+      fontWeight: fontWeightBold,
+      marginBottom: 12,
+      color: colors.text, // Dinámico
+    },
+    backIcon: {
+      width: 24,
+      height: 24,
+      // 4. Usar colores del tema (texto oscuro sobre fondo amarillo)
+      tintColor: isDark ? colors.lightText : colors.text,
+    },
+  });

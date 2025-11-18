@@ -1,15 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
-  TouchableOpacity,
-  ScrollView,
   StyleSheet,
+  TouchableOpacity,
   Image,
+  ScrollView,
   KeyboardAvoidingView,
   Dimensions,
   Platform,
 } from 'react-native';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 import apiClient from '@/src/api/client';
 import { useNotification } from '@/src/components/notifications';
 import { Raza, Especie, EstadoSalud } from '@/src/types/animals';
@@ -23,16 +23,28 @@ import {
   fontWeightMedium,
   AppText,
 } from '@/src/components/AppText';
+// 1. Quitar la importación estática
+// import { Colors } from '@/src/constants/colors';
+
+// 2. Importar el hook y los tipos de tema
+import { useTheme } from '@/src/contexts/ThemeContext';
+import { ColorsType } from '@/src/constants/colors';
+import CustomHeader from '@/src/components/UI/CustomHeader'; // Importar CustomHeader
 
 const { width } = Dimensions.get('window');
 
 export default function CreateAdoptionScreen() {
+  // 3. Llamar al hook y generar los estilos
+  const { colors, isDark } = useTheme();
+  const styles = getStyles(colors, isDark);
+
   const [raza, setRaza] = useState<Raza[]>([]);
   const [especie, setEspecie] = useState<Especie[]>([]);
   const [estadoSalud, setEstadoSalud] = useState<EstadoSalud[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { showError, showSuccess } = useNotification();
   const { user } = useAuth();
+  const router = useRouter(); // Mover router aquí
 
   const [formValues, setFormValues] = useState({
     nombre_animal: '',
@@ -60,7 +72,7 @@ export default function CreateAdoptionScreen() {
       }
     };
     fetchData();
-  }, []);
+  }, [showError]); // Dependencia añadida
 
   const handleValueChange = (name: string, value: any) => {
     setFormValues((prevValues) => ({ ...prevValues, [name]: value }));
@@ -117,13 +129,23 @@ export default function CreateAdoptionScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      {/* 🔹 Botón volver */}
-      <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-        <Image
-          source={require('../../assets/images/volver.png')}
-          style={{ width: 24, height: 24 }}
-        />
-      </TouchableOpacity>
+      {/* 4. Añadir CustomHeader aquí */}
+      <CustomHeader
+        title="Agregar Nuevo Animal"
+        leftComponent={
+          <TouchableOpacity onPress={() => router.back()}>
+            <Image
+              source={require('../../assets/images/volver.png')}
+              // 4. Aplicar color dinámico
+              style={{
+                width: 24,
+                height: 24,
+                tintColor: isDark ? colors.lightText : colors.text,
+              }}
+            />
+          </TouchableOpacity>
+        }
+      />
 
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.formContainer}>
@@ -145,21 +167,36 @@ export default function CreateAdoptionScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { padding: 20, backgroundColor: '#fff', flexGrow: 1 },
-  backButton: { position: 'absolute', top: 60, left: 20, zIndex: 10 },
-  scrollContainer: {
-    paddingTop: 100,
-    paddingBottom: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  formContainer: { width: width * 0.9, maxWidth: 400 },
-  welcomeTitle: {
-    fontSize: 28,
-    fontWeight: fontWeightSemiBold,
-    color: '#1F2937',
-    textAlign: 'center',
-    marginBottom: 30,
-  },
-});
+// 5. Convertir el StyleSheet en una función
+const getStyles = (colors: ColorsType, isDark: boolean) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background, // Dinámico
+    },
+    backButton: {
+      // Este estilo ya no se usa si CustomHeader está presente
+      position: 'absolute',
+      top: 60,
+      left: 20,
+      zIndex: 10,
+    },
+    scrollContainer: {
+      paddingTop: 20, // Reducido gracias al CustomHeader
+      paddingBottom: 40,
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexGrow: 1,
+    },
+    formContainer: {
+      width: width * 0.9,
+      maxWidth: 400,
+    },
+    welcomeTitle: {
+      fontSize: 28,
+      fontWeight: fontWeightSemiBold,
+      color: colors.text, // Dinámico
+      textAlign: 'center',
+      marginBottom: 30,
+    },
+  });

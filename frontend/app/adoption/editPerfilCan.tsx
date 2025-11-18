@@ -4,7 +4,12 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 
 import CustomHeader from '@/src/components/UI/CustomHeader';
 import { AppText } from '@/src/components/AppText';
-import { Colors } from '@/src/constants/colors';
+// 1. Quitar la importación estática
+// import { Colors } from '@/src/constants/colors';
+
+// 2. Importar el hook y el tipo de 'theme'
+import { useTheme } from '@/src/contexts/ThemeContext';
+import { ColorsType } from '@/src/constants/colors';
 
 import DynamicForm, { FormField } from '@/src/components/UI/DynamicForm';
 
@@ -15,6 +20,10 @@ const TAMANIOS = ['Pequeño', 'Mediano', 'Grande'];
 const ESTADOS_SALUD = ['Sano', 'En Tratamiento', 'Crítico'];
 
 export default function EditarPerfilCan() {
+  // 3. Llamar al hook y generar los estilos
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
+
   const router = useRouter();
   const { data } = useLocalSearchParams();
 
@@ -152,23 +161,25 @@ export default function EditarPerfilCan() {
 // -----------------------------------
 // Estilos
 // -----------------------------------
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  scroll: {
-    padding: 20,
-    paddingBottom: 60,
-  },
-  imageContainer: {
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  image: {
-    width: 160,
-    height: 160,
-    borderRadius: 14,
-    backgroundColor: '#ccc',
-  },
-});
+// 4. Convertir el StyleSheet en una función
+const getStyles = (colors: ColorsType) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background, // Dinámico
+    },
+    scroll: {
+      padding: 20,
+      paddingBottom: 60,
+    },
+    imageContainer: {
+      alignItems: 'center',
+      marginBottom: 20,
+    },
+    image: {
+      width: 160,
+      height: 160,
+      borderRadius: 14,
+      backgroundColor: colors.gray, // Dinámico
+    },
+  });
