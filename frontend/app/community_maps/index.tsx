@@ -1,39 +1,36 @@
+//Solo contiene la lógica de estado y pasa las props a los nuevos componentes.
+import { AppText, fontWeightBold } from '@/src/components/AppText';
 import { useNotification } from '@/src/components/notifications';
 import CustomHeader from '@/src/components/UI/CustomHeader';
 import FloatingSpeedDial from '@/src/components/UI/FloatingMenu';
+import { ColorsType } from '@/src/constants/colors';
+import { useAuth } from '@/src/contexts/AuthContext';
+import { useTheme } from '@/src/contexts/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Image, Modal, StyleSheet, TouchableOpacity, View } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Image, Modal, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import DropDownPicker from 'react-native-dropdown-picker';
 import MapView, { Region } from 'react-native-maps';
 import apiClient from '../../src/api/client';
 import { CommunityMapView } from '../../src/components/community_maps/CommunityMapView';
 import { MapControlButtons } from '../../src/components/community_maps/MapControlButtons';
 import MapsFilterModal from '../../src/components/community_maps/MapsFilterModal';
 import { MapStatusOverlay } from '../../src/components/community_maps/MapStatusOverlay';
-import {
-  CurrentFilters,
-  HeatmapPoint,
-  Reporte,
-} from '../../src/components/community_maps/types';
+import { CurrentFilters, HeatmapPoint, Reporte } from '../../src/components/community_maps/types';
 import { ReporteDetails } from '../../src/components/report/ReporteDetails';
 import { getHaversineDistance } from '../../src/utils/geo';
-import { Header } from '@react-navigation/elements';
-import { AppText } from '@/src/components/AppText'; // Importar AppText
-
-// 2. Importar el hook y los tipos de tema
-import { useTheme } from '@/src/contexts/ThemeContext';
-import { ColorsType } from '@/src/constants/colors';
 
 const CommunityMapScreen = () => {
-  // 3. Llamar al hook y generar los estilos
+  // Usar el hook de Tema
   const { colors, isDark } = useTheme();
   const styles = getStyles(colors, isDark);
 
   const router = useRouter();
-  const mapRef = useRef<MapView | null>(null);
+  const mapRef = useRef<MapView>(null!); 
   const { showError, showSuccess, confirm, showInfo } = useNotification();
+  const { user } = useAuth();
 
   // --- ESTADOS ---
   const [filterModalVisible, setFilterModalVisible] = useState(false);
@@ -73,6 +70,20 @@ const CommunityMapScreen = () => {
   const [heatmapLoading, setHeatmapLoading] = useState(false);
   const [initialZoomDone, setInitialZoomDone] = useState(false);
 
+  // --- ESTADOS MODAL CIERRE ---
+  const [isCloseModalVisible, setCloseModalVisible] = useState(false);
+  const [closeReason, setCloseReason] = useState<string | null>(null);
+  const [closeComment, setCloseComment] = useState('');
+  const [isClosing, setIsClosing] = useState(false);
+  const [openReasonPicker, setOpenReasonPicker] = useState(false);
+  const [reasonItems, setReasonItems] = useState([
+    { label: 'Animal Rescatado', value: 'Rescatado' },
+    { label: 'No Encontrado / Desaparecido', value: 'No Encontrado' },
+    { label: 'Falsa Alarma', value: 'Falsa Alarma' },
+    { label: 'Reporte Duplicado', value: 'Duplicado' },
+    { label: 'Otro (ver comentario)', value: 'Otro' },
+  ]);
+
   // --- LÓGICA DE DATOS ---
   useEffect(() => {
     const hasFilters =
@@ -90,7 +101,6 @@ const CommunityMapScreen = () => {
       return;
     }
 
-    // Empezamos a "observar" la ubicación
     const subscription = await Location.watchPositionAsync(
       {
         accuracy: Location.Accuracy.BestForNavigation,
@@ -98,9 +108,8 @@ const CommunityMapScreen = () => {
         distanceInterval: 10,
       },
       (location) => {
-        setCurrentUserLocation(location.coords); // Actualiza el estado con la nueva ubicación
+        setCurrentUserLocation(location.coords);
         if (!initialZoomDone) {
-          // Centra el mapa en el usuario la primera vez
           setMapRegion({
             latitude: location.coords.latitude,
             longitude: location.coords.longitude,
@@ -115,7 +124,6 @@ const CommunityMapScreen = () => {
   }, [showError, initialZoomDone]);
 
   useEffect(() => {
-    // Retornamos una función de limpieza que se ejecuta al desmontar
     return () => {
       if (locationSubscription) {
         locationSubscription.remove();
@@ -279,10 +287,18 @@ const CommunityMapScreen = () => {
   }, []);
 
   const onRegionChangeComplete = (newRegion: Region) => {
-    setMapRegion(newRegion);
+    // Comprobación más robusta para asegurar que la región es válida
+    if (
+      newRegion &&
+      typeof newRegion.latitude === 'number' &&
+      typeof newRegion.longitude === 'number' &&
+      typeof newRegion.latitudeDelta === 'number' &&
+      typeof newRegion.longitudeDelta === 'number'
+    ) {
+      setMapRegion(newRegion);
+    }
   };
 
-  // --- Handler para presionar un marcador
   const handleMarkerPress = useCallback(
     (reporte: Reporte | null) => {
       if (!reporte) {
@@ -291,10 +307,8 @@ const CommunityMapScreen = () => {
         return;
       }
 
-      //  Mostrar el modal de detalles
       setSelectedSighting(reporte);
 
-      // Calcular y mostrar la distancia
       if (!currentUserLocation) {
         showInfo(
           'Calculando...',
@@ -317,7 +331,7 @@ const CommunityMapScreen = () => {
       } else {
         friendlyDistance = `${(distance / 1000).toFixed(2)} km`;
       }
-      -setCalculatedDistance(friendlyDistance);
+      setCalculatedDistance(friendlyDistance);
       showInfo(
         'Distancia al Reporte',
         `Estás a ${friendlyDistance} de este avistamiento.`,
@@ -325,7 +339,54 @@ const CommunityMapScreen = () => {
     },
     [currentUserLocation, showInfo],
   );
-  // --- EFECTOS (EFFECTS) ---
+
+  // --- HANDLER CIERRE ---
+  const handleConfirmCloseSighting = async () => {
+    if (!closeReason || !selectedSighting) {
+      showError('Error', 'Debes seleccionar un motivo.');
+      return;
+    }
+
+    setIsClosing(true);
+
+    const fullReason = closeComment
+      ? `${closeReason}: ${closeComment}`
+      : closeReason;
+
+    let newStatusId;
+    if (closeReason === 'Rescatado') newStatusId = 4;
+    else if (closeReason === 'No Encontrado') newStatusId = 2;
+    else newStatusId = 5;
+
+    try {
+      await apiClient.patch(
+        `/sightings/${selectedSighting.id_avistamiento}/close`,
+        {
+          newStatusId: newStatusId,
+          reason: fullReason,
+        },
+      );
+
+      showSuccess('Éxito', 'Reporte cerrado y actualizado.');
+
+      setCloseModalVisible(false);
+      setSelectedSighting(null);
+      setCloseReason(null);
+      setCloseComment('');
+
+      if (showCriticalReports) {
+        fetchCriticalReports();
+      } else {
+        obtenerReportes(currentFilters);
+      }
+    } catch (err) {
+      showError('Error', 'No se pudo cerrar el reporte.');
+    } finally {
+      setIsClosing(false);
+    }
+  };
+
+  // --- EFECTOS ---
   useEffect(() => {
     if (showCriticalReports || hasActiveFilters) return;
     const intervalId = setInterval(async () => {
@@ -384,7 +445,16 @@ const CommunityMapScreen = () => {
     hasActiveFilters,
   ]);
 
-  const reportsToRender = showCriticalReports ? criticalReports : reportes;
+  // --- LÓGICA DE FILTRADO Y RENDERIZADO ---
+  const CERRADO_STATUS_ID = 5;
+  const baseReports = showCriticalReports ? criticalReports : reportes;
+
+  // useMemo para evitar re-cálculos que rompen el zoom
+  const reportsToRender = useMemo(() => {
+    return baseReports.filter(
+      (reporte) => reporte.id_estado_avistamiento !== CERRADO_STATUS_ID,
+    );
+  }, [baseReports]);
 
   useEffect(() => {
     if (reportsToRender.length === 0 || showHeatmap || !mapRef.current) {
@@ -405,21 +475,20 @@ const CommunityMapScreen = () => {
         animated: true,
       });
     }, 500);
-  }, [reportsToRender, showHeatmap]);
+  }, [reportsToRender, showHeatmap]); 
+
   useEffect(() => {
     if (!showCriticalReports) {
       obtenerReportes(currentFilters);
     }
   }, [currentFilters, obtenerReportes, showCriticalReports]);
 
-  // --- DATOS DERIVADOS ---
   const currentLoadingState =
     loading || (showCriticalReports && criticalLoading) || heatmapLoading;
   const shouldHideMap =
     currentLoadingState ||
     (hasSearchedWithFilters && reportsToRender.length === 0);
 
-  // --- NAVEGACIÓN ---
   const goToStatsScreen = () => {
     setMenuVisible(false);
     router.push('/stats');
@@ -437,12 +506,11 @@ const CommunityMapScreen = () => {
     router.push('/alerts/create-alert');
   };
 
-  // 4. Usar 'colors' del tema
-  const getMarkerColor = (report: Reporte): string | undefined => {
-    if (!showCriticalReports) return undefined;
-    if (report.id_estado_salud === 3) return colors.danger;
-    if (report.id_estado_salud === 2) return colors.warning;
-    return undefined;
+  const getMarkerColor = (report: Reporte): string => {
+    if (report.id_estado_salud === 3) return colors.danger; 
+    if (report.id_estado_salud === 2) return '#FF9800';     
+    if (report.id_estado_salud === 1) return '#4CAF50';    
+    return colors.info; 
   };
 
   // --- RENDERIZADO ---
@@ -454,7 +522,6 @@ const CommunityMapScreen = () => {
           <TouchableOpacity onPress={() => router.back()}>
             <Image
               source={require('../../assets/images/volver.png')}
-              // 4. Usar colores del tema (texto oscuro sobre fondo amarillo)
               style={{
                 width: 24,
                 height: 24,
@@ -471,7 +538,6 @@ const CommunityMapScreen = () => {
               setFilterModalVisible(true);
             }}
           >
-            {/* 4. Usar colores del tema (texto oscuro sobre fondo amarillo) */}
             <Ionicons
               name="options-outline"
               size={24}
@@ -479,7 +545,6 @@ const CommunityMapScreen = () => {
             />
           </TouchableOpacity>
         }
-        style={styles.header}
       />
 
       <MapControlButtons
@@ -506,18 +571,21 @@ const CommunityMapScreen = () => {
         onClearFilters={handleClearFilters}
       />
 
-      <CommunityMapView
-        mapRef={mapRef}
-        mapRegion={mapRegion}
-        location={currentUserLocation} // Pasa la ubicación del usuario al mapa
-        showHeatmap={showHeatmap}
-        heatmapData={heatmapData}
-        reportsToRender={reportsToRender}
-        onSelectSighting={handleMarkerPress} //Llama al handler que calcula la distancia
-        getMarkerColor={getMarkerColor}
-        shouldHideMap={shouldHideMap}
-        onRegionChangeComplete={onRegionChangeComplete}
-      />
+      {mapRegion && mapRegion.longitudeDelta && (
+        <CommunityMapView
+          mapRef={mapRef}
+          mapRegion={mapRegion}
+          location={currentUserLocation} // --- CORRECCIÓN AQUÍ: Se añade la prop obligatoria
+          showHeatmap={showHeatmap}
+          heatmapData={heatmapData}
+          reportsToRender={reportsToRender}
+          onSelectSighting={handleMarkerPress}
+          getMarkerColor={getMarkerColor}
+          shouldHideMap={shouldHideMap}
+          onRegionChangeComplete={onRegionChangeComplete}
+        />
+      )}
+
       {selectedSighting && (
         <ReporteDetails
           reporte={selectedSighting}
@@ -527,13 +595,15 @@ const CommunityMapScreen = () => {
           }}
           onDelete={handleDelete}
           distance={calculatedDistance}
-          onCloseSighting={() => {
-            // Aquí la función para abrir el modal de cierre o la acción que quieras
-            console.log('Cerrar avistamiento');
-          }}
-          canModify={true} // O la lógica que determines para permisos
+          onCloseSighting={() => setCloseModalVisible(true)}
+          canModify={
+            user?.role === 'Admin' ||
+            // @ts-ignore
+            user?.id === (selectedSighting as any).id_usuario
+          }
         />
       )}
+
       <FloatingSpeedDial
         visible={menuVisible}
         onToggle={() => setMenuVisible((v) => !v)}
@@ -546,7 +616,7 @@ const CommunityMapScreen = () => {
               <Ionicons
                 name="person-circle-outline"
                 size={22}
-                color={colors.secondary} // 4. Usar colores del tema
+                color={colors.secondary}
               />
             ),
           },
@@ -558,7 +628,7 @@ const CommunityMapScreen = () => {
               <Ionicons
                 name="bar-chart-outline"
                 size={22}
-                color={colors.secondary} // 4. Usar colores del tema
+                color={colors.secondary}
               />
             ),
           },
@@ -570,7 +640,7 @@ const CommunityMapScreen = () => {
               <Ionicons
                 name="document-text-outline"
                 size={22}
-                color={colors.secondary} // 4. Usar colores del tema
+                color={colors.secondary}
               />
             ),
           },
@@ -582,7 +652,7 @@ const CommunityMapScreen = () => {
               <Ionicons
                 name="alert-circle-outline"
                 size={22}
-                color={colors.secondary} // 4. Usar colores del tema
+                color={colors.secondary}
               />
             ),
           },
@@ -607,15 +677,139 @@ const CommunityMapScreen = () => {
           hasActiveFilters={hasActiveFilters}
         />
       </Modal>
+
+      {/* Modal de Cierre */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={isCloseModalVisible}
+        onRequestClose={() => setCloseModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <AppText style={styles.modalTitle}>Cerrar Avistamiento</AppText>
+            <AppText style={styles.modalSubtitle}>
+              Selecciona un motivo para cerrar este reporte.
+            </AppText>
+
+            <DropDownPicker
+              open={openReasonPicker}
+              value={closeReason}
+              items={reasonItems}
+              setOpen={setOpenReasonPicker}
+              setValue={setCloseReason}
+              setItems={setReasonItems}
+              placeholder="Selecciona un motivo"
+              style={styles.dropdown}
+              dropDownContainerStyle={styles.dropdownContainer}
+              zIndex={3000}
+            />
+
+            <TextInput
+              style={styles.modalTextInput}
+              placeholder="Comentario adicional (opcional)"
+              value={closeComment}
+              onChangeText={setCloseComment}
+            />
+
+            <TouchableOpacity
+              style={[
+                styles.modalButton,
+                { backgroundColor: colors.primary }, // Dinámico
+              ]}
+              onPress={handleConfirmCloseSighting}
+              disabled={isClosing}
+            >
+              {isClosing ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <AppText style={styles.modalButtonText}>
+                  Confirmar Cierre
+                </AppText>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.modalButton,
+                { backgroundColor: colors.gray }, // Dinámico
+              ]}
+              onPress={() => setCloseModalVisible(false)}
+            >
+              <AppText style={[styles.modalButtonText, { color: '#000' }]}>
+                Cancelar
+              </AppText>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
 
-// 5. Convertir el StyleSheet en una función
+// 5. Estilos Dinámicos
 const getStyles = (colors: ColorsType, isDark: boolean) =>
   StyleSheet.create({
-    container: { flex: 1, backgroundColor: colors.background }, // Dinámico
-    header: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 },
+    container: { flex: 1, backgroundColor: colors.background },
+    
+    // --- Estilos Modal Cierre ---
+    modalOverlay: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: 'rgba(0,0,0,0.5)',
+    },
+    modalContent: {
+      width: '90%',
+      backgroundColor: colors.cardBackground, 
+      borderRadius: 12,
+      padding: 20,
+      elevation: 5,
+      zIndex: 2000,
+    },
+    modalTitle: {
+      fontSize: 20,
+      fontWeight: fontWeightBold,
+      textAlign: 'center',
+      marginBottom: 10,
+      color: colors.text, 
+    },
+    modalSubtitle: {
+      fontSize: 14,
+      textAlign: 'center',
+      color: colors.gray,
+      marginBottom: 20,
+    },
+    dropdown: {
+      marginBottom: 15,
+      borderColor: colors.gray,
+      backgroundColor: isDark ? '#333' : '#fff',
+    },
+    dropdownContainer: {
+      borderColor: colors.gray,
+      backgroundColor: isDark ? '#333' : '#fff',
+    },
+    modalTextInput: {
+      borderWidth: 1,
+      borderColor: colors.gray,
+      borderRadius: 8,
+      padding: 10,
+      marginTop: 10,
+      minHeight: 80,
+      textAlignVertical: 'top',
+      backgroundColor: isDark ? '#333' : '#fff',
+      color: colors.text,
+    },
+    modalButton: {
+      padding: 15,
+      borderRadius: 8,
+      alignItems: 'center',
+      marginTop: 10,
+    },
+    modalButtonText: {
+      color: 'white',
+      fontWeight: fontWeightBold,
+    },
   });
 
 export default CommunityMapScreen;
