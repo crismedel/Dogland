@@ -10,7 +10,6 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Animated,
   Dimensions,
   ImageBackground,
@@ -52,7 +51,6 @@ const getSightingStatusName = (id: number) => {
   return 'Desconocido';
 };
 const CERRADO_STATUS_ID = 5;
-const { showError, showInfo } = useNotification();
 
 const formatDateDDMMYYYY = (input?: string | null) => {
   if (!input) return 'N/A';
@@ -70,35 +68,6 @@ const formatCoords = (lat?: number | null, lon?: number | null) => {
   return `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
 };
 
-const openInMaps = async (
-  lat?: number | null,
-  lon?: number | null,
-  label?: string,
-) => {
-  if (lat === undefined || lat === null || lon === undefined || lon === null) {
-    showError(
-      'Ubicación no disponible',
-      'No hay coordenadas para abrir en el mapa.',
-    );
-    return;
-  }
-  const url = `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`;
-  try {
-    const supported = await Linking.canOpenURL(url);
-    if (supported) {
-      await Linking.openURL(url);
-    } else {
-      showError(
-        'No se pudo abrir el mapa',
-        'No hay una aplicación disponible para abrir el mapa.',
-      );
-    }
-  } catch (e) {
-    console.error('openInMaps error', e);
-    showError('Error', 'No se pudo abrir la aplicación de mapas.');
-  }
-};
-
 const SightingDetailScreen = () => {
   // 3. Llamar al hook y generar los estilos
   const { colors, isDark } = useTheme();
@@ -107,11 +76,45 @@ const SightingDetailScreen = () => {
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const { user } = useAuth();
-  const { showSuccess, showError } = useNotification();
+  const { showSuccess, showError, showInfo } = useNotification();
 
   const [sighting, setSighting] = useState<Sighting | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const openInMaps = async (
+    lat?: number | null,
+    lon?: number | null,
+    label?: string,
+  ) => {
+    if (
+      lat === undefined ||
+      lat === null ||
+      lon === undefined ||
+      lon === null
+    ) {
+      showError(
+        'Ubicación no disponible',
+        'No hay coordenadas para abrir en el mapa.',
+      );
+      return;
+    }
+    const url = `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`;
+    try {
+      const supported = await Linking.canOpenURL(url);
+      if (supported) {
+        await Linking.openURL(url);
+      } else {
+        showError(
+          'No se pudo abrir el mapa',
+          'No hay una aplicación disponible para abrir el mapa.',
+        );
+      }
+    } catch (e) {
+      console.error('openInMaps error', e);
+      showError('Error', 'No se pudo abrir la aplicación de mapas.');
+    }
+  };
 
   const scrollY = useRef(new Animated.Value(0)).current;
 
@@ -447,6 +450,18 @@ const SightingDetailScreen = () => {
                     <TouchableOpacity
                       style={[styles.mapBtn, { marginLeft: 8 }]}
                       accessibilityLabel="Copiar coordenadas"
+                      onPress={() => {
+                        // Copiar coordenadas al portapapeles y mostrar toast
+                        if (coordsDisplay) {
+                          navigator.clipboard.writeText(coordsDisplay);
+                          showSuccess(
+                            'Copiado',
+                            'Coordenadas copiadas al portapapeles.',
+                          );
+                        } else {
+                          showError('Error', 'No hay coordenadas para copiar.');
+                        }
+                      }}
                     >
                       <Ionicons
                         name="copy-outline"

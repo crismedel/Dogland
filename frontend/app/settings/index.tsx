@@ -230,7 +230,7 @@ export default function SettingsScreen() {
 }
 
 const getStyles = (colors: ColorsType) =>
-   StyleSheet.create({
+  StyleSheet.create({
     container: {
       flex: 1,
       backgroundColor: colors.background,
@@ -245,7 +245,7 @@ const getStyles = (colors: ColorsType) =>
       padding: 16,
       marginTop: 16,
       borderWidth: 1,
-      borderColor: colors.backgroundSecon,
+      borderColor: colors.secondary,
     },
     sectionTitle: {
       color: colors.secondary,
