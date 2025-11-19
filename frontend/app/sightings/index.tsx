@@ -1,7 +1,8 @@
 import { AppText } from '@/src/components/AppText';
-
+import { useNotification } from '@/src/components/notifications';
 import CustomHeader from '@/src/components/UI/CustomHeader';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient'; // Necesario para los gradientes de las tarjetas
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
@@ -14,16 +15,14 @@ import {
   View,
 } from 'react-native';
 import apiClient from '../../src/api/client';
-import { useNotification } from '@/src/components/notifications';
 import {
   obtenerNombreEspecie,
   obtenerNombreEstadoSalud,
 } from '../../src/types/report';
-import Spinner from '@/src/components/UI/Spinner';
 
-// 2. Importar el hook y los tipos de tema
-import { useTheme } from '@/src/contexts/ThemeContext';
+// Importar el hook y los tipos de tema
 import { ColorsType } from '@/src/constants/colors';
+import { useTheme } from '@/src/contexts/ThemeContext';
 
 interface ApiSighting {
   id_avistamiento: number;
@@ -31,13 +30,13 @@ interface ApiSighting {
   id_especie: number;
   id_estado_salud: number;
   fecha_creacion: string;
-  fotos_url: string[];
+  fotos_url: string[]; // El backend ya nos manda esto como Base64 string
   nivel_riesgo: string;
   id_estado_avistamiento: number;
   latitude?: number;
   longitude?: number;
   id_usuario: number;
-  titulo: string;
+  titulo?: string; // Opcional porque en el backend lo quitamos para evitar errores
   motivo_cierre?: string;
 }
 
@@ -57,7 +56,7 @@ const getSightingStatusName = (id: number) => {
 const CERRADO_STATUS_ID = 5;
 
 const AvistamientosScreen: React.FC = () => {
-  // 3. Llamar al hook y generar los estilos
+  // Hook de tema
   const { colors, isDark } = useTheme();
   const styles = getStyles(colors, isDark);
 
@@ -68,8 +67,6 @@ const AvistamientosScreen: React.FC = () => {
   const [criticalSightings, setCriticalSightings] = useState<Sighting[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-
-  // (Se quitó la lógica de modales de este archivo)
 
   const normalizeSighting = (item: ApiSighting): Sighting => ({
     ...item,
@@ -128,6 +125,7 @@ const AvistamientosScreen: React.FC = () => {
   const criticalCount = criticalSightings.length;
   const activeCount = sightings.filter((s) => s.activa).length;
 
+  // Combinar listas asegurando unicidad
   const combinedSightings = [
     ...criticalSightings,
     ...sightings.filter(
@@ -145,7 +143,7 @@ const AvistamientosScreen: React.FC = () => {
     }
   };
 
-  // 4. Mover 'getStatePalette' adentro y usar 'colors'
+  // Paleta de colores usando el tema actual
   const getStatePalette = useCallback(
     (id_estado_salud: number) => {
       if (id_estado_salud === 3) {
@@ -153,7 +151,7 @@ const AvistamientosScreen: React.FC = () => {
           start: colors.danger,
           end: '#ff7676',
           accent: colors.danger,
-          chipBg: `${colors.danger}1F`, // ~12% alpha
+          chipBg: `${colors.danger}1F`,
         };
       }
       if (id_estado_salud === 2) {
@@ -161,25 +159,23 @@ const AvistamientosScreen: React.FC = () => {
           start: colors.warning,
           end: colors.secondary,
           accent: colors.secondary,
-          chipBg: `${colors.warning}26`, // ~15% alpha
+          chipBg: `${colors.warning}26`,
         };
       }
       return {
         start: colors.success,
         end: '#8be58b',
         accent: colors.success,
-        chipBg: `${colors.success}1F`, // ~12% alpha
+        chipBg: `${colors.success}1F`,
       };
     },
     [colors],
-  ); // Depende de 'colors'
+  );
 
-  // --- HANDLER RESTAURADO (para navegar) ---
   const handlePressSighting = (id: number) => {
     router.push({ pathname: '/sightings/[id]', params: { id: id.toString() } });
   };
 
-  // 5. Actualizar renderHeader para usar 'colors'
   const renderHeader = () => (
     <CustomHeader
       title="Avistamientos"
@@ -190,7 +186,6 @@ const AvistamientosScreen: React.FC = () => {
             style={{
               width: 24,
               height: 24,
-              // El texto/ícono del header debe ser oscuro sobre fondo amarillo
               tintColor: isDark ? colors.lightText : colors.text,
             }}
           />
@@ -199,7 +194,6 @@ const AvistamientosScreen: React.FC = () => {
     />
   );
 
-  // 5. Actualizar renderDashboard para usar 'colors'
   const renderDashboard = () => (
     <View style={styles.dashboardWrap}>
       <View style={styles.dashboard}>
@@ -240,7 +234,6 @@ const AvistamientosScreen: React.FC = () => {
     </View>
   );
 
-  // --- RENDER ITEM (Modificado para mostrar motivo) ---
   const renderItem = ({ item }: { item: Sighting }) => {
     const palette = getStatePalette(item.id_estado_salud);
     const stateName =
@@ -248,7 +241,6 @@ const AvistamientosScreen: React.FC = () => {
     const speciesName =
       obtenerNombreEspecie(item.id_especie) || 'Especie desconocida';
 
-    // Nueva lógica de estado
     const sightingStatusName = getSightingStatusName(
       item.id_estado_avistamiento,
     );
@@ -257,10 +249,15 @@ const AvistamientosScreen: React.FC = () => {
     return (
       <TouchableOpacity
         activeOpacity={0.9}
-        onPress={() => handlePressSighting(item.id_avistamiento)} // <-- LLAMA A NAVEGACIÓN
-        style={[styles.card, isClosed && styles.closedCard]}
+        onPress={() => handlePressSighting(item.id_avistamiento)}
+        style={[styles.card, isClosed && styles.closedCard, { borderColor: palette.accent + '40' }]}
       >
-        <View style={styles.gradientBackground}>
+        <LinearGradient
+          colors={isDark ? ['#333', '#222'] : [`${palette.start}10`, `${palette.end}05`]}
+          start={[0, 0]}
+          end={[1, 1]}
+          style={styles.gradientBackground}
+        >
           <View style={styles.cardLeft}>
             <View
               style={[styles.stateBadge, { backgroundColor: palette.start }]}
@@ -268,7 +265,7 @@ const AvistamientosScreen: React.FC = () => {
               <Ionicons
                 name={item.id_estado_salud === 3 ? 'warning' : 'leaf'}
                 size={20}
-                color={colors.lightText} // Usar color de tema
+                color={colors.lightText}
               />
             </View>
           </View>
@@ -276,6 +273,7 @@ const AvistamientosScreen: React.FC = () => {
           <View style={styles.cardBody}>
             <View style={styles.cardTitleRow}>
               <AppText style={styles.cardTitle} numberOfLines={2}>
+                {/* Usamos description si no hay titulo, para evitar huecos */}
                 {item.titulo || item.descripcion || 'Sin descripción.'}
               </AppText>
               <AppText style={styles.smallDate}>
@@ -283,7 +281,7 @@ const AvistamientosScreen: React.FC = () => {
               </AppText>
             </View>
 
-            {/* --- MUESTRA MOTIVO DE CIERRE SI EXISTE --- */}
+            {/* --- SECCIÓN DE MOTIVO DE CIERRE --- */}
             {isClosed && item.motivo_cierre && (
               <View style={styles.reasonContainer}>
                 <Ionicons
@@ -293,13 +291,14 @@ const AvistamientosScreen: React.FC = () => {
                   style={{ marginRight: 6 }}
                 />
                 <AppText
-                  style={[styles.chipText, { color: colors.gray }]}
-                  numberOfLines={1}
+                  style={[styles.chipText, { color: colors.gray, flex: 1 }]}
+                  numberOfLines={2}
                 >
                   Motivo: {item.motivo_cierre}
                 </AppText>
               </View>
             )}
+            {/* ----------------------------------- */}
 
             <View style={styles.chipsRow}>
               <View style={[styles.chip, { backgroundColor: palette.chipBg }]}>
@@ -351,13 +350,23 @@ const AvistamientosScreen: React.FC = () => {
               </View>
             </View>
           </View>
-        </View>
+        </LinearGradient>
       </TouchableOpacity>
     );
   };
 
   if (loading && sightings.length === 0) {
-    return <Spinner />;
+    return (
+      <View style={styles.container}>
+        {renderHeader()}
+        <View style={styles.loadingWrap}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <AppText style={styles.loadingText}>
+            Cargando avistamientos...
+          </AppText>
+        </View>
+      </View>
+    );
   }
 
   return (
@@ -377,12 +386,11 @@ const AvistamientosScreen: React.FC = () => {
               fetchSightings();
               fetchCriticalSightings();
             }}
-            colors={[colors.primary]} // 6. Usar colores del tema
+            colors={[colors.primary]}
           />
         }
         ListEmptyComponent={() => (
           <View style={styles.emptyWrap}>
-            {/* 6. Usar colores del tema */}
             <Ionicons name="eye-off" size={44} color={colors.darkGray} />
             <AppText style={styles.emptyText}>
               No hay avistamientos registrados.
@@ -390,15 +398,13 @@ const AvistamientosScreen: React.FC = () => {
           </View>
         )}
       />
-
-      {/* --- MODALES ELIMINADOS DE ESTE ARCHIVO --- */}
     </View>
   );
 };
 
 export default AvistamientosScreen;
 
-// 7. Convertir el StyleSheet en una función
+// Estilos
 const getStyles = (colors: ColorsType, isDark: boolean) =>
   StyleSheet.create({
     container: {
@@ -434,7 +440,6 @@ const getStyles = (colors: ColorsType, isDark: boolean) =>
       elevation: 1,
       opacity: 0.95,
     },
-
     metricItem: {
       flex: 1,
       alignItems: 'center',
@@ -459,35 +464,29 @@ const getStyles = (colors: ColorsType, isDark: boolean) =>
       color: colors.darkGray,
       marginTop: 0,
     },
-
     listContent: {
       paddingHorizontal: 14,
       paddingTop: 12,
       paddingBottom: 30,
     },
     card: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: colors.backgroundSecon,
       borderRadius: 16,
       borderWidth: 1,
-      borderColor: colors.secondary,
-      padding: 10,
       shadowColor: '#000',
       shadowOpacity: 0.06,
       shadowRadius: 8,
       elevation: 3,
       marginBottom: 20,
+      overflow: 'hidden',
     },
     closedCard: {
-      opacity: 0.6,
-      backgroundColor: colors.backgroundSecon,
-      borderColor: colors.darkGray,
+      opacity: 0.7,
+      borderColor: colors.gray,
     },
     gradientBackground: {
-      flex: 1,
       flexDirection: 'row',
       alignItems: 'center',
+      padding: 10,
     },
     cardLeft: {
       width: 62,
@@ -535,6 +534,8 @@ const getStyles = (colors: ColorsType, isDark: boolean) =>
       paddingVertical: 4,
       backgroundColor: colors.backgroundSecon,
       borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.gray,
     },
     chipsRow: {
       marginTop: 10,
@@ -554,7 +555,6 @@ const getStyles = (colors: ColorsType, isDark: boolean) =>
     chipText: {
       fontSize: 13,
     },
-
     chipClosed: {
       backgroundColor: colors.backgroundSecon,
       borderWidth: 1,
@@ -563,22 +563,7 @@ const getStyles = (colors: ColorsType, isDark: boolean) =>
     chipActive: {
       backgroundColor: colors.background,
       borderWidth: 1,
-      borderBlockColor: colors.success,
-    },
-
-    chipGradient: {
-      borderRadius: 999,
-      padding: 1.5,
-      marginRight: 8,
-      marginBottom: 6,
-    },
-    chipInner: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingHorizontal: 10,
-      paddingVertical: 6,
-      borderRadius: 999,
-      backgroundColor: colors.background,
+      borderColor: colors.success,
     },
     emptyWrap: {
       paddingTop: 40,
@@ -590,3 +575,4 @@ const getStyles = (colors: ColorsType, isDark: boolean) =>
       color: colors.darkGray,
     },
   });
+

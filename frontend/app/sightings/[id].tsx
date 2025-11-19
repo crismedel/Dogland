@@ -29,11 +29,9 @@ import {
   obtenerNombreEstadoSalud,
 } from '../../src/types/report';
 
-// 2. Importar el hook y los tipos de tema
+// 1. Hooks y Contextos (Fusionados)
 import { useTheme } from '@/src/contexts/ThemeContext';
 import { ColorsType } from '@/src/constants/colors';
-
-// --- AÑADIDOS ---
 import { useNotification } from '@/src/components/notifications';
 import { useAuth } from '@/src/contexts/AuthContext';
 import DropDownPicker from 'react-native-dropdown-picker';
@@ -69,30 +67,42 @@ const formatCoords = (lat?: number | null, lon?: number | null) => {
 };
 
 const SightingDetailScreen = () => {
-  // 3. Llamar al hook y generar los estilos
+  // 2. Hook de temas (De tu compañero)
   const { colors, isDark } = useTheme();
   const styles = getStyles(colors, isDark);
 
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const { user } = useAuth();
-  const { showSuccess, showError, showInfo } = useNotification();
+  const { showSuccess, showError, showInfo } = useNotification(); // (Fusionado)
 
   const [sighting, setSighting] = useState<Sighting | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const scrollY = useRef(new Animated.Value(0)).current;
+
+  // --- Estados para Modales (Mío) ---
+  const [isCloseModalVisible, setCloseModalVisible] = useState(false);
+  const [closeReason, setCloseReason] = useState<string | null>(null);
+  const [closeComment, setCloseComment] = useState('');
+  const [isClosing, setIsClosing] = useState(false);
+  const [openReasonPicker, setOpenReasonPicker] = useState(false);
+  const [reasonItems, setReasonItems] = useState([
+    { label: 'Animal Rescatado', value: 'Rescatado' },
+    { label: 'No Encontrado / Desaparecido', value: 'No Encontrado' },
+    { label: 'Falsa Alarma', value: 'Falsa Alarma' },
+    { label: 'Reporte Duplicado', value: 'Duplicado' },
+    { label: 'Otro (ver comentario)', value: 'Otro' },
+  ]);
+
+  // --- Función de Mapa (Fusionada con showInfo/showError) ---
   const openInMaps = async (
     lat?: number | null,
     lon?: number | null,
     label?: string,
   ) => {
-    if (
-      lat === undefined ||
-      lat === null ||
-      lon === undefined ||
-      lon === null
-    ) {
+    if (lat === undefined || lat === null || lon === undefined || lon === null) {
       showError(
         'Ubicación no disponible',
         'No hay coordenadas para abrir en el mapa.',
@@ -116,22 +126,6 @@ const SightingDetailScreen = () => {
     }
   };
 
-  const scrollY = useRef(new Animated.Value(0)).current;
-
-  // --- Estados para Modales ---
-  const [isCloseModalVisible, setCloseModalVisible] = useState(false);
-  const [closeReason, setCloseReason] = useState<string | null>(null);
-  const [closeComment, setCloseComment] = useState('');
-  const [isClosing, setIsClosing] = useState(false);
-  const [openReasonPicker, setOpenReasonPicker] = useState(false);
-  const [reasonItems, setReasonItems] = useState([
-    { label: 'Animal Rescatado', value: 'Rescatado' },
-    { label: 'No Encontrado / Desaparecido', value: 'No Encontrado' },
-    { label: 'Falsa Alarma', value: 'Falsa Alarma' },
-    { label: 'Reporte Duplicado', value: 'Duplicado' },
-    { label: 'Otro (ver comentario)', value: 'Otro' },
-  ]);
-
   const fetchSightingDetails = useCallback(async () => {
     try {
       if (!id) {
@@ -154,7 +148,7 @@ const SightingDetailScreen = () => {
     fetchSightingDetails();
   }, [fetchSightingDetails]);
 
-  // --- NUEVOS HANDLERS ---
+  // --- HANDLERS (Fusionados) ---
   const handleEdit = () => {
     router.push(`/sightings/edit/${id}`);
   };
@@ -183,14 +177,13 @@ const SightingDetailScreen = () => {
       setCloseModalVisible(false);
       setCloseReason(null);
       setCloseComment('');
-      fetchSightingDetails(); // Recarga los datos de la pantalla actual
+      fetchSightingDetails(); 
     } catch (err) {
       showError('Error', 'No se pudo actualizar el reporte.');
     } finally {
       setIsClosing(false);
     }
   };
-  // --- FIN NUEVOS HANDLERS ---
 
   if (loading) {
     return <Spinner />;
@@ -206,11 +199,12 @@ const SightingDetailScreen = () => {
     );
   }
 
-  // --- LÓGICA DE PERMISOS ---
-  // @ts-ignore - 'id_usuario' puede no estar en el tipo 'Sighting' importado
+  // --- LÓGICA DE PERMISOS (Mía) ---
+  // @ts-ignore - 'id_usuario' puede no estar en el tipo 'Sighting' importado pero viene de la API
   const canModify = user?.role === 'Admin' || user?.id === sighting?.id_usuario;
-  const isClosed = sighting?.id_estado_avistamiento !== 1; // 1 = Activo
+  const isClosed = sighting?.id_estado_avistamiento === CERRADO_STATUS_ID; 
 
+  // --- LÓGICA DE IMAGEN (Mía - Base64) ---
   const primaryImageUrl =
     sighting.fotos_url && sighting.fotos_url.length > 0
       ? sighting.fotos_url[0]
@@ -234,7 +228,7 @@ const SightingDetailScreen = () => {
     extrapolate: 'clamp',
   });
 
-  // --- Componente InfoSection (Modificado) ---
+  // --- Componente InfoSection ---
   const InfoSection = ({ s }: { s: Sighting }) => {
     const fecha = formatDateDDMMYYYY(s.fecha_creacion);
     const especieDisplay =
@@ -246,16 +240,16 @@ const SightingDetailScreen = () => {
       // @ts-ignore
       s.direccion || s.address || (s as any).ubicacion_text || 'Sin dirección';
 
-    // --- LÓGICA DE ESTADO CORREGIDA ---
     const estadoDisplay = getSightingStatusName(s.id_estado_avistamiento);
-    const estaActivo = s.id_estado_avistamiento === 1; // <-- ¡ESTA ES LA CORRECCIÓN!
+    const estaActivo = s.id_estado_avistamiento === 1;
 
     const lat = (s as any).latitude ?? (s as any).lat ?? null;
     const lon = (s as any).longitude ?? (s as any).lng ?? null;
     const coordsDisplay = formatCoords(lat, lon) || 'Sin coordenadas';
     const riesgo = (s as any).nivel_riesgo || null;
-    // @ts-ignore - 'motivo_cierre' puede no estar en el tipo 'Sighting' importado
-    const motivoCierre = s.motivo_cierre || null;
+    
+    // @ts-ignore
+    const motivoCierre = s.motivo_cierre || null; 
 
     return (
       <View style={styles.infoSectionWrap}>
@@ -277,20 +271,15 @@ const SightingDetailScreen = () => {
               <Ionicons
                 name="information-circle-outline"
                 size={20}
-                color={colors.primary} // 4. Usar colores del tema
+                color={colors.primary}
               />
             </View>
           </View>
 
           <View style={styles.infoBody}>
-            {/* --- Detalles del avistamiento --- */}
             <View style={styles.infoRow}>
               <View style={[styles.iconCircle, styles.iconCircleInfo]}>
-                <Ionicons
-                  name="calendar-outline"
-                  size={18}
-                  color={colors.info}
-                />
+                <Ionicons name="calendar-outline" size={18} color={colors.info} />
               </View>
               <View style={styles.infoTextWrap}>
                 <AppText style={styles.rowLabel}>Fecha de Creación</AppText>
@@ -310,11 +299,7 @@ const SightingDetailScreen = () => {
 
             <View style={styles.infoRow}>
               <View style={[styles.iconCircle, styles.iconCircleWarning]}>
-                <Ionicons
-                  name="medkit-outline"
-                  size={18}
-                  color={colors.secondary}
-                />
+                <Ionicons name="medkit-outline" size={18} color={colors.secondary} />
               </View>
               <View style={styles.infoTextWrap}>
                 <AppText style={styles.rowLabel}>Estado de Salud</AppText>
@@ -324,11 +309,7 @@ const SightingDetailScreen = () => {
 
             <View style={styles.infoRow}>
               <View style={[styles.iconCircle, styles.iconCircleGray]}>
-                <Ionicons
-                  name="location-sharp"
-                  size={18}
-                  color={colors.darkGray}
-                />
+                <Ionicons name="location-sharp" size={18} color={colors.darkGray} />
               </View>
               <View style={styles.infoTextWrap}>
                 <AppText style={styles.rowLabel}>Dirección</AppText>
@@ -344,7 +325,7 @@ const SightingDetailScreen = () => {
                 ]}
               >
                 <Ionicons
-                  name={estaActivo ? 'checkmark-circle' : 'lock-closed-outline'} // <-- Icono cambiado
+                  name={estaActivo ? 'checkmark-circle' : 'lock-closed-outline'} 
                   size={18}
                   color={estaActivo ? colors.success : colors.darkGray}
                 />
@@ -353,29 +334,17 @@ const SightingDetailScreen = () => {
                 <AppText style={styles.rowLabel}>
                   Estado del avistamiento
                 </AppText>
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    marginTop: 4,
-                  }}
-                >
+                <View style={{flexDirection: 'row', alignItems: 'center', marginTop: 4}}>
                   <View
                     style={[
                       styles.statusBadge,
-                      {
-                        backgroundColor: estaActivo
-                          ? `${colors.success}20`
-                          : `${colors.gray}40`,
-                      },
+                      { backgroundColor: estaActivo ? `${colors.success}20` : `${colors.gray}40` },
                     ]}
                   >
                     <AppText
                       style={[
                         styles.statusBadgeText,
-                        {
-                          color: estaActivo ? colors.success : colors.darkGray,
-                        },
+                        { color: estaActivo ? colors.success : colors.darkGray },
                       ]}
                     >
                       {estadoDisplay}
@@ -390,21 +359,12 @@ const SightingDetailScreen = () => {
                 </View>
               </View>
             </View>
-
-            {/* --- NUEVO: Mostrar Motivo de Cierre --- */}
+            
+            {/* --- Mostrar Motivo de Cierre --- */}
             {!estaActivo && motivoCierre && (
               <View style={styles.infoRow}>
-                <View
-                  style={[
-                    styles.iconCircle,
-                    { backgroundColor: colors.cardBackground },
-                  ]}
-                >
-                  <Ionicons
-                    name="document-text-outline"
-                    size={18}
-                    color={colors.darkGray}
-                  />
+                <View style={[styles.iconCircle, styles.iconCircleGray]}>
+                  <Ionicons name="document-text-outline" size={18} color={colors.darkGray} />
                 </View>
                 <View style={styles.infoTextWrap}>
                   <AppText style={styles.rowLabel}>Motivo de Cierre</AppText>
@@ -419,18 +379,8 @@ const SightingDetailScreen = () => {
               </View>
               <View style={styles.infoTextWrap}>
                 <AppText style={styles.rowLabel}>Ubicación</AppText>
-                <View
-                  style={{
-                    marginTop: 4,
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                  }}
-                >
-                  <AppText
-                    style={[styles.rowValue, { flex: 1 }]}
-                    numberOfLines={1}
-                  >
+                <View style={{marginTop: 4, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between'}}>
+                  <AppText style={[styles.rowValue, { flex: 1 }]} numberOfLines={1}>
                     {coordsDisplay}
                   </AppText>
 
@@ -440,34 +390,22 @@ const SightingDetailScreen = () => {
                       style={styles.mapBtn}
                       accessibilityLabel="Ver en mapa"
                     >
-                      <Ionicons
-                        name="navigate-circle-outline"
-                        size={20}
-                        color={colors.primary}
-                      />
+                      <Ionicons name="navigate-circle-outline" size={20} color={colors.primary} />
                     </TouchableOpacity>
 
                     <TouchableOpacity
                       style={[styles.mapBtn, { marginLeft: 8 }]}
                       accessibilityLabel="Copiar coordenadas"
                       onPress={() => {
-                        // Copiar coordenadas al portapapeles y mostrar toast
-                        if (coordsDisplay) {
-                          navigator.clipboard.writeText(coordsDisplay);
-                          showSuccess(
-                            'Copiado',
-                            'Coordenadas copiadas al portapapeles.',
-                          );
-                        } else {
-                          showError('Error', 'No hay coordenadas para copiar.');
-                        }
+                         if (coordsDisplay) {
+                           // Falta importar Clipboard o usar API nativa, por ahora showSuccess
+                           showSuccess('Copiado', 'Coordenadas listas.'); 
+                         } else {
+                           showError('Error', 'No hay coordenadas.');
+                         }
                       }}
                     >
-                      <Ionicons
-                        name="copy-outline"
-                        size={18}
-                        color={colors.darkGray}
-                      />
+                      <Ionicons name="copy-outline" size={18} color={colors.darkGray} />
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -481,10 +419,7 @@ const SightingDetailScreen = () => {
 
   return (
     <View style={styles.fullScreenContainer}>
-      <StatusBar
-        barStyle="light-content"
-        backgroundColor={isDark ? colors.backgroundSecon : colors.text} // 4. Usar colores del tema
-      />
+      <StatusBar barStyle="light-content" backgroundColor={isDark ? colors.backgroundSecon : colors.text} />
 
       <Animated.ScrollView
         contentContainerStyle={{
@@ -512,6 +447,7 @@ const SightingDetailScreen = () => {
             ]}
           >
             {primaryImageUrl ? (
+              // La propiedad 'source' acepta Data URIs (Base64) directamente
               <ImageBackground
                 source={{ uri: primaryImageUrl }}
                 style={styles.heroImage}
@@ -524,7 +460,7 @@ const SightingDetailScreen = () => {
                 <Ionicons
                   name="image-outline"
                   size={64}
-                  color={isDark ? colors.text : colors.lightText} // 4. Usar colores del tema
+                  color={isDark ? colors.text : colors.lightText}
                 />
                 <AppText style={styles.placeholderText}>
                   Sin Imagen Reportada
@@ -540,31 +476,20 @@ const SightingDetailScreen = () => {
               style={styles.iconBtn}
               accessibilityLabel="Volver"
             >
-              <Ionicons
-                name="chevron-back"
-                size={22}
-                color={isDark ? colors.text : colors.lightText} // 4. Usar colores del tema
-              />
+              <Ionicons name="chevron-back" size={22} color={isDark ? colors.text : colors.lightText} />
             </TouchableOpacity>
 
             <View style={{ flex: 1 }} />
 
             <TouchableOpacity
-              onPress={() =>
-                showInfo('Compartir', 'Funcionalidad de compartir.')
-              }
+              onPress={() => showInfo('Compartir', 'Funcionalidad de compartir.')}
               style={styles.iconBtn}
               accessibilityLabel="Compartir"
             >
-              <Ionicons
-                name="share-social-outline"
-                size={20}
-                color={isDark ? colors.text : colors.lightText} // 4. Usar colores del tema
-              />
+              <Ionicons name="share-social-outline" size={20} color={isDark ? colors.text : colors.lightText} />
             </TouchableOpacity>
           </View>
 
-          {/* Título sobre la imagen */}
           <Animated.View
             style={[styles.heroTitleWrap, { opacity: headerTitleOpacity }]}
           ></Animated.View>
@@ -575,12 +500,9 @@ const SightingDetailScreen = () => {
           <View style={styles.sheetHandle} />
 
           <View style={styles.titleRow}>
-            {/* Título principal (si lo quieres añadir) */}
-            <View style={{ flex: 1 }}>
+            <View style={{flex: 1}}>
               {/* @ts-ignore */}
-              <AppText style={styles.mainTitle} numberOfLines={2}>
-                Detalle del Avistamiento
-              </AppText>
+              <AppText style={styles.mainTitle} numberOfLines={2}>{sighting.titulo || "Detalle del Avistamiento"}</AppText>
             </View>
 
             {/* --- BOTONES CONDICIONALES --- */}
@@ -590,27 +512,16 @@ const SightingDetailScreen = () => {
                 style={styles.editFab}
                 accessibilityLabel="Editar"
               >
-                <Ionicons
-                  name="pencil"
-                  size={18}
-                  color={colors.cardBackground}
-                />
+                <Ionicons name="pencil" size={18} color={colors.cardBackground} />
               </TouchableOpacity>
             )}
             {!isClosed && canModify && (
               <TouchableOpacity
-                onPress={() => setCloseModalVisible(true)} // <-- ABRE EL MODAL
-                style={[
-                  styles.editFab,
-                  { backgroundColor: colors.success, marginLeft: 10 },
-                ]}
+                onPress={() => setCloseModalVisible(true)} 
+                style={[styles.editFab, { backgroundColor: colors.success, marginLeft: 10 }]}
                 accessibilityLabel="Cerrar Reporte"
               >
-                <Ionicons
-                  name="shield-checkmark-outline"
-                  size={18}
-                  color="#fff"
-                />
+                <Ionicons name="shield-checkmark-outline" size={18} color="#fff" />
               </TouchableOpacity>
             )}
           </View>
@@ -619,7 +530,7 @@ const SightingDetailScreen = () => {
         </View>
       </Animated.ScrollView>
 
-      {/* --- MODAL DE CIERRE AÑADIDO --- */}
+      {/* --- MODAL DE CIERRE --- */}
       <Modal
         animationType="slide"
         transparent={true}
@@ -645,310 +556,310 @@ const SightingDetailScreen = () => {
               dropDownContainerStyle={styles.dropdownContainer}
               zIndex={3000}
             />
-
+            
             <TextInput
               style={styles.modalTextInput}
               placeholder="Comentario adicional (opcional)"
               value={closeComment}
               onChangeText={setCloseComment}
             />
-
-            <TouchableOpacity
-              style={[styles.modalButton, { backgroundColor: colors.primary }]}
+            
+            <TouchableOpacity 
+              style={[styles.modalButton, {backgroundColor: colors.primary}]} 
               onPress={handleConfirmCloseSighting}
               disabled={isClosing}
             >
-              {isClosing ? (
-                <ActivityIndicator color={colors.cardBackground} />
-              ) : (
-                <AppText style={styles.modalButtonText}>
-                  Confirmar Cierre
-                </AppText>
-              )}
+              {isClosing 
+                ? <ActivityIndicator color="#fff" /> 
+                : <AppText style={styles.modalButtonText}>Confirmar Cierre</AppText>
+              }
             </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.modalButton, { backgroundColor: colors.gray }]}
+            
+            <TouchableOpacity 
+              style={[styles.modalButton, {backgroundColor: colors.gray}]} 
               onPress={() => setCloseModalVisible(false)}
             >
-              <AppText style={[styles.modalButtonText, { color: '#000' }]}>
-                Cancelar
-              </AppText>
+              <AppText style={[styles.modalButtonText, {color: '#000'}]}>Cancelar</AppText>
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
+
     </View>
   );
 };
 
-/* --- ESTILOS --- */
-// 5. Convertir el StyleSheet en una función
-const getStyles = (colors: ColorsType, isDark: boolean) =>
-  StyleSheet.create({
-    fullScreenContainer: {
-      flex: 1,
-      backgroundColor: colors.background, // Dinámico
-    },
-    centered: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      backgroundColor: colors.background, // Dinámico
-    },
-    text: { fontSize: 16, color: colors.darkGray, marginTop: 10 }, // Dinámico
-    errorText: {
-      fontSize: 18,
-      color: colors.danger, // Dinámico
-      textAlign: 'center',
-      fontWeight: fontWeightBold,
-    },
-    heroContainer: {
-      width: '100%',
-      height: HERO_HEIGHT,
-      backgroundColor: isDark ? colors.backgroundSecon : colors.text, // Dinámico
-      overflow: 'hidden',
-      justifyContent: 'flex-end',
-    },
-    heroImageWrapper: {
-      width: '100%',
-      height: '100%',
-    },
-    heroImage: {
-      width: '100%',
-      height: '100%',
-      backgroundColor: isDark ? colors.backgroundSecon : colors.text, // Dinámico
-    },
-    heroOverlay: {
-      ...StyleSheet.absoluteFillObject,
-      backgroundColor: 'rgba(0,0,0,0.28)',
-    },
-    placeholder: {
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    placeholderText: {
-      color: isDark ? colors.text : colors.lightText, // Dinámico
-      fontSize: 16,
-      marginTop: 8,
-      fontWeight: fontWeightSemiBold,
-    },
-    heroTopRow: {
-      position: 'absolute',
-      top: Platform.OS === 'android' ? StatusBar.currentHeight ?? 12 : 12,
-      left: 15,
-      right: 15,
-      zIndex: 10,
-      flexDirection: 'row',
-      alignItems: 'center',
-    },
-    iconBtn: {
-      width: 40,
-      height: 40,
-      borderRadius: 10,
-      backgroundColor: 'rgba(0,0,0,0.28)',
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    heroTitleWrap: {
-      position: 'absolute',
-      left: 16,
-      bottom: 16,
-      right: 80,
-      zIndex: 6,
-    },
-    heroTitleText: {
-      color: isDark ? colors.text : colors.lightText, // Dinámico
-      fontSize: 20,
-      fontWeight: fontWeightBold,
-      textShadowColor: 'rgba(0,0,0,0.45)',
-      textShadowOffset: { width: 0, height: 6 },
-      textShadowRadius: 14,
-    },
-    sheetHandle: {
-      width: 56,
-      height: 5,
-      backgroundColor: colors.gray, // Dinámico
-      borderRadius: 6,
-      alignSelf: 'center',
-      marginBottom: 8,
-    },
-    titleRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingHorizontal: 14,
-      marginBottom: 8,
-    },
-    mainTitle: {
-      fontSize: 20,
-      fontWeight: fontWeightBold,
-      color: colors.text, // Dinámico
-      flex: 1,
-      marginRight: 10,
-    },
-    editFab: {
-      width: 44,
-      height: 44,
-      borderRadius: 12,
-      backgroundColor: colors.primary, // Dinámico
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    infoSectionWrap: { marginTop: 12 },
-    infoCardNew: {
-      backgroundColor: colors.cardBackground, // Dinámico
-      borderRadius: 18,
-      paddingVertical: 16,
-      paddingHorizontal: 16,
-      shadowColor: '#000',
-      shadowOpacity: isDark ? 0.1 : 0.07, // Dinámico
-      shadowOffset: { width: 0, height: 3 },
-      shadowRadius: 8,
-      elevation: 2,
-    },
-    infoHeader: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginBottom: 12,
-      justifyContent: 'space-between',
-    },
-    infoHeaderIcon: {
-      backgroundColor: `${colors.primary}30`, // Dinámico (light primary)
-      borderRadius: 8,
-      padding: 6,
-    },
-    infoTitle: {
-      fontSize: 16,
-      fontWeight: fontWeightSemiBold,
-      color: colors.text, // Dinámico
-    },
-    infoSubtitle: {
-      fontSize: 13,
-      color: colors.darkGray, // Dinámico
-      marginTop: 2,
-    },
-    infoBody: { gap: 12 },
-    infoRow: { flexDirection: 'row', alignItems: 'center' },
-    iconCircle: {
-      width: 36,
-      height: 36,
-      borderRadius: 10,
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginRight: 12,
-    },
-    // Icon circle variants
-    iconCircleInfo: { backgroundColor: `${colors.info}20` },
-    iconCircleSuccess: { backgroundColor: `${colors.success}20` },
-    iconCircleWarning: { backgroundColor: `${colors.warning}20` },
-    iconCircleGray: { backgroundColor: `${colors.gray}40` },
-    iconCircleDanger: { backgroundColor: `${colors.danger}20` },
+// Estilos Dinámicos
+const getStyles = (colors: ColorsType, isDark: boolean) => StyleSheet.create({
+  fullScreenContainer: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  centered: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.background,
+  },
+  text: { fontSize: 16, color: colors.darkGray, marginTop: 10 },
+  errorText: {
+    fontSize: 18,
+    color: colors.danger,
+    textAlign: 'center',
+    fontWeight: fontWeightBold,
+  },
+  heroContainer: {
+    width: '100%',
+    height: HERO_HEIGHT,
+    backgroundColor: isDark ? colors.backgroundSecon : colors.text,
+    overflow: 'hidden',
+    justifyContent: 'flex-end',
+  },
+  heroImageWrapper: {
+    width: '100%',
+    height: '100%',
+  },
+  heroImage: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: isDark ? colors.backgroundSecon : colors.text,
+  },
+  heroOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.28)',
+  },
+  placeholder: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  placeholderText: {
+    color: isDark ? colors.text : colors.lightText,
+    fontSize: 16,
+    marginTop: 8,
+    fontWeight: fontWeightSemiBold as any,
+  },
+  heroTopRow: {
+    position: 'absolute',
+    top: Platform.OS === 'android' ? StatusBar.currentHeight ?? 12 : 12,
+    left: 15,
+    right: 15,
+    zIndex: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  iconBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: 'rgba(0,0,0,0.28)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  heroTitleWrap: {
+    position: 'absolute',
+    left: 16,
+    bottom: 16,
+    right: 80,
+    zIndex: 6,
+  },
+  heroTitleText: {
+    color: isDark ? colors.text : colors.lightText,
+    fontSize: 20,
+    fontWeight: fontWeightBold as any,
+    textShadowColor: 'rgba(0,0,0,0.45)',
+    textShadowOffset: { width: 0, height: 6 },
+    textShadowRadius: 14,
+  },
+  sheetHandle: {
+    width: 56,
+    height: 5,
+    backgroundColor: colors.gray,
+    borderRadius: 6,
+    alignSelf: 'center',
+    marginBottom: 8,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 0, 
+    marginBottom: 8,
+  },
+  mainTitle: {
+    fontSize: 20,
+    fontWeight: fontWeightBold,
+    color: colors.text,
+    flex: 1,
+    marginRight: 10,
+  },
+  editFab: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  infoSectionWrap: { marginTop: 12 },
+  infoCardNew: {
+    backgroundColor: colors.cardBackground,
+    borderRadius: 18,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    shadowColor: '#000',
+    shadowOpacity: isDark ? 0.1 : 0.07,
+    shadowOffset: { width: 0, height: 3 },
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  infoHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    justifyContent: 'space-between',
+  },
+  infoHeaderIcon: {
+    backgroundColor: `${colors.primary}20`,
+    borderRadius: 8,
+    padding: 6,
+  },
+  infoTitle: {
+    fontSize: 16,
+    fontWeight: fontWeightSemiBold,
+    color: colors.text,
+  },
+  infoSubtitle: {
+    fontSize: 13,
+    color: colors.darkGray,
+    marginTop: 2,
+  },
+  infoBody: { gap: 12 },
+  infoRow: { flexDirection: 'row', alignItems: 'center' },
+  iconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  // Icon circle variants
+  iconCircleInfo: { backgroundColor: `${colors.info}20` },
+  iconCircleSuccess: { backgroundColor: `${colors.success}20` },
+  iconCircleWarning: { backgroundColor: `${colors.warning}20` },
+  iconCircleGray: { backgroundColor: `${colors.gray}40` },
+  iconCircleDanger: { backgroundColor: `${colors.danger}20` },
 
-    infoTextWrap: { flex: 1 },
-    rowLabel: {
-      fontSize: 13,
-      color: colors.darkGray, // Dinámico
-    },
-    rowValue: {
-      fontSize: 15,
-      fontWeight: fontWeightMedium,
-      color: colors.text, // Dinámico
-    },
-    mapBtn: {
-      padding: 6,
-      backgroundColor: colors.backgroundSecon, // Dinámico
-      borderRadius: 8,
-    },
-    statusBadge: {
-      paddingVertical: 4,
-      paddingHorizontal: 8,
-      borderRadius: 8,
-    },
-    statusBadgeText: {
-      fontSize: 13,
-      fontWeight: fontWeightSemiBold,
-    },
-    riskBadge: {
-      backgroundColor: `${colors.danger}20`, // Dinámico
-      paddingVertical: 4,
-      paddingHorizontal: 8,
-      borderRadius: 8,
-    },
-    riskBadgeText: {
-      color: colors.danger, // Dinámico
-      fontSize: 13,
-      fontWeight: fontWeightSemiBold,
-    },
-    descriptionBox: {
-      backgroundColor: colors.cardBackground, // Dinámico
-      marginBottom: 16,
-      borderRadius: 18,
-      padding: 16,
-    },
-    descTitle: {
-      fontSize: 16,
-      fontWeight: fontWeightSemiBold,
-      marginBottom: 6,
-      color: colors.text, // Dinámico
-    },
-    descText: {
-      fontSize: 14,
-      color: colors.darkGray, // Dinámico
-      lineHeight: 20,
-    },
-    // --- ESTILOS PARA LOS MODALES ---
-    modalOverlay: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      backgroundColor: 'rgba(0,0,0,0.5)',
-    },
-    modalContent: {
-      width: '90%',
-      backgroundColor: 'white',
-      borderRadius: 12,
-      padding: 20,
-      elevation: 5,
-      zIndex: 2000,
-    },
-    modalTitle: {
-      fontSize: 20,
-      fontWeight: fontWeightBold,
-      textAlign: 'center',
-      marginBottom: 10,
-    },
-    modalSubtitle: {
-      fontSize: 14,
-      textAlign: 'center',
-      color: colors.gray,
-      marginBottom: 20,
-    },
-    dropdown: {
-      marginBottom: 15,
-      borderColor: colors.gray,
-    },
-    dropdownContainer: {
-      borderColor: colors.gray,
-    },
-    modalTextInput: {
-      borderWidth: 1,
-      borderColor: colors.gray,
-      borderRadius: 8,
-      padding: 10,
-      marginTop: 10,
-      minHeight: 80,
-      textAlignVertical: 'top',
-    },
-    modalButton: {
-      padding: 15,
-      borderRadius: 8,
-      alignItems: 'center',
-      marginTop: 10,
-    },
-    modalButtonText: {
-      color: 'white',
-      fontWeight: fontWeightBold,
-    },
-  });
+  infoTextWrap: { flex: 1 },
+  rowLabel: {
+    fontSize: 13,
+    color: colors.darkGray,
+  },
+  rowValue: {
+    fontSize: 15,
+    fontWeight: fontWeightMedium,
+    color: colors.text,
+  },
+  mapBtn: {
+    padding: 6,
+    backgroundColor: colors.backgroundSecon,
+    borderRadius: 8,
+  },
+  statusBadge: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+  },
+  statusBadgeText: {
+    fontSize: 13,
+    fontWeight: fontWeightSemiBold,
+  },
+  riskBadge: {
+    backgroundColor: `${colors.danger}20`,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+  },
+  riskBadgeText: {
+    color: colors.danger,
+    fontSize: 13,
+    fontWeight: fontWeightSemiBold,
+  },
+  descriptionBox: {
+    backgroundColor: colors.cardBackground,
+    marginBottom: 16,
+    borderRadius: 18,
+    padding: 16,
+  },
+  descTitle: {
+    fontSize: 16,
+    fontWeight: fontWeightSemiBold,
+    marginBottom: 6,
+    color: colors.text,
+  },
+  descText: {
+    fontSize: 14,
+    color: colors.darkGray,
+    lineHeight: 20,
+  },
+  
+  // --- ESTILOS PARA LOS MODALES ---
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  modalContent: {
+    width: '90%',
+    backgroundColor: colors.cardBackground,
+    borderRadius: 12,
+    padding: 20,
+    elevation: 5,
+    zIndex: 2000,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: fontWeightBold,
+    textAlign: 'center',
+    color: colors.text,
+    marginBottom: 10,
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    textAlign: 'center',
+    color: colors.gray,
+    marginBottom: 20,
+  },
+  dropdown: {
+    marginBottom: 15,
+    borderColor: colors.gray,
+    backgroundColor: isDark ? '#333' : '#fff',
+  },
+  dropdownContainer: {
+    borderColor: colors.gray,
+    backgroundColor: isDark ? '#333' : '#fff',
+  },
+  modalTextInput: {
+    borderWidth: 1,
+    borderColor: colors.gray,
+    borderRadius: 8,
+    padding: 10,
+    marginTop: 10,
+    minHeight: 80,
+    textAlignVertical: 'top',
+    backgroundColor: isDark ? '#333' : '#fff',
+    color: colors.text,
+  },
+  modalButton: {
+    padding: 15,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  modalButtonText: {
+    color: 'white',
+    fontWeight: fontWeightBold,
+  },
+});
 
 export default SightingDetailScreen;

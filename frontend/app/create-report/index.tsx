@@ -1,48 +1,38 @@
-import React, { useState, useEffect } from 'react';
-import {
-  View,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  Image,
-  ActivityIndicator,
-  Dimensions,
-  KeyboardAvoidingView,
-  Platform,
-  Linking,
-  Text, // Asegúrate de que Text esté importado
-  TextInput,
-  Pressable, // Importar Pressable si se usa
-} from 'react-native';
-import { useRouter } from 'expo-router';
-import DynamicForm, { FormField } from '@/src/components/UI/DynamicForm';
-import CustomHeader from '@/src/components/UI/CustomHeader';
 import {
   AppText,
-  fontWeightBold,
-  fontWeightMedium,
-  fontWeightSemiBold,
+  fontWeightMedium
 } from '@/src/components/AppText';
-// 1. Quitar la importación estática
-// import { Colors } from '@/src/constants/colors';
-import { fetchUserProfile } from '@/src/api/users';
-import { useAuth } from '@/src/contexts/AuthContext';
-import { fetchNotifications } from '@/src/api/notifications';
-import Spinner from '@/src/components/UI/Spinner';
+import CustomHeader from '@/src/components/UI/CustomHeader';
+import DynamicForm, { FormField } from '@/src/components/UI/DynamicForm';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
-import MapView, { Marker } from 'react-native-maps';
-import apiClient from '../../src/api/client';
+import { useRouter } from 'expo-router';
+import React, { useState } from 'react';
+import {
+  ActivityIndicator,
+  Dimensions,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  View
+} from 'react-native';
+// --- CORRECCIÓN CRÍTICA: Usar el path '/legacy' para readAsStringAsync ---
 import { useNotification } from '@/src/components/notifications';
 import { useNetInfo } from '@react-native-community/netinfo';
+import * as FileSystem from 'expo-file-system/legacy';
+import MapView, { Marker } from 'react-native-maps';
+import apiClient from '../../src/api/client';
+import CustomButton from '../../src/components/UI/CustomButton';
 import { useReportSync } from '../../src/hooks/useReportSync';
 import { saveReportOffline } from '../../src/utils/offlineStorage';
-import DropDownPicker from 'react-native-dropdown-picker';
-import CustomButton from '../../src/components/UI/CustomButton';
 
 // 2. Importar el hook y los tipos de tema
-import { useTheme } from '@/src/contexts/ThemeContext';
 import { ColorsType } from '@/src/constants/colors';
+import { useTheme } from '@/src/contexts/ThemeContext';
 
 const { width } = Dimensions.get('window');
 
@@ -64,11 +54,10 @@ const CreateReportScreen = () => {
   // --- FIN HOOKS OFFLINE ---
 
   // ESTADOS DEL FORMULARIO
-  const [descripcion, setDescripcion] = useState('');
-  const [titulo, setTitulo] = useState('');
-  const [imageUrl, setImageUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [loadingLocation, setLoadingLocation] = useState(false);
+  
+  const [localImageUri, setLocalImageUri] = useState<string | null>(null);
 
   const [formValues, setFormValues] = useState<Record<string, any>>({
     titulo: '',
@@ -76,12 +65,36 @@ const CreateReportScreen = () => {
     especie: null,
     estadoSalud: null,
     estadoAvistamiento: null,
-    imageUrl: '',
     ubicacion: null,
     direccion: '',
   });
 
   const [mostrarMapa, setMostrarMapa] = useState(false);
+
+  // --- LÓGICA DE IMAGEN ---
+  const handleImagePick = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        showError('Permiso requerido', 'Necesitamos acceso a tu galería para subir fotos.');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        quality: 0.6,
+        base64: false, // No convertir a Base64 aquí
+      });
+
+      if (!result.canceled) {
+        setLocalImageUri(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.error('Error al seleccionar la imagen:', error);
+      showError('Error', 'No se pudo seleccionar la imagen.');
+    }
+  };
 
   // Función para obtener dirección legible desde coordenadas (geocodificación inversa)
   const obtenerDireccionDesdeCoordenadas = async (
@@ -167,14 +180,15 @@ const CreateReportScreen = () => {
       especie: null,
       estadoSalud: null,
       estadoAvistamiento: null,
-      imageUrl: '',
       ubicacion: null,
       direccion: '',
     });
+    setLocalImageUri(null); // Limpiar URI local
     setLoading(false);
   };
 
   const fields: FormField[] = [
+    // ... (campos de texto y pickers sin cambios) ...
     {
       name: 'titulo',
       label: 'Título del Reporte',
@@ -208,9 +222,9 @@ const CreateReportScreen = () => {
       required: true,
       type: 'picker',
       options: [
-        { label: 'Desaparecido', value: 2 },
-        { label: 'Observado', value: 3 },
-        { label: 'Recuperado', value: 4 },
+        { label: 'Saludable', value: 1 },
+        { label: 'Herido', value: 2 },
+        { label: 'Grave', value: 3 },
       ],
     },
     {
@@ -219,20 +233,13 @@ const CreateReportScreen = () => {
       required: true,
       type: 'picker',
       options: [
+        { label: 'Activo', value: 1 },
         { label: 'Desaparecido', value: 2 },
         { label: 'Observado', value: 3 },
         { label: 'Recuperado', value: 4 },
       ],
     },
-    {
-      name: 'imageUrl',
-      label: 'URL de la Foto (Opcional)',
-      required: false,
-      placeholder: 'Ej: https://tudominio.com/foto.jpg',
-      type: 'text',
-      keyboardType: 'url',
-      autoCapitalize: 'none',
-    },
+    // Eliminamos el campo 'imageUrl'
     {
       name: 'ubicacion',
       label: 'Ubicación',
@@ -270,6 +277,7 @@ const CreateReportScreen = () => {
     setFormValues((prev) => ({ ...prev, [name]: value }));
   };
 
+  // --- FUNCIÓN PRINCIPAL DE SUBIDA MODIFICADA PARA BYTEA ---
   const handleCreateReport = async (values: Record<string, any>) => {
     if (!values.ubicacion) {
       showError('Error', 'La ubicación es obligatoria.');
@@ -278,17 +286,27 @@ const CreateReportScreen = () => {
 
     setLoading(true);
 
-    const finalImageUrl =
-      values.imageUrl && values.imageUrl.startsWith('http')
-        ? values.imageUrl
-        : null;
-    if (values.imageUrl && !finalImageUrl) {
-      showInfo(
-        'Advertencia',
-        'La URL de la foto no parece ser válida. El reporte se enviará sin imagen.',
-      );
+    let imageDataBase64: string | null = null;
+
+    // 1. Convertir imagen local (URI) a Base64 si existe una seleccionada
+    if (localImageUri) {
+        try {
+            // Usamos readAsStringAsync con la cadena 'base64' como codificación
+            const base64 = await FileSystem.readAsStringAsync(localImageUri, {
+                encoding: 'base64', 
+            });
+            
+            // Creamos la cadena Base64 que incluye el prefijo (data URL)
+            imageDataBase64 = `data:image/jpeg;base64,${base64}`;
+        } catch (fileError) {
+            console.error('Error leyendo archivo para Base64:', fileError);
+            showError('Error de archivo', 'No se pudo leer la imagen para la subida.');
+            setLoading(false);
+            return;
+        }
     }
 
+    // 2. Preparar los datos del reporte
     const reportData = {
       id_estado_avistamiento: values.estadoAvistamiento,
       id_estado_salud: values.estadoSalud,
@@ -300,12 +318,15 @@ const CreateReportScreen = () => {
         latitude: values.ubicacion.latitude,
       },
       direccion: values.direccion || 'No proporcionada',
-      url: finalImageUrl,
+      // Enviamos la cadena Base64 en el campo que espera el backend
+      imageDataBase64: imageDataBase64, 
     };
 
+    // 3. Lógica Offline/Online
     const isOnline = netInfo.isConnected && netInfo.isInternetReachable;
 
     if (isOnline) {
+      // --- INTENTO DE ENVÍO ONLINE ---
       try {
         const response = await apiClient.post('/sightings', reportData);
         if (response.status === 201) {
@@ -327,7 +348,6 @@ const CreateReportScreen = () => {
           message:
             'No pudimos subir el reporte. ¿Quieres guardarlo para intentarlo más tarde?',
           confirmLabel: 'Guardar Offline',
-          cancelLabel: 'Cancelar',
           onConfirm: async () => {
             await saveReportOffline(reportData);
             resetForm();
@@ -338,17 +358,18 @@ const CreateReportScreen = () => {
         });
       }
     } else {
+      // --- MODO OFFLINE (SIN CONEXIÓN) ---
       try {
-        await saveReportOffline(reportData);
+        await saveReportOffline(reportData); 
         showSuccess(
           'Guardado Offline',
           'Reporte guardado. Se subirá automáticamente cuando recuperes la conexión.',
         );
-        resetForm();
         router.back();
       } catch (saveError) {
         showError('Error', 'No se pudo guardar el reporte localmente.');
-        setLoading(false);
+      } finally {
+         resetForm(); 
       }
     }
   };
@@ -364,11 +385,10 @@ const CreateReportScreen = () => {
           <TouchableOpacity onPress={() => router.back()}>
             <Image
               source={require('../../assets/images/volver.png')}
-              // 6. Usar colores del tema (texto oscuro sobre fondo amarillo)
               style={{
                 width: 24,
                 height: 24,
-                tintColor: isDark ? colors.lightText : colors.text,
+                tintColor: isDark ? colors.lightText : colors.text, 
               }}
             />
           </TouchableOpacity>
@@ -378,13 +398,13 @@ const CreateReportScreen = () => {
             {loading ? (
               <ActivityIndicator
                 size="small"
-                color={isDark ? colors.lightText : colors.text} // 6. Usar colores del tema
+                color={isDark ? colors.lightText : colors.text} 
               />
             ) : (
               <Ionicons
                 name="checkmark-done-outline"
                 size={22}
-                color={isDark ? colors.lightText : colors.text} // 6. Usar colores del tema
+                color={isDark ? colors.lightText : colors.text} 
               />
             )}
           </TouchableOpacity>
@@ -407,6 +427,28 @@ const CreateReportScreen = () => {
             buttonText="Generar Reporte"
             buttonIcon="checkmark-done-outline"
           />
+
+          {/* --- BOTÓN Y VISTA PREVIA DE IMAGEN --- */}
+          <View style={styles.imagePickerContainer}>
+            <AppText style={styles.inputLabel}>Foto del Avistamiento (Opcional):</AppText>
+            <CustomButton
+                title={localImageUri ? "Cambiar Foto" : "Seleccionar Foto"}
+                onPress={handleImagePick}
+                variant={localImageUri ? "secondary" : "primary"}
+                style={styles.imageButton}
+                icon="image-outline"
+            />
+            {localImageUri && (
+                <View style={styles.imagePreviewContainer}>
+                    <Image
+                        source={{ uri: localImageUri }}
+                        style={styles.imagePreview}
+                    />
+                </View>
+            )}
+          </View>
+          {/* --- FIN IMAGEN --- */}
+
 
           {mostrarMapa && (
             <View style={styles.mapContainer}>
@@ -435,13 +477,12 @@ const CreateReportScreen = () => {
   );
 };
 
-// --- ESTILOS (sin cambios, excepto por un scroll más grande) ---
-// 7. Convertir el StyleSheet en una función
+// --- ESTILOS ---
 const getStyles = (colors: ColorsType, isDark: boolean) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: colors.background, // Dinámico
+      backgroundColor: colors.background,
     },
     scrollContainer: {
       flex: 1,
@@ -449,6 +490,39 @@ const getStyles = (colors: ColorsType, isDark: boolean) =>
     contentContainer: {
       padding: 20,
     },
+    // Estilos para DynamicForm
+    inputLabel: {
+      fontSize: 16,
+      fontWeight: fontWeightMedium,
+      color: colors.text,
+      marginBottom: 6,
+    },
+
+    // --- ESTILOS DE IMAGEN ---
+    imagePickerContainer: {
+        marginTop: 10,
+        marginBottom: 20,
+        zIndex: 100, // Asegurar que el DropdownPicker no tape el botón
+    },
+    imageButton: {
+        width: 'auto',
+        alignSelf: 'flex-start',
+        paddingVertical: 10,
+        paddingHorizontal: 15,
+        borderRadius: 8,
+    },
+    imagePreviewContainer: {
+        marginTop: 15,
+        borderRadius: 12,
+        overflow: 'hidden',
+        alignItems: 'center',
+    },
+    imagePreview: {
+        width: '100%',
+        height: 200,
+        resizeMode: 'cover',
+    },
+    // FIN ESTILOS IMAGEN
 
     mapContainer: {
       width: '100%',

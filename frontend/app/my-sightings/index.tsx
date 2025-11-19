@@ -1,3 +1,9 @@
+import { AppText, fontWeightBold } from '@/src/components/AppText';
+import { useNotification } from '@/src/components/notifications';
+import CustomHeader from '@/src/components/UI/CustomHeader';
+import { useAuth } from '@/src/contexts/AuthContext';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -10,34 +16,20 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-  Platform,
 } from 'react-native';
-
 import DropDownPicker from 'react-native-dropdown-picker';
-import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-
 import apiClient from '../../src/api/client';
 import { ReporteDetails } from '../../src/components/report/ReporteDetails';
-import { useNotification } from '@/src/components/notifications';
-import { useAuth } from '@/src/contexts/AuthContext';
-import { useTheme } from '@/src/contexts/ThemeContext';
-import { ColorsType } from '@/src/constants/colors';
-
 import {
   obtenerNombreEspecie,
   obtenerNombreEstadoSalud,
 } from '../../src/types/report';
 
-import {
-  AppText,
-  fontWeightSemiBold,
-  fontWeightMedium,
-  fontWeightBold,
-} from '@/src/components/AppText';
-import CustomHeader from '@/src/components/UI/CustomHeader';
-import Spinner from '@/src/components/UI/Spinner';
+// Importar el hook y los tipos de tema
+import { ColorsType } from '@/src/constants/colors';
+import { useTheme } from '@/src/contexts/ThemeContext';
 
+// --- 1. INTERFAZ ACTUALIZADA CON FOTOS ---
 interface MySighting {
   id_avistamiento: number;
   titulo: string;
@@ -48,30 +40,26 @@ interface MySighting {
   id_estado_avistamiento: number;
   id_especie: number;
   id_usuario: number;
-  motivo_cierre?: string;
+  motivo_cierre?: string; 
   latitude?: number;
   longitude?: number;
+  fotos_url: string[]; // <-- Importante: Array de Base64
 }
 
 const getSightingStatusName = (id: number) => {
   switch (id) {
-    case 1:
-      return 'Activo';
-    case 2:
-      return 'Desaparecido';
-    case 3:
-      return 'Observado';
-    case 4:
-      return 'Recuperado';
-    case 5:
-      return 'Cerrado';
-    default:
-      return 'Desconocido';
+    case 1: return 'Activo';
+    case 2: return 'Desaparecido';
+    case 3: return 'Observado';
+    case 4: return 'Recuperado';
+    case 5: return 'Cerrado';
+    default: return 'Desconocido';
   }
 };
 
 const CERRADO_STATUS_ID = 5;
 
+// --- COMPONENTE TARJETA (CON FOTO) ---
 const MySightingCard = ({
   sighting,
   onPress,
@@ -90,6 +78,11 @@ const MySightingCard = ({
 
   const isCritical = sighting.id_estado_salud === 3;
   const isClosed = sighting.id_estado_avistamiento === CERRADO_STATUS_ID;
+
+  // 2. Extraer la primera foto si existe
+  const primaryImage = sighting.fotos_url && sighting.fotos_url.length > 0 
+                        ? sighting.fotos_url[0] 
+                        : null;
 
   const formatDate = (dateString: string) => {
     try {
@@ -113,75 +106,69 @@ const MySightingCard = ({
       onPress={onPress}
       activeOpacity={0.9}
     >
-      <View style={styles.cardHeader}>
-        <AppText style={styles.cardTitle} numberOfLines={1}>
-          {sighting.titulo || sighting.descripcion}
-        </AppText>
-
-        <View
-          style={[
-            styles.badge,
-            isClosed
-              ? styles.badgeClosed
-              : isCritical
-              ? styles.badgeCritical
-              : styles.badgeActive,
-          ]}
-        >
-          <AppText style={styles.badgeText}>{estadoAvistamientoNombre}</AppText>
+      <View style={styles.cardContentRow}>
+        {/* --- 3. COLUMNA IZQUIERDA: IMAGEN --- */}
+        <View style={styles.imageWrapper}>
+          {primaryImage ? (
+            <Image 
+              source={{ uri: primaryImage }} 
+              style={styles.cardImage}
+              resizeMode="cover"
+            />
+          ) : (
+            <View style={styles.placeholderImage}>
+              <Ionicons name="image-outline" size={24} color={colors.darkGray} />
+            </View>
+          )}
+          
+          {/* Badge de estado sobre la imagen */}
+          <View style={[
+            styles.imageBadge, 
+            isClosed ? styles.badgeClosed : (isCritical ? styles.badgeCritical : styles.badgeActive)
+          ]}>
+             <AppText style={styles.imageBadgeText}>{estadoAvistamientoNombre}</AppText>
+          </View>
         </View>
-      </View>
 
-      <AppText style={styles.cardDescription} numberOfLines={2}>
-        {sighting.descripcion}
-      </AppText>
+        {/* --- 4. COLUMNA DERECHA: INFO --- */}
+        <View style={styles.infoColumn}>
+          <AppText style={styles.cardTitle} numberOfLines={1}>
+            {sighting.titulo || sighting.descripcion}
+          </AppText>
 
-      <View style={styles.infoRow}>
-        <Ionicons
-          name="paw-outline"
-          size={16}
-          color={colors.darkGray}
-          style={{ marginRight: 8 }}
-        />
-        <AppText style={styles.label}>Especie:</AppText>
-        <AppText style={styles.value}>{especieNombre}</AppText>
-      </View>
+          <View style={styles.miniInfoRow}>
+            <Ionicons name="paw-outline" size={14} color={colors.darkGray} style={{marginRight:4}}/>
+            <AppText style={styles.miniInfoText} numberOfLines={1}>{especieNombre}</AppText>
+          </View>
 
-      <View style={styles.infoRow}>
-        <Ionicons
-          name="medkit-outline"
-          size={16}
-          color={isCritical ? colors.danger : colors.darkGray}
-          style={{ marginRight: 8 }}
-        />
-        <AppText style={styles.label}>Salud:</AppText>
-        <AppText
-          style={[
-            styles.value,
-            isCritical && { color: colors.danger, fontWeight: '700' },
-          ]}
-        >
-          {estadoSaludNombre}
-        </AppText>
-      </View>
+          <View style={styles.miniInfoRow}>
+            <Ionicons 
+               name="medkit-outline" 
+               size={14} 
+               color={isCritical ? colors.danger : colors.darkGray} 
+               style={{marginRight:4}}
+            />
+            <AppText 
+              style={[styles.miniInfoText, isCritical && {color: colors.danger, fontWeight:'bold'}]}
+              numberOfLines={1}
+            >
+              {estadoSaludNombre}
+            </AppText>
+          </View>
 
-      {isClosed && sighting.motivo_cierre && (
-        <View style={styles.reasonContainer}>
-          <Ionicons
-            name="information-circle-outline"
-            size={16}
-            color={colors.darkGray}
-            style={{ marginRight: 6 }}
-          />
-          <AppText style={styles.reasonText}>
-            Motivo: {sighting.motivo_cierre}
+          {isClosed && sighting.motivo_cierre && (
+            <View style={styles.miniReason}>
+               <AppText style={styles.miniReasonText} numberOfLines={1}>
+                 Motivo: {sighting.motivo_cierre}
+               </AppText>
+            </View>
+          )}
+          
+          <AppText style={styles.cardDate}>
+            {formatDate(sighting.fecha_creacion)}
           </AppText>
         </View>
-      )}
-
-      <AppText style={styles.cardDate}>
-        Reportado: {formatDate(sighting.fecha_creacion)}
-      </AppText>
+      </View>
     </TouchableOpacity>
   );
 };
@@ -314,7 +301,14 @@ const MySightingsScreen = () => {
   );
 
   if (loading && sightings.length === 0 && !error) {
-    return <Spinner />;
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <AppText style={styles.loadingText}>
+          Cargando tus avistamientos...
+        </AppText>
+      </View>
+    );
   }
 
   return (
@@ -471,9 +465,10 @@ const getStyles = (colors: ColorsType, isDark: boolean) =>
       color: colors.primary,
     },
     listContent: { padding: 10 },
+    
+    // --- ESTILOS TARJETA ACTUALIZADOS PARA IMAGEN ---
     card: {
       backgroundColor: colors.cardBackground,
-      padding: 15,
       borderRadius: 12,
       marginBottom: 10,
       shadowColor: '#000',
@@ -481,101 +476,99 @@ const getStyles = (colors: ColorsType, isDark: boolean) =>
       shadowOpacity: isDark ? 0.2 : 0.1,
       shadowRadius: 3.84,
       elevation: 5,
+      overflow: 'hidden', // Importante para recortar la imagen
     },
-    criticalCard: {
-      backgroundColor: `${colors.danger}20`,
-      borderColor: colors.danger,
-      borderWidth: 2,
-      padding: 15,
-      borderRadius: 12,
-      marginBottom: 10,
-      shadowColor: colors.danger,
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.2,
-      shadowRadius: 5.46,
-      elevation: 8,
-    },
-    closedCard: {
-      opacity: 0.6,
-      backgroundColor: colors.cardBackground,
-      borderColor: colors.darkGray,
-      borderWidth: 1,
-    },
-    cardHeader: {
+    cardContentRow: {
       flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: 10,
+      height: 120, // Altura fija para que todas las tarjetas se vean iguales
     },
-    cardTitle: {
-      fontSize: 18,
-      fontWeight: fontWeightSemiBold,
-      color: colors.text,
-      flex: 1,
-      marginRight: 10,
-    },
-    cardDescription: {
-      fontSize: 14,
-      color: colors.text,
-      marginBottom: 10,
-    },
-    infoRow: {
-      flexDirection: 'row',
-      marginBottom: 5,
-      alignItems: 'center',
-    },
-    label: {
-      fontSize: 14,
-      fontWeight: fontWeightMedium,
-      color: colors.darkGray,
-      width: 120,
-    },
-    value: {
-      fontSize: 14,
-      color: colors.text,
-      flexShrink: 1,
-    },
-    reasonContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginBottom: 10,
-      padding: 10,
+    // Imagen izquierda
+    imageWrapper: {
+      width: 110,
+      height: '100%',
       backgroundColor: colors.backgroundSecon,
-      borderRadius: 8,
+      position: 'relative',
+      justifyContent: 'center',
+      alignItems: 'center',
     },
-    reasonText: {
-      fontSize: 14,
-      color: colors.darkGray,
-      marginLeft: 6,
-      flexShrink: 1,
+    cardImage: {
+      width: '100%',
+      height: '100%',
     },
-    cardDate: {
-      fontSize: 12,
-      color: colors.gray,
-      textAlign: 'right',
-    },
-    badge: {
-      paddingHorizontal: 10,
-      paddingVertical: 4,
-      borderRadius: 12,
-      minWidth: 70,
+    placeholderImage: {
+      flex: 1,
       alignItems: 'center',
       justifyContent: 'center',
     },
-    badgeClosed: {
-      backgroundColor: colors.darkGray,
+    imageBadge: {
+      position: 'absolute',
+      bottom: 6,
+      left: 6,
+      backgroundColor: 'rgba(0,0,0,0.6)',
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: 4,
     },
-    badgeCritical: {
-      backgroundColor: colors.danger,
+    imageBadgeText: {
+      color: 'white',
+      fontSize: 10,
+      fontWeight: 'bold',
     },
-    badgeActive: {
-      backgroundColor: colors.success,
+    // Columna de Info
+    infoColumn: {
+      flex: 1,
+      padding: 10,
+      justifyContent: 'center',
     },
-    badgeText: {
-      color: colors.lightText,
-      fontWeight: '600',
-      fontSize: 12,
+    cardTitle: {
+      fontSize: 16,
+      fontWeight: fontWeightBold,
+      color: colors.text,
+      marginBottom: 6,
     },
+    miniInfoRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 4,
+    },
+    miniInfoText: {
+      fontSize: 13,
+      color: colors.darkGray,
+    },
+    miniReason: {
+      marginTop: 4,
+      padding: 4,
+      backgroundColor: colors.backgroundSecon,
+      borderRadius: 4,
+    },
+    miniReasonText: {
+      fontSize: 11,
+      color: colors.darkGray,
+      fontStyle: 'italic',
+    },
+    cardDate: {
+      fontSize: 11,
+      color: colors.gray,
+      marginTop: 'auto', // Empuja la fecha al fondo
+      textAlign: 'right',
+    },
+    
+    // Estilos condicionales
+    criticalCard: {
+      borderColor: colors.danger,
+      borderWidth: 2,
+    },
+    closedCard: {
+      opacity: 0.7,
+      borderColor: colors.darkGray,
+      borderWidth: 1,
+    },
+    // Badges
+    badgeClosed: { backgroundColor: colors.darkGray },
+    badgeCritical: { backgroundColor: colors.danger },
+    badgeActive: { backgroundColor: colors.success },
+    
+    // ... (Estilos de modales y estados de error se mantienen)
     errorText: {
       color: colors.danger,
       fontSize: 16,

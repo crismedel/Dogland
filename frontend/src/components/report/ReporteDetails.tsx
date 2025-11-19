@@ -1,32 +1,29 @@
 import {
   AppText,
   fontWeightBold,
-  fontWeightMedium,
-  fontWeightSemiBold,
+  fontWeightMedium
 } from '@/src/components/AppText';
+import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
-import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import {
   obtenerColorMarcador,
   obtenerNombreEspecie,
   obtenerNombreEstadoSalud,
 } from '../../types/report';
-// 1. Quitar la importación estática
-// import { colors } from '@/src/constants/colors';
-import { Ionicons } from '@expo/vector-icons';
 
 // 2. Importar el hook y los tipos de tema
-import { useTheme } from '@/src/contexts/ThemeContext';
 import { ColorsType } from '@/src/constants/colors';
+import { useTheme } from '@/src/contexts/ThemeContext';
 
-// --- DEFINIMOS LAS PROPS CON TYPESCRIPT ---
+// --- DEFINIMOS LAS PROPS ---
 interface ReporteDetailsProps {
-  reporte: any; // Puedes cambiar 'any' por tu tipo 'Reporte' si lo tienes
+  reporte: any; 
   onClose: () => void;
   onDelete: () => void;
   distance: string | null;
-  onCloseSighting: () => void; // <-- Prop para abrir el modal de cierre
-  canModify: boolean; // <-- Prop de permisos
+  onCloseSighting: () => void;
+  canModify: boolean;
 }
 
 export const ReporteDetails = ({
@@ -34,39 +31,82 @@ export const ReporteDetails = ({
   onClose,
   onDelete,
   distance,
-  onCloseSighting, // <-- Recibimos la prop
-  canModify, // <-- Recibimos la prop
+  onCloseSighting,
+  canModify,
 }: ReporteDetailsProps) => {
-  // Un reporte se considera 'cerrado' si su estado no es 'Activo' (ID 1)
   const isClosed = reporte.id_estado_avistamiento !== 1;
 
-  // 3. Llamar al hook y generar los estilos
+  // 1. Extraer la imagen (Base64)
+  const primaryImage =
+    reporte.fotos_url && reporte.fotos_url.length > 0
+      ? reporte.fotos_url[0]
+      : null;
+
+  // 3. Llamar al hook de temas
   const { colors, isDark } = useTheme();
-  const styles = getStyles(colors);
+  const styles = getStyles(colors, isDark);
 
   return (
     <View style={styles.floatingDetailsContainer}>
+      {/* Botón Cerrar (X) */}
       <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-        <AppText style={styles.closeButtonText}>✕</AppText>
+        <View style={styles.closeButtonBg}>
+           <AppText style={styles.closeButtonText}>✕</AppText>
+        </View>
       </TouchableOpacity>
 
-      <ScrollView contentContainerStyle={styles.scrollableContent}>
-        <AppText style={styles.detailTitle}>{reporte.descripcion}</AppText>
+      <ScrollView contentContainerStyle={styles.scrollableContent} showsVerticalScrollIndicator={false}>
+        
+        {/* --- 2. SECCIÓN DE IMAGEN --- */}
+        <View style={styles.imageContainer}>
+          {primaryImage ? (
+            <Image 
+              source={{ uri: primaryImage }} 
+              style={styles.sightingImage}
+              resizeMode="cover"
+            />
+          ) : (
+            <View style={styles.imagePlaceholder}>
+              <Ionicons name="image-outline" size={40} color={colors.gray} />
+              <AppText style={styles.placeholderText}>Sin foto</AppText>
+            </View>
+          )}
+          
+          {/* Badge de estado sobre la imagen */}
+          <View style={[styles.statusBadgeOverlay, isClosed ? {backgroundColor: colors.gray} : {backgroundColor: colors.success}]}>
+             <AppText style={styles.statusTextOverlay}>
+                {isClosed ? "Cerrado" : "Activo"}
+             </AppText>
+          </View>
+        </View>
+        {/* --------------------------- */}
+
+        <AppText style={styles.detailTitle}>{reporte.titulo || "Reporte"}</AppText>
+        <AppText style={styles.detailDescription}>{reporte.descripcion}</AppText>
 
         <View style={styles.detailCard}>
-          {/* --- BLOQUE DE DISTANCIA AÑADIDO --- */}
+          {/* Distancia */}
           {distance && (
             <View style={styles.infoRow}>
               <Ionicons
                 name="location-outline"
-                size={16} // Ajustamos tamaño
-                color={colors.primary} // 4. Usar colores del tema
+                size={16}
+                color={colors.primary}
                 style={styles.detailIcon}
               />
               <AppText style={styles.distanceText}>Estás a {distance}</AppText>
             </View>
           )}
-          {/* ---------------------------------- */}
+
+          {/* Motivo de Cierre (si existe) */}
+          {isClosed && reporte.motivo_cierre && (
+             <View style={[styles.infoRow, { backgroundColor: isDark ? '#444' : '#F5F5F5' }]}>
+               <Ionicons name="information-circle-outline" size={16} color={colors.darkGray} style={styles.detailIcon} />
+               <AppText style={[styles.detailValue, { fontStyle: 'italic', color: colors.darkGray }]}>
+                 Motivo: {reporte.motivo_cierre}
+               </AppText>
+             </View>
+          )}
 
           <View style={styles.detailRow}>
             <Ionicons
@@ -76,7 +116,7 @@ export const ReporteDetails = ({
               style={styles.detailIcon}
             />
             <AppText style={[styles.detailValue, { color: colors.text }]}>
-              {reporte.direccion}
+              {reporte.direccion || "Ubicación en mapa"}
             </AppText>
           </View>
           <View style={styles.detailRow}>
@@ -124,21 +164,10 @@ export const ReporteDetails = ({
               })}
             </AppText>
           </View>
-          <View style={styles.detailRow}>
-            <Ionicons
-              name="pricetag-outline"
-              size={16}
-              color={colors.secondary}
-              style={styles.detailIcon}
-            />
-            <AppText style={[styles.detailValue, { color: colors.text }]}>
-              reporte numero {reporte.id_avistamiento}
-            </AppText>
-          </View>
         </View>
       </ScrollView>
 
-      {/* --- BOTONES CONDICIONALES POR PERMISO --- */}
+      {/* --- BOTONES DE ACCIÓN --- */}
       {canModify && (
         <View style={styles.buttonContainer}>
           <TouchableOpacity
@@ -149,18 +178,13 @@ export const ReporteDetails = ({
             <AppText style={styles.actionButtonText}>Eliminar</AppText>
           </TouchableOpacity>
 
-          {/* El botón de CERRAR solo aparece si el reporte está ACTIVO */}
           {!isClosed && (
             <TouchableOpacity
               onPress={onCloseSighting}
               style={[styles.actionButton, styles.closeReportButton]}
             >
-              <Ionicons
-                name="shield-checkmark-outline"
-                size={16}
-                color={colors.lightText}
-              />
-              <AppText style={styles.actionButtonText}>Cerrar Reporte</AppText>
+              <Ionicons name="shield-checkmark-outline" size={16} color={colors.lightText} />
+              <AppText style={styles.actionButtonText}>Cerrar</AppText>
             </TouchableOpacity>
           )}
         </View>
@@ -169,107 +193,157 @@ export const ReporteDetails = ({
   );
 };
 
-// 5. Convertir el StyleSheet en una función
-const getStyles = (colors: ColorsType) =>
-  StyleSheet.create({
-    floatingDetailsContainer: {
-      position: 'absolute',
-      bottom: 20,
-      left: 20,
-      right: 20,
-      backgroundColor: colors.cardBackground, // Dinámico
-      padding: 16,
-      borderRadius: 12,
-      shadowColor: '#000',
-      shadowOpacity: 0.2,
-      shadowOffset: { width: 0, height: 2 },
-      shadowRadius: 4,
-      elevation: 5,
-    },
-    closeButton: {
-      position: 'absolute',
-      top: 10,
-      right: 10,
-      zIndex: 10,
-    },
-    closeButtonText: {
-      fontSize: 18,
-      color: colors.darkGray, // Dinámico
-    },
-    scrollableContent: { paddingTop: 20 },
-    detailTitle: {
-      fontSize: 18,
-      fontWeight: fontWeightSemiBold,
-      marginBottom: 10,
-      paddingRight: 20,
-      color: colors.text, // Dinámico
-    },
-    detailCard: {
-      padding: 10,
-      backgroundColor: colors.backgroundSecon, // Dinámico
-      borderRadius: 8,
-    },
-    detailRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginBottom: 6,
-      paddingVertical: 2,
-    },
-    detailIcon: { marginRight: 8, width: 20, textAlign: 'center' },
-    detailValue: {
-      fontSize: 14,
-      flexShrink: 1,
-      color: colors.text, // Dinámico (default)
-    },
-    deleteButton: {
-      backgroundColor: colors.danger, // Dinámico
-      padding: 12,
-      borderRadius: 8,
-      marginTop: 10,
-    },
-    deleteButtonText: {
-      color: colors.lightText, // Dinámico
-      fontWeight: fontWeightBold,
-      textAlign: 'center',
-    },
+const getStyles = (colors: ColorsType, isDark: boolean) => StyleSheet.create({
+  floatingDetailsContainer: {
+    position: 'absolute',
+    bottom: 20,
+    left: 20,
+    right: 20,
+    backgroundColor: colors.cardBackground,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 5,
+    maxHeight: '75%', 
+    overflow: 'hidden', 
+  },
+  scrollableContent: { 
+    paddingBottom: 20 
+  },
+  
+  // --- ESTILOS IMAGEN ---
+  imageContainer: {
+    width: '100%',
+    height: 200,
+    backgroundColor: isDark ? '#333' : '#f0f0f0',
+    position: 'relative',
+  },
+  sightingImage: {
+    width: '100%',
+    height: '100%',
+  },
+  imagePlaceholder: {
+    width: '100%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: isDark ? '#333' : '#E1E1E1',
+  },
+  placeholderText: {
+    color: colors.gray,
+    marginTop: 5,
+    fontSize: 12,
+  },
+  statusBadgeOverlay: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    opacity: 0.9,
+  },
+  statusTextOverlay: {
+    color: colors.lightText,
+    fontSize: 12,
+    fontWeight: fontWeightBold,
+  },
 
-    // --- ESTILOS MODIFICADOS/NUEVOS PARA BOTONES ---
-    buttonContainer: {
-      flexDirection: 'row',
-      marginTop: 10,
-      gap: 10, // Espacio entre botones
-    },
-    actionButton: {
-      flex: 1, // Para que ocupen el espacio
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: 12,
-      borderRadius: 8,
-    },
-    actionButtonText: {
-      color: colors.lightText,
-      fontWeight: fontWeightBold,
-      textAlign: 'center',
-      marginLeft: 8,
-    },
-    closeReportButton: {
-      backgroundColor: colors.success,
-    },
+  // --- BOTÓN CERRAR MODAL (X) ---
+  closeButton: {
+    position: 'absolute', 
+    top: 10, 
+    right: 10,
+    zIndex: 10,
+  },
+  closeButtonBg: {
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  closeButtonText: { 
+    fontSize: 14, 
+    color: 'white', 
+    fontWeight: 'bold' 
+  },
 
-    // --- ESTILOS AÑADIDOS PARA LA DISTANCIA ---
-    infoRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginBottom: 8,
-      backgroundColor: `${colors.info}20`, // Dinámico (light blue)
-      borderRadius: 8,
-      padding: 10,
-    },
-    distanceText: {
-      fontSize: 14,
-      fontWeight: fontWeightBold,
-      color: colors.primary, // Dinámico
-      marginLeft: 4,
-    },
-  });
+  // --- CONTENIDO ---
+  detailTitle: {
+    fontSize: 20,
+    fontWeight: fontWeightBold,
+    marginTop: 15,
+    marginBottom: 5,
+    paddingHorizontal: 16,
+    color: colors.text,
+  },
+  detailDescription: {
+    fontSize: 14,
+    color: colors.darkGray,
+    marginBottom: 15,
+    paddingHorizontal: 16,
+    lineHeight: 20,
+  },
+  detailCard: { 
+    backgroundColor: colors.backgroundSecon, 
+    borderRadius: 12, 
+    marginHorizontal: 16,
+    padding: 12,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  detailIcon: { marginRight: 8, width: 20, textAlign: 'center' },
+  detailValue: { fontSize: 14, flexShrink: 1, color: colors.text },
+
+  // --- BOTONES ACCIÓN ---
+  buttonContainer: {
+    flexDirection: 'row',
+    margin: 16,
+    marginTop: 0,
+    gap: 10,
+  },
+  actionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 12,
+    borderRadius: 10,
+  },
+  actionButtonText: {
+    color: colors.lightText,
+    fontWeight: fontWeightBold,
+    textAlign: 'center',
+    marginLeft: 8,
+    fontSize: 14,
+  },
+  deleteButton: {
+    backgroundColor: colors.danger,
+  },
+  closeReportButton: {
+    backgroundColor: colors.success,
+  },
+
+  // --- DISTANCIA ---
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+    backgroundColor: `${colors.info}20`,
+    borderRadius: 8,
+    padding: 10,
+  },
+  distanceText: {
+    fontSize: 14,
+    fontWeight: fontWeightBold,
+    color: colors.primary,
+    marginLeft: 4,
+  },
+});
