@@ -81,7 +81,7 @@ const FormAgregarPerrito = () => {
         );
       } catch (error) {
         console.error('Error cargando datos iniciales:', error);
-        Alert.alert(
+        showError(
           'Error',
           'No se pudieron cargar las listas de opciones. Revisa tu conexión.',
         );
@@ -191,7 +191,7 @@ const FormAgregarPerrito = () => {
       !formValues.id_estado_salud ||
       !formValues.id_especie
     ) {
-      Alert.alert(
+      showError(
         'Campos incompletos',
         'Nombre, Especie y Estado de Salud son obligatorios.',
       );
@@ -224,10 +224,9 @@ const FormAgregarPerrito = () => {
       const response = await createFullAnimal(payload);
 
       if (response.success) {
-        Alert.alert(
+        showSuccess(
           '¡Éxito! 🎉',
           'El animal ha sido registrado correctamente.',
-          [{ text: 'OK', onPress: () => router.back() }],
         );
       } else {
         // Manejo de errores del backend

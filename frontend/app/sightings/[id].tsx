@@ -52,6 +52,7 @@ const getSightingStatusName = (id: number) => {
   return 'Desconocido';
 };
 const CERRADO_STATUS_ID = 5;
+const { showError, showInfo } = useNotification();
 
 const formatDateDDMMYYYY = (input?: string | null) => {
   if (!input) return 'N/A';
@@ -75,7 +76,7 @@ const openInMaps = async (
   label?: string,
 ) => {
   if (lat === undefined || lat === null || lon === undefined || lon === null) {
-    Alert.alert(
+    showError(
       'Ubicación no disponible',
       'No hay coordenadas para abrir en el mapa.',
     );
@@ -87,14 +88,14 @@ const openInMaps = async (
     if (supported) {
       await Linking.openURL(url);
     } else {
-      Alert.alert(
+      showError(
         'No se pudo abrir el mapa',
         'No hay una aplicación disponible para abrir el mapa.',
       );
     }
   } catch (e) {
     console.error('openInMaps error', e);
-    Alert.alert('Error', 'No se pudo abrir la aplicación de mapas.');
+    showError('Error', 'No se pudo abrir la aplicación de mapas.');
   }
 };
 
@@ -139,10 +140,7 @@ const SightingDetailScreen = () => {
       setSighting(response.data.data);
     } catch (err) {
       console.error('Error fetching sighting details:', err);
-      Alert.alert(
-        'Error',
-        'No se pudo cargar la información del avistamiento.',
-      );
+      showError('Error', 'No se pudo cargar la información del avistamiento.');
       setError('No se pudo cargar la información del avistamiento.');
     } finally {
       setLoading(false);
@@ -538,7 +536,7 @@ const SightingDetailScreen = () => {
 
             <TouchableOpacity
               onPress={() =>
-                Alert.alert('Compartir', 'Funcionalidad de compartir.')
+                showInfo('Compartir', 'Funcionalidad de compartir.')
               }
               style={styles.iconBtn}
               accessibilityLabel="Compartir"

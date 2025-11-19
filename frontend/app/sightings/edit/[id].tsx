@@ -28,6 +28,7 @@ import {
 } from 'react-native';
 import DropDownPicker from 'react-native-dropdown-picker';
 import MapView, { Marker, Region } from 'react-native-maps';
+import { useNotification } from '@/src/components/notifications';
 
 // 2. Importar el hook y los tipos de tema
 import { useTheme } from '@/src/contexts/ThemeContext';
@@ -65,6 +66,7 @@ const EditSightingScreen = () => {
   const styles = getStyles(colors, isDark);
   const { id } = useLocalSearchParams();
   const router = useRouter();
+  const { showError, showSuccess } = useNotification();
 
   // --- ESTADOS ---
   const [formData, setFormData] = useState<FormData>({
@@ -281,16 +283,16 @@ const EditSightingScreen = () => {
       !formData.id_estado_salud ||
       !formData.id_estado_avistamiento
     ) {
-      Alert.alert('Error', 'Por favor completa todos los campos con *');
+      showError('Error', 'Por favor completa todos los campos con *');
       return;
     }
     if (!formData.ubicacion) {
-      Alert.alert('Error', 'Por favor selecciona una ubicación en el mapa');
+      showError('Error', 'Por favor selecciona una ubicación en el mapa');
       return;
     }
 
     if (!hasChanges()) {
-      Alert.alert('Sin cambios', 'No has realizado ningún cambio');
+      showError('Sin cambios', 'No has realizado ningún cambio');
       return;
     }
 
@@ -311,28 +313,24 @@ const EditSightingScreen = () => {
 
       await apiClient.put(`/sightings/${id}`, payload);
 
-      Alert.alert('Éxito', 'Avistamiento actualizado correctamente', [
-        { text: 'OK', onPress: () => router.back() },
-      ]);
+      showSuccess('Éxito', 'Avistamiento actualizado correctamente');
+      router.back();
     } catch (err: any) {
       console.error(
         'Error updating sighting:',
         err.response?.data || err.message,
       );
       if (err.response?.status === 403) {
-        Alert.alert('Acción Prohibida', 'No tienes permiso para editar esto.');
+        showError('Acción Prohibida', 'No tienes permiso para editar esto.');
       } else if (err.response?.status === 404) {
-        Alert.alert('Error', 'El avistamiento no fue encontrado.');
+        showError('Error', 'El avistamiento no fue encontrado.');
       } else if (err.response?.status === 400) {
-        Alert.alert(
+        showError(
           'Error',
           'Datos inválidos. Por favor verifica la información.',
         );
       } else {
-        Alert.alert(
-          'Error del Servidor',
-          'No se pudo guardar la actualización.',
-        );
+        showError('Error del Servidor', 'No se pudo guardar la actualización.');
       }
     } finally {
       setIsSubmitting(false);
