@@ -16,30 +16,35 @@ import authRouter from './routes/auth.js';
 import authGoogle from './routes/authGoogle.js';
 import organizationsRouter from './routes/organizations.js';
 import usersRouter from './routes/users.js';
+import animalsRouter from './routes/animals.js';
 import adoptionsRouter from './routes/adoptions.js';
 import regionsRouter from './routes/regions.js';
 import citiesRouter from './routes/cities.js';
-import medicalHistoryRouter from './routes/medicalHistory.js';
-import statRoutes from './routes/stats.js';
-import notificationsRoutes from './routes/notifications.js';
-import userPhotoRouter from './routes/userPhoto.js';
-import favoritesRouter from './routes/favorites.js';
-//-------------------------apartado de agregar perrito---------------------------------
-//import infoCompAnimales from './routes/infoCompAnimales.js'; //info de animales completa (en teoria)
-//------------------------------------------------------------------------------------------
-
-import animalsRouter from './routes/animals.js';
-import speciesRouter from './routes/species.js'; //  esta comentada por que lo cambie SMM, no la elimino por ahora
+//import speciesRouter from './routes/species.js';   esta comentada por que lo cambie SMM, no la elimino por ahora
 import racesRouter from './routes/races.js';
 import healthRouter from './routes/health-states.js';
-import animalPostRouter from './routes/animalPost.js';
+import medicalHistoryRouter from './routes/medicalHistory.js';
+import statRoutes from './routes/stats.js';
+import infoCompAnimales from './routes/infoCompAnimales.js'; //info de animales completa (en teoria)
+import notificationsRoutes from './routes/notifications.js';
+import userPhotoRouter from './routes/userPhoto.js';
+
+//-------------------------apartado de agregar perrito---------------------------------
+
+import especiesRoutes from './routes/especies.js';
+import animalesRoutes from './routes/animal_form.js';
+import razasRoutes from './routes/razas.js'; // archivo para razas pagina adoptar
+import estadosSaludRoutes from './routes/estadosSalud.js'; // pagina adoptar
+
 //-------------------------fin apartado de agregar perrito------------------------------
+
 
 const app = express();
 
 // Configuraciones base
 app.set('port', PORT);
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Middleware CORS
 app.use(cors(corsOptions));
@@ -75,19 +80,21 @@ app.use('/api', organizationsRouter);
 app.use('/api', usersRouter);
 app.use('/api', regionsRouter);
 app.use('/api', citiesRouter);
+app.use('/api', animalsRouter);
 app.use('/api', adoptionsRouter);
-app.use('/api', medicalHistoryRouter);
-app.use('/api/notifications', notificationsRoutes);
-app.use('/api', userPhotoRouter);
-app.use('/api', favoritesRouter);
-
-//---------------NO TOCAR----------------------------
-app.use('/api', animalsRouter); // lo usa bayron
-app.use('/api', speciesRouter);  
+//app.use('/api', speciesRouter);  esta comentada por que lo cambie SMM, no la elimino por ahora
 app.use('/api', racesRouter);
 app.use('/api', healthRouter);
-app.use('/api', animalPostRouter);
-//app.use('/api', infoCompAnimales);  esta es una prueba de SMM
+app.use('/api', medicalHistoryRouter);
+app.use('/api', infoCompAnimales);
+app.use('/api/notifications', notificationsRoutes);
+app.use('/api', userPhotoRouter);
+
+//---------------NO TOCAR----------------------------
+app.use('/api', animalesRoutes);
+app.use('/api', especiesRoutes);
+app.use('/api', estadosSaludRoutes);
+app.use('/api', razasRoutes);
 //-----------------------------------------------
 
 // Middleware de manejo de errores general
